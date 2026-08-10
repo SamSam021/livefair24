@@ -39,7 +39,26 @@ function getDynamoClient() {
   // isn't actually being used (e.g. local dev without DYNAMODB_TABLE set).
   const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
   const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
-  const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+
+  // IMPORTANT: some hosts (Railway confirmed, possibly others) inject their
+  // own internal values for AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY into
+  // every container, silently overriding whatever you set for those exact
+  // names — the AWS SDK then fails with "Could not load credentials from
+  // any providers" even though you configured real keys. To avoid that
+  // collision, this app reads differently-named variables instead
+  // (DYNAMO_ACCESS_KEY_ID / DYNAMO_SECRET_ACCESS_KEY) and passes them to
+  // the SDK explicitly. If those aren't set, it falls back to the SDK's
+  // normal default credential chain — which is what you want on AWS-native
+  // compute (App Runner/ECS) using an instance role, where no explicit keys
+  // are needed at all.
+  const clientConfig = { region: process.env.AWS_REGION || 'us-east-1' };
+  if (process.env.DYNAMO_ACCESS_KEY_ID && process.env.DYNAMO_SECRET_ACCESS_KEY) {
+    clientConfig.credentials = {
+      accessKeyId: process.env.DYNAMO_ACCESS_KEY_ID,
+      secretAccessKey: process.env.DYNAMO_SECRET_ACCESS_KEY,
+    };
+  }
+  const client = new DynamoDBClient(clientConfig);
   ddbDocClient = DynamoDBDocumentClient.from(client);
   return ddbDocClient;
 }
