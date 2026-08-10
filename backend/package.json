@@ -1,0 +1,16 @@
+{
+  "name": "livefair24-backend",
+  "version": "1.0.0",
+  "description": "LiveFair24 ticket + hotel comparison backend. Plug-in provider architecture for ticket, hotel, and email APIs. Only real dependency is the AWS SDK, and only needed if DYNAMODB_TABLE is set — otherwise falls back to local file storage with zero installs.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
+  }
+}

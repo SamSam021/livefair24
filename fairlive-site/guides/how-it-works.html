@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How LiveFair24 Works — Compare Concert Ticket &amp; Hotel Prices | LiveFair24</title>
+<meta name="description" content="How LiveFair24 compares concert ticket prices across 5+ sellers and finds the cheapest nearby hotel, so you can see the total cost of a concert trip before you book.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://livefair24.com/guides/how-it-works.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+
+<meta property="og:title" content="How LiveFair24 Works">
+<meta property="og:description" content="Compare concert ticket prices across sellers, find the cheapest nearby hotel, and see your total trip cost.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://livefair24.com/guides/how-it-works.html">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How LiveFair24 Works",
+  "description": "How LiveFair24 compares concert ticket prices across multiple sellers and finds the cheapest nearby hotel.",
+  "author": {"@type":"Organization","name":"LiveFair24"},
+  "publisher": {"@type":"Organization","name":"LiveFair24","url":"https://livefair24.com/"},
+  "datePublished": "2026-08-01",
+  "dateModified": "2026-08-10",
+  "url": "https://livefair24.com/guides/how-it-works.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"Concerts","item":"https://livefair24.com/"},
+    {"@type":"ListItem","position":2,"name":"Guides","item":"https://livefair24.com/guides/"},
+    {"@type":"ListItem","position":3,"name":"How it works"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does LiveFair24 sell tickets directly?",
+      "acceptedAnswer": {"@type":"Answer","text":"No. LiveFair24 is a comparison service. We show live prices from multiple sellers and hotel booking sites; when you click through, you buy directly from that seller at their price."}
+    },
+    {
+      "@type": "Question",
+      "name": "How often are prices updated?",
+      "acceptedAnswer": {"@type":"Answer","text":"Ticket and hotel prices refresh every 2 minutes for events with high search traffic, and at least every hour for all other listed events."}
+    },
+    {
+      "@type": "Question",
+      "name": "Does LiveFair24 charge a booking fee?",
+      "acceptedAnswer": {"@type":"Answer","text":"No. LiveFair24 never adds a markup. We earn a small affiliate commission from the seller when you complete a purchase, at no extra cost to you."}
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="nav-links" id="navLinks">
+      <a href="/cities/">Browse cities</a>
+      <a href="/artists/">Artists</a>
+      <a href="/venues/">Venues</a>
+      <a href="/guides/how-it-works.html">How it works</a>
+    </div>
+        <div class="nav-right">
+      <a href="/" class="nav-cta">Search concerts</a>
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">Concerts</a><span class="sep">›</span>
+    <a href="/guides/">Guides</a><span class="sep">›</span>
+    <span>How it works</span>
+  </div>
+</div>
+
+<main>
+<div class="container">
+
+  <section style="padding:40px 0 24px;max-width:74ch;">
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,48px);">How LiveFair24 works</h1>
+    <p style="font-size:16px;color:var(--ink-dim);margin-top:14px;line-height:1.7;">
+      LiveFair24 compares concert ticket prices from multiple sellers and pairs them with nearby hotel prices, so you can see the real total cost of going to a show — not just the face value of a ticket — before you commit to anything.
+    </p>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;">
+      <div class="card">
+        <h3>1. We scan ticket sellers</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:10px;line-height:1.6;">
+          For every event, we check prices across Ticketmaster, SeatGeek, StubHub, Vivid Seats, TicketNetwork and other marketplaces, and refresh those prices continuously.
+        </p>
+      </div>
+      <div class="card">
+        <h3>2. We match nearby hotels</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:10px;line-height:1.6;">
+          We pull hotel availability and pricing around each venue, sorted by distance, so you can weigh a closer hotel against a cheaper one further out.
+        </p>
+      </div>
+      <div class="card">
+        <h3>3. We show total trip cost</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:10px;line-height:1.6;">
+          Cheapest ticket plus cheapest nearby hotel plus a local transport estimate — one number, so you can compare across cities and dates.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div><h2>Frequently asked questions</h2></div></div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Does LiveFair24 sell tickets directly?<span class="chevron">▾</span></button>
+        <div class="faq-a">No. LiveFair24 is a comparison service. We show live prices from multiple sellers and hotel booking sites; when you click through, you buy directly from that seller at their price.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">How often are prices updated?<span class="chevron">▾</span></button>
+        <div class="faq-a">Ticket and hotel prices refresh every 2 minutes for high-traffic events, and at least every hour for all other listed events.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Does LiveFair24 charge a booking fee?<span class="chevron">▾</span></button>
+        <div class="faq-a">No. We never add a markup. We earn a small affiliate commission from the seller when you complete a purchase, at no extra cost to you.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">● LiveFair24</div><p class="footer-tagline">Concert ticket price comparison + hotels + total trip cost.</p></div>
+    <div class="footer-col"><h4>Browse</h4><ul><li><a href="/cities/">All cities</a></li><li><a href="/artists/">Artists</a></li><li><a href="/venues/">Venues</a></li></ul></div>
+    <div class="footer-col"><h4>Compare</h4><ul><li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li><li><a href="/guides/how-it-works.html">How it works</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/about.html">About</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 LiveFair24. Price comparison only — we earn affiliate commission on purchases made through our links.</span></div>
+</footer>
+<script>
+function toggleFaq(btn){
+  const ans = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  document.querySelectorAll('.faq-q').forEach(b=>{b.classList.remove('open');b.nextElementSibling.classList.remove('open');});
+  if(!isOpen){ btn.classList.add('open'); ans.classList.add('open'); }
+}
+</script>
+</body>
+</html>
