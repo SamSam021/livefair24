@@ -4,25 +4,28 @@
 // watchers-store.js don't need to know or care which backend is active:
 //
 //   - If DYNAMODB_TABLE is set, use DynamoDB. This is the right choice for
-//     App Runner (and any stateless/serverless host) — local disk doesn't
-//     survive redeploys or restarts there.
+//     any stateless/serverless host — local disk doesn't survive redeploys
+//     or restarts there.
 //   - If it's not set, fall back to a local JSON file, same as before this
 //     feature existed. Good for local development/testing without needing
 //     any AWS account at all.
 //
-// On App Runner, attach an "instance role" (not the build role) to your
-// service with dynamodb:GetItem + dynamodb:PutItem permission on your table.
-// The AWS SDK picks those credentials up automatically — no access keys to
-// manage. Locally, if you want to test against real DynamoDB, set
-// AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION as usual for the
-// AWS SDK's default credential chain, or just leave DYNAMODB_TABLE unset
-// and use the local file instead.
+// On AWS-native compute (App Runner/ECS), attach an "instance role" to your
+// service with dynamodb:GetItem + dynamodb:PutItem permission on your
+// table. The AWS SDK picks those credentials up automatically — no keys to
+// manage, leave DYNAMO_ACCESS_KEY_ID/DYNAMO_SECRET_ACCESS_KEY unset.
+//
+// On non-AWS hosts (Railway, Render, etc.), set DYNAMO_ACCESS_KEY_ID and
+// DYNAMO_SECRET_ACCESS_KEY explicitly (see .env.example). Deliberately NOT
+// named AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY — several hosts (Railway
+// confirmed) inject their own internal values for those exact names, which
+// silently breaks the AWS SDK's credential lookup even when you set real
+// ones yourself.
 //
 // IMPORTANT: this DynamoDB path was written from documented SDK v3
-// conventions, not tested against a live table — this sandbox has no
-// outbound network access. Verify it against a real table before depending
-// on it in production. The local-file fallback path IS tested (it's the
-// same code this project used before).
+// conventions and fixed once against a real Railway deployment issue, but
+// I still can't run it myself — this sandbox has no outbound network
+// access. The local-file fallback path IS fully tested.
 
 const fs = require('fs');
 const path = require('path');
@@ -52,6 +55,12 @@ function getDynamoClient() {
   // compute (App Runner/ECS) using an instance role, where no explicit keys
   // are needed at all.
   const clientConfig = { region: process.env.AWS_REGION || 'us-east-1' };
+  console.log(
+    '[persistence] DYNAMO_ACCESS_KEY_ID present:', !!process.env.DYNAMO_ACCESS_KEY_ID,
+    '| DYNAMO_SECRET_ACCESS_KEY present:', !!process.env.DYNAMO_SECRET_ACCESS_KEY,
+    '| DYNAMODB_TABLE:', process.env.DYNAMODB_TABLE,
+    '| AWS_REGION:', process.env.AWS_REGION
+  );
   if (process.env.DYNAMO_ACCESS_KEY_ID && process.env.DYNAMO_SECRET_ACCESS_KEY) {
     clientConfig.credentials = {
       accessKeyId: process.env.DYNAMO_ACCESS_KEY_ID,
