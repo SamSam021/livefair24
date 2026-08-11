@@ -1,16 +1,18 @@
-// cookie-banner.js — shows a cookie consent banner on first visit.
-// Remembers the choice in localStorage so it doesn't show again once
-// accepted. This is real production site code (not a Claude artifact),
-// so localStorage is the correct, standard tool here.
+// cookie-banner.js — shows a cookie consent banner on first visit, and a
+// persistent "Cookie settings" tab that lets the visitor reopen it and
+// change their choice at any time (GDPR/TTDSG require withdrawal to be as
+// easy as giving consent). Remembers the choice in localStorage. This is
+// real production site code (not a Claude artifact), so localStorage is
+// the correct, standard tool here.
 
 (function () {
   var STORAGE_KEY = 'livefair24_cookie_consent';
 
-  function alreadyDecided() {
+  function getChoice() {
     try {
-      return !!localStorage.getItem(STORAGE_KEY);
+      return localStorage.getItem(STORAGE_KEY);
     } catch (e) {
-      return false; // if storage is blocked, just show the banner every time rather than crash
+      return null; // if storage is blocked, treat as undecided rather than crash
     }
   }
 
@@ -22,7 +24,10 @@
     }
   }
 
-  function buildBanner() {
+  function showBanner() {
+    if (document.getElementById('cookieBanner')) return; // already open
+    hideToggle();
+
     var el = document.createElement('div');
     el.id = 'cookieBanner';
     el.className = 'cookie-banner';
@@ -41,18 +46,50 @@
     document.getElementById('cookieAccept').addEventListener('click', function () {
       remember('accepted');
       el.remove();
+      showToggle();
     });
     document.getElementById('cookieDecline').addEventListener('click', function () {
       remember('declined');
       el.remove();
+      showToggle();
     });
   }
 
-  if (!alreadyDecided()) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', buildBanner);
-    } else {
-      buildBanner();
+  function buildToggle() {
+    if (document.getElementById('cookieSettingsToggle')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'cookieSettingsToggle';
+    btn.className = 'cookie-settings-toggle';
+    btn.setAttribute('aria-label', 'Cookie settings — change your choice');
+    btn.title = 'Cookie settings';
+    btn.textContent = '🍪';
+    btn.addEventListener('click', showBanner);
+    document.body.appendChild(btn);
+  }
+
+  function hideToggle() {
+    var t = document.getElementById('cookieSettingsToggle');
+    if (t) t.style.display = 'none';
+  }
+
+  function showToggle() {
+    var t = document.getElementById('cookieSettingsToggle');
+    if (t) t.style.display = 'flex';
+  }
+
+  function init() {
+    buildToggle();
+    if (!getChoice()) {
+      showBanner();
     }
+    // If a choice already exists, the toggle stays visible by default
+    // (its CSS default is visible) so it's always reachable to change later.
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
