@@ -229,3 +229,20 @@ img{max-width:100%;display:block;}
 .event-card:hover:not(.active){ border-color:#c3d6fd; }
 .cta-hotels{ cursor:pointer; display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:700; color:var(--ink-faint); }
 .cta-hotels:hover{ color:var(--blue); }
+
+/* ---- Cookie consent banner ---- */
+.cookie-banner{ position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#101828; color:#fff; box-shadow:0 -8px 24px rgba(0,0,0,.25); }
+.cookie-banner-inner{ max-width:1120px; margin:0 auto; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+.cookie-banner-inner p{ font-size:13.5px; line-height:1.5; color:#e4e7ec; margin:0; flex:1; min-width:240px; }
+.cookie-banner-inner a{ color:#8fb4ff; text-decoration:underline; }
+.cookie-banner-actions{ display:flex; gap:10px; flex-shrink:0; flex-wrap:wrap; }
+.cookie-btn{ font-family:inherit; font-size:13px; font-weight:700; padding:10px 18px; border-radius:9px; cursor:pointer; border:1px solid transparent; white-space:nowrap; }
+.cookie-btn-accept{ background:var(--blue); color:#fff; }
+.cookie-btn-accept:hover{ background:var(--blue-deep); }
+.cookie-btn-decline{ background:transparent; color:#e4e7ec; border-color:rgba(255,255,255,.3); }
+.cookie-btn-decline:hover{ border-color:#fff; color:#fff; }
+@media(max-width:520px){
+  .cookie-banner-inner{ flex-direction:column; align-items:stretch; }
+  .cookie-banner-actions{ justify-content:stretch; }
+  .cookie-btn{ flex:1; text-align:center; }
+}
