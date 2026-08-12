@@ -16,6 +16,7 @@ const { handleTickets } = require('./routes/tickets');
 const { handleHotels } = require('./routes/hotels');
 const watcherRoutes = require('./routes/watchers');
 const eventRoutes = require('./routes/events');
+const sportsRoutes = require('./routes/sports');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -207,6 +208,51 @@ const server = http.createServer(async (req, res) => {
       const slug = decodeURIComponent(pathname.split('/').pop());
       try {
         return sendJSON(res, 200, await eventRoutes.getEvent(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/sports' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await sportsRoutes.listSports());
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/sports/leagues' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await sportsRoutes.listLeagues());
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/sports/teams' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await sportsRoutes.listTeams());
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/sports\/teams\/[^/]+$/) && req.method === 'GET') {
+      const slug = decodeURIComponent(pathname.split('/').pop());
+      try {
+        return sendJSON(res, 200, await sportsRoutes.getTeam(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/sports\/matches\/[^/]+$/) && req.method === 'GET') {
+      const slug = decodeURIComponent(pathname.split('/').pop());
+      try {
+        return sendJSON(res, 200, await sportsRoutes.getMatch(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/sports\/leagues\/[^/]+\/fixtures$/) && req.method === 'GET') {
+      const slug = decodeURIComponent(pathname.split('/')[4]);
+      try {
+        return sendJSON(res, 200, await sportsRoutes.getLeagueFixtures(slug));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "db:migrate": "node db/migrate.js",
-    "db:seed-events": "node db/seed-live-events.js"
+    "db:seed-events": "node db/seed-live-events.js",
+    "db:seed-sports": "node db/seed-sports.js"
   },
   "engines": {
     "node": ">=18"

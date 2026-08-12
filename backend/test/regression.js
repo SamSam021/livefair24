@@ -244,6 +244,12 @@ async function runTests() {
     assert.ok(res.json.error.includes('PostgreSQL is not configured'));
   });
 
+  await test('GET /api/sports/teams fails gracefully (not a crash) without PostgreSQL configured', async () => {
+    const res = await get('/api/sports/teams');
+    assert.strictEqual(res.status, 500);
+    assert.ok(res.json.error.includes('PostgreSQL is not configured'));
+  });
+
   await test('Homepage hotel cards have a Book button', async () => {
     const res = await get('/');
     assert.ok(res.body.includes('hbook'), 'homepage hotel cards must have a Book button (class="hbook")');
@@ -261,6 +267,33 @@ async function runTests() {
     assert.ok(res.body.includes('renderEventHotelList'), 'event page must render hotels as cards, not a table');
     assert.ok(!res.body.includes('class="hotel-table"'), 'the old hotel table markup must be fully removed');
     assert.ok(!res.body.includes('hotelTableBody'), 'no leftover references to the removed table body element');
+  });
+
+  await test('Match page (Step 8) loads and reuses the same shared components', async () => {
+    const res = await get('/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.body.includes('id="sellerCards"'), 'match page must use the shared seller-card ticket component');
+    assert.ok(res.body.includes('id="hotelScroll"'), 'match page must use the shared hotel card component');
+    assert.ok(res.body.includes('leaflet'), 'match page must have the hotel map');
+  });
+
+  await test('Match page ticket/hotel API calls actually work end to end', async () => {
+    const tickets = await get('/api/tickets?artist=FC%20Bergkristall%20vs%20Rheingold%20United&city=Munich&basePrice=45&eventId=101');
+    assert.strictEqual(tickets.status, 200);
+    assert.ok(tickets.json.results.length > 0);
+    const hotels = await get('/api/hotels?lat=48.1351&lng=11.5820&checkIn=2026-09-12&checkOut=2026-09-13&eventId=101');
+    assert.strictEqual(hotels.status, 200);
+    assert.ok(hotels.json.results.length > 0);
+  });
+
+  await test('Homepage hero links all point to pages that actually exist (no dead links)', async () => {
+    const res = await get('/');
+    const hrefs = [...res.body.matchAll(/class="pill"[^>]*href="([^"]+)"|href="([^"]+)"[^>]*class="pill"/g)]
+      .map(m => m[1] || m[2]);
+    for (const href of hrefs) {
+      const check = await get(href);
+      assert.strictEqual(check.status, 200, `Dead hero link found: ${href}`);
+    }
   });
 
   const failed = results.filter((r) => !r.pass);
