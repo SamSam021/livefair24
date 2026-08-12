@@ -187,7 +187,7 @@
     <!-- Event cards — clickable, first one pre-selected -->
     <div class="card-grid" id="eventCardGrid">
 
-      <div class="card event-card active" data-id="0">
+      <div class="card event-card active" data-id="0" style="cursor:pointer;" onclick="selectEvent(0,'ticket')">
         <div class="genre">Singer-Songwriter</div>
         <h3>Rosa Calder</h3>
         <div class="meta">Pier 2, Bremen, Germany</div>
@@ -201,7 +201,7 @@
         </div>
       </div>
 
-      <div class="card event-card" data-id="1">
+      <div class="card event-card" data-id="1" style="cursor:pointer;" onclick="selectEvent(1,'ticket')">
         <div class="genre">Pop / Rock</div>
         <h3>Nova Wren</h3>
         <div class="meta">Waldbühne, Berlin, Germany</div>
@@ -215,7 +215,7 @@
         </div>
       </div>
 
-      <div class="card event-card" data-id="2">
+      <div class="card event-card" data-id="2" style="cursor:pointer;" onclick="selectEvent(2,'ticket')">
         <div class="genre">Rock</div>
         <h3>Silvertone</h3>
         <div class="meta">3Olympia Theatre, Dublin, Ireland</div>
@@ -229,7 +229,7 @@
         </div>
       </div>
 
-      <div class="card event-card" data-id="3">
+      <div class="card event-card" data-id="3" style="cursor:pointer;" onclick="selectEvent(3,'ticket')">
         <div class="genre">Indie Pop</div>
         <h3>Delphine &amp; The Static Choir</h3>
         <div class="meta">Brixton Academy, London, UK</div>
@@ -243,7 +243,7 @@
         </div>
       </div>
 
-      <div class="card event-card" data-id="4">
+      <div class="card event-card" data-id="4" style="cursor:pointer;" onclick="selectEvent(4,'ticket')">
         <div class="genre">Techno</div>
         <h3>Nocturne</h3>
         <div class="meta">Fabrique, Milan, Italy</div>
@@ -257,7 +257,7 @@
         </div>
       </div>
 
-      <div class="card event-card" data-id="5">
+      <div class="card event-card" data-id="5" style="cursor:pointer;" onclick="selectEvent(5,'ticket')">
         <div class="genre">Hip-Hop</div>
         <h3>Kaito Reyes</h3>
         <div class="meta">Zénith Paris, Paris, France</div>
@@ -559,13 +559,13 @@ function renderTrendingEventCards(events){
   if(!grid) return;
 
   grid.innerHTML = events.map((ev, i) => `
-    <div class="card event-card${i===0?' active':''}" data-id="${i}">
+    <div class="card event-card${i===0?' active':''}" data-id="${i}" style="cursor:pointer;" onclick="selectEvent(${i},'ticket')">
       <div class="genre">${ev.genre || 'Live'}</div>
       <h3>${ev.artist}</h3>
       <div class="meta">${ev.venue}, ${ev.city}, ${ev.country}</div>
       <div class="date">${ev.date}</div>
       <div class="card-foot">
-        <span class="from">${ev.ticket === 'TBA' ? '<span style="color:var(--ink-faint);">Price TBA</span>' : `from <b>${ev.ticket}</b>`}</span>
+        <span class="from">from <b>${ev.ticket}</b></span>
         <div class="card-actions">
           <a href="${ev.sourceUrl || '#'}" target="_blank" rel="noopener" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">Compare →</a>
           <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(${i},'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
@@ -597,7 +597,11 @@ async function loadTrendingConcerts(){
       country: r.country,
       date: formatTrendingDate(r.date, r.time),
       isoDate: r.date,
-      ticket: r.lowestPrice != null ? `$${Math.round(r.lowestPrice)}` : 'TBA',
+      // The backend already guarantees every result reaching here has a
+      // real price (events without one are filtered out server-side, per
+      // an explicit decision that unpriced concerts shouldn't appear as
+      // homepage cards at all) — this is just the display formatting.
+      ticket: `$${Math.round(r.lowestPrice)}`,
       lat: r.lat,
       lng: r.lng,
       sourceUrl: r.url,
