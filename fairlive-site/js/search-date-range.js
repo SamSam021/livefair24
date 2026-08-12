@@ -7,6 +7,7 @@
 
 (function () {
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   function daysInMonth(year, month) {
@@ -28,8 +29,28 @@
     return `${year}-${pad2(month + 1)}-${pad2(day)}`;
   }
 
-  function formatMMDDYYYY(year, month, day) {
-    return `${pad2(month + 1)}/${pad2(day)}/${year}`;
+  // "12 Aug 2026" — deliberately NOT MM/DD/YYYY, which is genuinely
+  // ambiguous outside the US (is 09/23/2026 Sep 23rd, or an invalid date
+  // if read as day/month? this format has no such ambiguity anywhere).
+  function formatDate(year, month, day) {
+    return `${day} ${MONTH_NAMES_SHORT[month]} ${year}`;
+  }
+
+  // Smart range label — always shows month and year somewhere, but
+  // doesn't repeat them when both ends of the range share them, matching
+  // what the reference UI showed (e.g. "12 - 13 Aug 2026", not
+  // "12 Aug 2026 - 13 Aug 2026"). Verified against 5 cases (single date,
+  // same month, cross-month, cross-year, no selection) before wiring in.
+  function formatRangeLabel(start, end) {
+    if (!start) return 'All Dates';
+    if (!end) return formatDate(start.year, start.month, start.day);
+    if (start.year === end.year && start.month === end.month) {
+      return `${start.day} - ${end.day} ${MONTH_NAMES_SHORT[start.month]} ${start.year}`;
+    }
+    if (start.year === end.year) {
+      return `${start.day} ${MONTH_NAMES_SHORT[start.month]} - ${end.day} ${MONTH_NAMES_SHORT[end.month]} ${start.year}`;
+    }
+    return `${formatDate(start.year, start.month, start.day)} - ${formatDate(end.year, end.month, end.day)}`;
   }
 
   function toISOStart(year, month, day) {
@@ -130,8 +151,8 @@
     }
 
     function syncTextInputs() {
-      startInput.value = selStart ? formatMMDDYYYY(selStart.year, selStart.month, selStart.day) : '';
-      endInput.value = selEnd ? formatMMDDYYYY(selEnd.year, selEnd.month, selEnd.day) : '';
+      startInput.value = selStart ? formatDate(selStart.year, selStart.month, selStart.day) : '';
+      endInput.value = selEnd ? formatDate(selEnd.year, selEnd.month, selEnd.day) : '';
     }
 
     function handleDayClick(y, m, d) {
@@ -210,9 +231,7 @@
       if (selStart) {
         fromHidden.value = toISOStart(selStart.year, selStart.month, selStart.day);
         toHidden.value = selEnd ? toISOEnd(selEnd.year, selEnd.month, selEnd.day) : toISOEnd(selStart.year, selStart.month, selStart.day);
-        label.textContent = selEnd
-          ? `${formatMMDDYYYY(selStart.year, selStart.month, selStart.day)} – ${formatMMDDYYYY(selEnd.year, selEnd.month, selEnd.day)}`
-          : formatMMDDYYYY(selStart.year, selStart.month, selStart.day);
+        label.textContent = formatRangeLabel(selStart, selEnd);
       } else {
         fromHidden.value = '';
         toHidden.value = '';
