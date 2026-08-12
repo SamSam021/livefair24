@@ -521,6 +521,21 @@ async function runTests() {
     assert.ok(res.body.includes('id="epTitle">Hotels near Rosa Calder'), 'hotel panel initial content must also match — this one was already correct, confirming only the ticket panel had drifted');
   });
 
+  await test('Trending discovery filters to music events only (regression: a live debug trace showed comedy shows and a children\'s museum being pulled in as "trending concerts")', async () => {
+    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
+    assert.ok(tmSrc.includes('classificationName=music'), 'discovery must filter to music events, confirmed necessary by real non-concert results appearing in production');
+  });
+
+  await test('Trending candidate selection preserves soonest-first date order rather than randomizing across the whole discovered pool (near-term events are more likely to have on-sale pricing)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('selectDiverseSoonest'), 'candidate selection must use the soonest-first function, not the fully-randomized one');
+    assert.ok(trendingSrc.includes('const candidates = selectDiverseSoonest'), 'must actually be wired in as the candidate-picking function, not just defined and unused');
+    // Final display selection must still be fully randomized — only the
+    // candidate-VERIFICATION stage changed, per the requirement that
+    // final selection stays random.
+    assert.ok(trendingSrc.includes('selectDiverseRandom(priced, TARGET_COUNT)'), 'final display selection must still randomize among already-priced results');
+  });
+
   await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);

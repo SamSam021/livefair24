@@ -95,6 +95,13 @@ module.exports = {
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
     if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
+    // Confirmed via a real discovery response: without this, the bare
+    // country browse returns comedy shows, museum exhibits, and generic
+    // club nights alongside actual concerts ("die Comedy Show",
+    // "EXPLORADO - Abenteuermuseum" were both real results). This site is
+    // about concerts specifically, and non-music events are also less
+    // likely to have traditional ticket priceRanges populated at all.
+    if (params.countryCode && !params.query) parts.push('classificationName=music');
     // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against

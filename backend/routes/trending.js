@@ -40,7 +40,11 @@ function shuffle(arr) {
 // distinct ones — never returns fewer cards than the pool could support
 // just to protect diversity. Also randomizes selection (which artist,
 // and which of their dates) rather than deterministically always
-// picking the same soonest ones, so repeat visits see variety.
+// picking the same soonest ones, so repeat visits see variety. This is
+// for the FINAL display selection, made only from events already
+// confirmed to have real pricing — full randomization here doesn't hurt
+// pricing odds, unlike at the candidate-picking stage (see
+// selectDiverseSoonest below).
 // Verified against three cases before wiring in: plenty of diversity,
 // scarce diversity (must top up with repeats), and a pool smaller than
 // the target (must not pad with anything fake).
@@ -67,6 +71,39 @@ function selectDiverseRandom(events, targetCount) {
     for (const ev of remaining) {
       if (selected.length >= targetCount) break;
       selected.push(ev);
+    }
+  }
+
+  return selected;
+}
+
+// For picking which candidates to spend a verification API call on —
+// deliberately NOT randomized like selectDiverseRandom above. Confirmed
+// via a real debug trace that fully randomizing here can select
+// candidates scattered across a wide date range, and events further out
+// are markedly less likely to have on-sale pricing populated yet.
+// Preserves the input's date order (discovery already sorts date,asc)
+// and takes the FIRST — i.e. soonest — occurrence of each distinct
+// artist, maximizing the odds that a limited number of verification
+// calls actually finds priced events. Still prefers diversity the same
+// way selectDiverseRandom does (one per artist first, top up with
+// repeats only if the pool lacks enough distinct artists).
+function selectDiverseSoonest(events, targetCount) {
+  const selected = [];
+  const usedArtists = new Set();
+
+  for (const ev of events) {
+    if (selected.length >= targetCount) break;
+    const key = attractionKey(ev);
+    if (!key || usedArtists.has(key)) continue;
+    usedArtists.add(key);
+    selected.push(ev);
+  }
+
+  if (selected.length < targetCount) {
+    for (const ev of events) {
+      if (selected.length >= targetCount) break;
+      if (!selected.includes(ev)) selected.push(ev);
     }
   }
 
@@ -139,10 +176,12 @@ async function getTrendingEvents(clientIp, env) {
     return { detectedCountry, countryUsed: countryCode, demoMode, count: 0, results: [], debug };
   }
 
-  // Pick a diverse, randomized pool of CANDIDATES to verify pricing for
-  // — more than TARGET_COUNT, since some candidates' keyword re-search
-  // below may still come back unpriced or empty.
-  const candidates = selectDiverseRandom(upcomingDiscovered, CANDIDATES_TO_VERIFY);
+  // Pick candidates to verify pricing for — deliberately soonest-first
+  // (not randomized) per the reasoning above: near-term events are more
+  // likely to already have on-sale pricing, and discovery is already
+  // date-sorted, so preserving that order here matters. Final display
+  // selection is still fully randomized (below), just not this stage.
+  const candidates = selectDiverseSoonest(upcomingDiscovered, CANDIDATES_TO_VERIFY);
   debug.candidatesChecked = candidates.length;
   debug.candidateNames = candidates.slice(0, 5).map((c) => c.name); // sample, not the full list
 
@@ -171,9 +210,11 @@ async function getTrendingEvents(clientIp, env) {
   });
   debug.verifiedRawCount = verified.length;
 
-  const eligible = verified.filter(isUpcoming).filter(hasRealPrice);
-  debug.eligibleCount = eligible.length;
-  const selected = selectDiverseRandom(eligible, TARGET_COUNT);
+  const eligible = verified.filter(isUpcoming);
+  debug.verifiedUpcomingCount = eligible.length; // split from eligibleCount below — isolates whether the date filter or the price filter is the actual bottleneck, if this still doesn't fully solve it
+  const priced = eligible.filter(hasRealPrice);
+  debug.eligibleCount = priced.length;
+  const selected = selectDiverseRandom(priced, TARGET_COUNT);
 
   return {
     detectedCountry: detectedCountry, // null if geolocation didn't resolve — distinct from the fallback actually used
