@@ -454,6 +454,15 @@ async function runTests() {
     assert.ok(res.json.results.length > 0, 'a location-only search must still return results');
   });
 
+  await test('The /search/ results page reads city/dateFrom/dateTo from the URL, not just q (regression: was silently ignoring them)', async () => {
+    const res = await get('/search/');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.body.includes("getQueryParam('city')"), 'load handler must read city from the URL');
+    assert.ok(res.body.includes("getQueryParam('dateFrom')") && res.body.includes("getQueryParam('dateTo')"), 'load handler must read the date range from the URL');
+    assert.ok(res.body.includes('apiParams.set(\'city\'') || res.body.includes('apiParams.set("city"'), 'must actually pass city through to /api/search, not just read it and drop it');
+    assert.ok(!res.body.includes('runSearch(getQueryParam(\'q\'))'), 'must not call runSearch with only the query string — that was the exact bug (location-only searches did nothing)');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {
