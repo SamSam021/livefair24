@@ -70,8 +70,8 @@
   <section class="search-page-hero">
     <h1 class="display" style="font-size:clamp(24px,4vw,36px);" id="searchHeading">Search results</h1>
     <p style="color:var(--ink-dim);margin-top:8px;" id="searchSubtext">Compares matching events across every ticket source we have connected, sorted by price.</p>
-    <form class="search-box-row" id="searchForm">
-      <input type="search" id="searchInput" placeholder="Artist, event or city" autocomplete="off">
+    <form class="search-box-row search-form" id="searchForm">
+      <input type="search" id="searchInput" class="search-input" placeholder="Artist, event or city" autocomplete="off">
       <button type="submit">Search →</button>
     </form>
   </section>
@@ -95,6 +95,7 @@
   <div class="footer-bottom"><span>© 2026 LiveFair24. Price comparison only — we earn affiliate commission on purchases made through our links.</span></div>
 </footer>
 <script src="../js/cookie-banner.js" defer></script>
+<script src="../js/search-autocomplete.js" defer></script>
 
 <script>
 function getQueryParam(name){
