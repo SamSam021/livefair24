@@ -507,26 +507,18 @@ async function runTests() {
     assert.strictEqual(new Set(names).size, names.length, 'every trending result must be a genuinely different act, not repeats');
   });
 
-  await test('Trending results are sorted priced-first, but events with no price are still shown rather than excluded (real Ticketmaster country searches can return zero priced results)', async () => {
+  await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);
-    // Demo mode always generates prices, so this can't directly prove an
-    // unpriced event survives — that's confirmed by the dedicated logic
-    // test below instead. This checks the sort order property that DOES
-    // hold regardless: once you hit a null-price result, every result
-    // after it must also be null (priced ones never appear after unpriced
-    // ones).
-    let seenUnpriced = false;
-    for (const r of res.json.results) {
-      if (r.lowestPrice == null) seenUnpriced = true;
-      else assert.ok(!seenUnpriced, 'a priced result must not appear after an unpriced one — priced results must sort first');
-    }
+    assert.ok(res.json.results.every((r) => r.lowestPrice != null), 'no result reaching the frontend should have a missing price');
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('.filter(hasRealPrice)'), 'must hard-filter out unpriced events per the explicit requirement that they not appear as cards');
   });
 
-  await test('Trending backend does not hard-require a price (regression: a real Germany search returned demoMode:false, count:0 because every result lacked pricing)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(!trendingSrc.includes('.filter(hasRealPrice)'), 'must not hard-filter out unpriced events — that caused a real production bug where a whole country legitimately returned zero results');
-    assert.ok(trendingSrc.includes('pricedFirst'), 'must still prioritize priced results via sorting, just not require them');
+  await test('Trending query sorts by soonest-upcoming date, not relevance (near-term events are more likely to have real pricing than distant announced tours)', async () => {
+    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
+    assert.ok(tmSrc.includes("sort=date,asc"), 'trending query must sort by date, not the old relevance sort that surfaced unpriced far-future tours');
+    assert.ok(!tmSrc.includes('sort=relevance,desc'), 'the old relevance sort must be fully removed, not left alongside the new one');
   });
 
   await test('Trending dedup logic uses the real attractionId field, not a name-matching heuristic alone', async () => {
@@ -560,11 +552,18 @@ async function runTests() {
     assert.strictEqual(loadListenerCount, 1, 'exactly one load listener should drive homepage event initialization');
   });
 
-  await test('Trending cards with no price show honest "Price TBA", not a broken-looking blank or fake $0', async () => {
+  await test('Trending cards always show a real price — the backend guarantees this, so no TBA/blank handling is needed on the frontend', async () => {
     const res = await get('/');
-    assert.ok(res.body.includes("'TBA'"), 'unpriced trending events must map to an honest TBA marker, not $0');
-    assert.ok(res.body.includes('Price TBA'), 'must display an honest label for unpriced events');
-    assert.ok(!res.body.includes("r.lowestPrice != null ? `$${Math.round(r.lowestPrice)}` : '$0'"), 'must not fake a $0 price for events with no real price data');
+    assert.ok(res.body.includes('ticket: `$${Math.round(r.lowestPrice)}`'), 'must map directly to a real price — the backend contract guarantees every result has one');
+    assert.ok(!res.body.includes("'TBA'"), 'the TBA fallback path should be removed now that unpriced events never reach the frontend');
+  });
+
+  await test('Every event card (static and trending) is fully clickable, not just its small "Compare"/"Hotels" links (regression: cards looked selectable via the active border but only two tiny links actually worked)', async () => {
+    const res = await get('/');
+    const cardOnclicks = res.body.match(/class="card event-card[^"]*" data-id="\d+" style="cursor:pointer;" onclick="selectEvent\(\d+,'ticket'\)"/g) || [];
+    assert.ok(cardOnclicks.length >= 6, 'all 6 static fallback cards must have a whole-card click handler');
+    assert.ok(res.body.includes('style="cursor:pointer;" onclick="selectEvent(${i},\'ticket\')"'),
+      'the dynamically-rendered trending card template must have the same whole-card click handler');
   });
 
 

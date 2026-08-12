@@ -99,7 +99,12 @@ module.exports = {
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against
     // a real response. Falls back to date order if this isn't respected.
-    if (params.countryCode && !params.query) parts.push('sort=relevance,desc');
+    // "Trending" here means soonest-upcoming, not relevance-sorted —
+    // switched after confirming via a real request that relevance sort
+    // was surfacing far-future, just-announced tour dates with no
+    // pricing populated yet. Events happening sooner are far more likely
+    // to already have real on-sale pricing.
+    if (params.countryCode && !params.query) parts.push('sort=date,asc');
     // Ticketmaster expects startDateTime/endDateTime as full ISO 8601 with
     // a trailing Z (UTC) — e.g. 2026-09-01T00:00:00Z. UNVERIFIED: unlike
     // keyword/city (confirmed working against a real live call earlier),

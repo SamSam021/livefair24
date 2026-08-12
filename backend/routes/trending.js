@@ -39,21 +39,16 @@ function dedupeByAttraction(events) {
   return out;
 }
 
-// Many Ticketmaster events genuinely have no priceRanges data in this
-// endpoint — confirmed against a real live request for Germany: every
-// single dedupe-surviving result came back with lowestPrice: null,
-// which made a strict "must have a price" filter reject everything,
-// leaving zero results. Real variety of artists matters more than
-// guaranteed pricing, so this now sorts priced results first rather than
-// requiring them — an event with no price still shows (as "Price TBA" on
-// the frontend), it just doesn't get priority over one that has a price.
-function pricedFirst(events) {
-  return [...events].sort((a, b) => {
-    if (a.lowestPrice == null && b.lowestPrice == null) return 0;
-    if (a.lowestPrice == null) return 1;
-    if (b.lowestPrice == null) return -1;
-    return a.lowestPrice - b.lowestPrice;
-  });
+// Many Ticketmaster events have no priceRanges data in this endpoint —
+// confirmed against a real live request for Germany using relevance
+// sort, where every dedupe-surviving result was unpriced. Switched the
+// underlying query to soonest-upcoming-date sort (see ticketmaster.js)
+// specifically to make this filter viable again — near-term events are
+// far more likely to have real on-sale pricing than distant announced
+// tours. Explicitly requested: an event with no price should not appear
+// on the homepage at all, not even labeled "Price TBA".
+function hasRealPrice(ev) {
+  return ev.lowestPrice != null;
 }
 
 async function getTrendingEvents(clientIp, env) {
@@ -66,10 +61,10 @@ async function getTrendingEvents(clientIp, env) {
   const settled = await Promise.allSettled(
     providers.map((p) =>
       typeof p.searchEvents === 'function'
-        // Requesting more than TARGET_COUNT here deliberately — even
-        // without the old strict price filter, deduping repeat tour
-        // dates alone can still shrink a raw fetch of just 6 down to far
-        // fewer usable, distinct artists.
+        // Requesting more than TARGET_COUNT here deliberately — after
+        // deduping repeat tour dates and filtering out unpriced events,
+        // a raw fetch of just 6 could easily end up with far fewer (or
+        // zero) usable results.
         ? p.searchEvents({ query: '', city: '', countryCode, limit: 40 }, env)
         : Promise.resolve([])
     )
@@ -80,7 +75,7 @@ async function getTrendingEvents(clientIp, env) {
     if (outcome.status === 'fulfilled') results = results.concat(outcome.value);
   });
 
-  const filtered = pricedFirst(dedupeByAttraction(results));
+  const filtered = dedupeByAttraction(results).filter(hasRealPrice);
 
   return {
     detectedCountry: detectedCountry, // null if geolocation didn't resolve — distinct from the fallback actually used
