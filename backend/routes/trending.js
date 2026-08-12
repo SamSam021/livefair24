@@ -293,11 +293,20 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // earliest in their whole database, past events included. Explicit
   // startDateTime fixes this at the query level, not just relying on the
   // client-side isUpcoming() filter to clean up afterward.
-  const nowIso = new Date().toISOString().split('.')[0] + 'Z';
+  //
+  // Set to MIN_LEAD_DAYS out, not just "now" — confirmed via a real
+  // debug trace that checking pricing soonest-first (correctly
+  // prioritizing near-term events, more likely to be on sale) actively
+  // conflicted with the minimum-lead-time requirement: the 6 candidates
+  // that DID have real pricing were exactly the ones too soon to be
+  // eligible, wasting those verification calls on events that would be
+  // rejected anyway. Discovery only returning already-eligible events
+  // means every verification call has a real chance of counting.
+  const minLeadIso = new Date(Date.now() + MIN_LEAD_DAYS * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + 'Z';
   const discoverySettled = await Promise.allSettled(
     providers.map((p) =>
       typeof p.searchEvents === 'function'
-        ? p.searchEvents({ query: '', city: '', countryCode, limit: 40, dateFrom: nowIso }, env)
+        ? p.searchEvents({ query: '', city: '', countryCode, limit: 40, dateFrom: minLeadIso }, env)
         : Promise.resolve([])
     )
   );

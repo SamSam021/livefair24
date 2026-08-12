@@ -625,10 +625,10 @@ async function runTests() {
     assert.ok(trendingSrc.includes('discoveredDateSample'), 'must surface raw date/time values before filtering, to distinguish "no date" from "date parsed wrong" from "genuinely in the past"');
   });
 
-  await test('Trending discovery explicitly requests events from right now onward (regression: real evidence showed 2025-dated events being returned when "now" was August 2026 — sort=date,asc alone doesn\'t exclude past events, only an explicit startDateTime does)', async () => {
+  await test('Trending discovery explicitly requests events from at least MIN_LEAD_DAYS out, not just "now" (regression: checking pricing soonest-first conflicted with the minimum-lead-time requirement — the events most likely to have pricing were exactly the ones too soon to be eligible, wasting verification calls on events that would be rejected anyway)', async () => {
     const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('dateFrom: nowIso'), 'discovery must explicitly pass the current moment as dateFrom, not rely on sort order alone to exclude past events');
-    assert.ok(trendingSrc.includes("new Date().toISOString()"), 'must compute the current moment fresh at request time, not a hardcoded or stale date');
+    assert.ok(trendingSrc.includes('dateFrom: minLeadIso'), 'discovery must request events starting from the lead-time boundary, not just "now" — otherwise near-term-but-ineligible events waste verification calls');
+    assert.ok(trendingSrc.includes('Date.now() + MIN_LEAD_DAYS'), 'the discovery boundary must be computed from the same MIN_LEAD_DAYS constant used for eligibility, not a separately hardcoded value that could drift out of sync');
   });
 
   await test('Ticketmaster declares which countries support pricing (US, CA, AU, NZ, MX per their own documentation) and a fallback country, using a real API interface rather than a hardcoded rule', async () => {
