@@ -214,7 +214,12 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // selection is still fully randomized (below), just not this stage.
   const candidates = selectDiverseSoonest(discoveryPool, CANDIDATES_TO_VERIFY);
   debug.candidatesChecked = candidates.length;
-  debug.candidateNames = candidates.slice(0, 5).map((c) => c.name); // sample, not the full list
+  // Includes the real Ticketmaster URL now — the fastest way to check
+  // whether a price genuinely exists on Ticketmaster's own site for one
+  // of these events (a data question, answerable by just looking) versus
+  // this API key/account not being entitled to see pricing at all (a
+  // permissions question, not fixable by more query changes).
+  debug.candidateSample = candidates.slice(0, 5).map((c) => ({ name: c.name, url: c.url }));
 
   // STEP 2 — Verify pricing: fetch each candidate's full details directly
   // by its real Ticketmaster event ID, instead of re-searching by
