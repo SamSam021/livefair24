@@ -108,7 +108,8 @@ function renderResults(data){
   demoBadge.style.display = data.demoMode ? 'inline-flex' : 'none';
 
   if(data.results.length === 0){
-    container.innerHTML = `<div style="padding:40px;text-align:center;color:var(--ink-faint);">No results for "${data.query}". Try a different artist, event, or city.</div>`;
+    const what = [data.query, data.city].filter(Boolean).join(' in ') || 'your search';
+    container.innerHTML = `<div style="padding:40px;text-align:center;color:var(--ink-faint);">No results for ${what}. Try a different artist, event, city, or date range.</div>`;
     return;
   }
 
@@ -128,11 +129,22 @@ function renderResults(data){
     </div>`).join('');
 }
 
-async function runSearch(q){
-  document.getElementById('searchHeading').textContent = q ? `Results for "${q}"` : 'Search results';
+function buildHeading(q, city){
+  if(q && city) return `Results for "${q}" in ${city}`;
+  if(q) return `Results for "${q}"`;
+  if(city) return `Results in ${city}`;
+  return 'Search results';
+}
+
+// params: { q, city, dateFrom, dateTo } — a location-only or date-only
+// search (no keyword at all) is valid and must actually run, matching
+// what /api/search itself already supports.
+async function runSearch(params){
+  const { q, city, dateFrom, dateTo } = params;
+  document.getElementById('searchHeading').textContent = buildHeading(q, city);
   document.getElementById('searchInput').value = q || '';
 
-  if(!q){
+  if(!q && !city && !dateFrom){
     document.getElementById('searchResults').innerHTML =
       '<div style="padding:40px;text-align:center;color:var(--ink-faint);">Type a search above to get started.</div>';
     return;
@@ -142,7 +154,13 @@ async function runSearch(q){
     '<div style="padding:40px;text-align:center;color:var(--ink-faint);">Searching…</div>';
 
   try{
-    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const apiParams = new URLSearchParams();
+    if(q) apiParams.set('q', q);
+    if(city) apiParams.set('city', city);
+    if(dateFrom) apiParams.set('dateFrom', dateFrom);
+    if(dateTo) apiParams.set('dateTo', dateTo);
+
+    const res = await fetch(`/api/search?${apiParams}`);
     if(!res.ok) throw new Error('Search failed');
     const data = await res.json();
     renderResults(data);
@@ -158,13 +176,27 @@ document.getElementById('searchForm').addEventListener('submit', function(e){
   const q = document.getElementById('searchInput').value.trim();
   const url = new URL(window.location);
   url.searchParams.set('q', q);
+  // Refining the keyword from this page deliberately keeps any existing
+  // city/date filters already in the URL — someone who arrived here via
+  // a location search almost certainly wants to keep that filter while
+  // narrowing down the keyword, not lose it silently.
   window.history.pushState({}, '', url);
-  runSearch(q);
+  runSearch({
+    q,
+    city: getQueryParam('city'),
+    dateFrom: getQueryParam('dateFrom'),
+    dateTo: getQueryParam('dateTo'),
+  });
   return false;
 });
 
 window.addEventListener('load', function(){
-  runSearch(getQueryParam('q'));
+  runSearch({
+    q: getQueryParam('q'),
+    city: getQueryParam('city'),
+    dateFrom: getQueryParam('dateFrom'),
+    dateTo: getQueryParam('dateTo'),
+  });
 });
 </script>
 </body>
