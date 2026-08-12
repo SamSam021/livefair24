@@ -398,7 +398,7 @@ img{max-width:100%;display:block;}
 .cal-nav-btn:hover{ background:var(--surface); color:var(--ink); }
 .cal-months{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
 @media(max-width:560px){ .cal-months{ grid-template-columns:1fr; } }
-.cal-month-title{ font-family:'Sora',sans-serif; font-weight:700; font-size:14px; text-align:center; margin-bottom:12px; }
+.cal-month-title{ font-family:'Sora',sans-serif; font-weight:700; font-size:14px; text-align:center; margin-bottom:12px; color:var(--ink); }
 .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
 .cal-weekdays span{ text-align:center; font-size:10.5px; color:var(--ink-faint); font-weight:700; font-family:'JetBrains Mono',monospace; }
 .cal-week{ display:grid; grid-template-columns:repeat(7,1fr); }
