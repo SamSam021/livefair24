@@ -605,6 +605,12 @@ async function loadTrendingConcerts(){
       lat: r.lat,
       lng: r.lng,
       sourceUrl: r.url,
+      // Kept separate from `id` below (which stays the 0-5 array index
+      // the existing card-selection DOM logic depends on) — these carry
+      // Ticketmaster's own identifiers, so the selected event can be
+      // precisely traced back to the exact real listing it came from.
+      ticketmasterEventId: r.eventId,
+      attractionId: r.attractionId,
     })).filter((ev) => ev.lat != null && ev.lng != null); // hotel search needs real coordinates — drop anything missing them rather than silently break the map
 
     if(mapped.length === 0) return false;
@@ -741,6 +747,16 @@ function renderHotelList(hotels){
   document.getElementById('hotelCountBar').textContent =
     `${filtered.length} of ${hotels.length} hotels near venue`;
 
+  // Two genuinely different empty states, shown distinctly: the API
+  // returned nothing at all for this location (real "no hotels
+  // available", per the requirement that this stay honest rather than
+  // implying a filter is at fault) vs. hotels exist but the visitor's
+  // own price/rating filters exclude all of them.
+  if(hotels.length===0){
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels available.</div>';
+    return;
+  }
   if(filtered.length===0){
     document.getElementById('hotelScroll').innerHTML =
       '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels match these filters.<br>Try raising the price or lowering the rating.</div>';
@@ -813,10 +829,14 @@ function renderMap(ev, hotels){
   setTimeout(()=>map.invalidateSize(),200);
 }
 
-/* ---- Controls ---- */
-document.querySelectorAll('.event-card').forEach(card=>{
-  card.addEventListener('click',()=> selectEvent(parseInt(card.dataset.id)));
-});
+/* ---- Controls ----
+   Whole-card clicks are now handled via inline onclick attributes on
+   each card (both the static fallback cards and the dynamically
+   rendered trending cards use the same selectEvent(idx,'ticket')
+   pattern) — this old querySelectorAll-based listener only ever
+   attached to whatever cards existed at script-parse time, so it never
+   worked for trending cards injected later, and is now redundant for
+   the static ones. */
 
 const hpSlider = document.getElementById('hpSlider');
 hpSlider.addEventListener('input',()=>{
