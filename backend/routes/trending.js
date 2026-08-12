@@ -90,6 +90,14 @@ function hasRealPrice(ev) {
   return ev.lowestPrice != null;
 }
 
+// How many discovered candidates to re-check for real pricing. Higher
+// means a better chance of finding TARGET_COUNT priced events, at the
+// cost of more provider API calls (each candidate is one extra request,
+// subject to Ticketmaster's rate limit). 15 is a middle ground — kept as
+// a named constant so it's easy to tune if it proves too low or too
+// costly in practice.
+const CANDIDATES_TO_VERIFY = 15;
+
 async function getTrendingEvents(clientIp, env) {
   const detectedCountry = await ipapi.getCountryCodeForIp(clientIp);
   const countryCode = detectedCountry || FALLBACK_COUNTRY;
@@ -97,24 +105,57 @@ async function getTrendingEvents(clientIp, env) {
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
 
-  const settled = await Promise.allSettled(
+  // STEP 1 — Discover: broad country browse, no price required at this
+  // stage. Confirmed via direct testing that this query shape (no
+  // keyword, country-only) reliably comes back with priceRanges missing
+  // on every result, regardless of sort order — so this step exists
+  // purely to find out WHAT'S happening, not to get final pricing from.
+  const discoverySettled = await Promise.allSettled(
     providers.map((p) =>
       typeof p.searchEvents === 'function'
-        // Requesting more than TARGET_COUNT here deliberately — after
-        // filtering for upcoming+priced events, a raw fetch of just 6
-        // could easily end up with far fewer usable candidates to choose
-        // a diverse, random selection from.
         ? p.searchEvents({ query: '', city: '', countryCode, limit: 40 }, env)
         : Promise.resolve([])
     )
   );
-
-  let results = [];
-  settled.forEach((outcome) => {
-    if (outcome.status === 'fulfilled') results = results.concat(outcome.value);
+  let discovered = [];
+  discoverySettled.forEach((outcome) => {
+    if (outcome.status === 'fulfilled') discovered = discovered.concat(outcome.value);
   });
 
-  const eligible = results.filter(isUpcoming).filter(hasRealPrice);
+  const upcomingDiscovered = discovered.filter(isUpcoming);
+  if (upcomingDiscovered.length === 0) {
+    return { detectedCountry, countryUsed: countryCode, demoMode, count: 0, results: [] };
+  }
+
+  // Pick a diverse, randomized pool of CANDIDATES to verify pricing for
+  // — more than TARGET_COUNT, since some candidates' keyword re-search
+  // below may still come back unpriced or empty.
+  const candidates = selectDiverseRandom(upcomingDiscovered, CANDIDATES_TO_VERIFY);
+
+  // STEP 2 — Verify pricing: re-query each candidate BY NAME. This is
+  // the same query shape /api/search and /api/tickets already use for
+  // real, user-initiated searches, and the only one directly confirmed
+  // (via a real captured response earlier in this project) to include
+  // priceRanges data at least some of the time. Demo mode never reaches
+  // this step with an empty query in practice, but is unaffected either
+  // way — demo.js always returns priced results.
+  const verifySettled = await Promise.allSettled(
+    candidates.map((cand) =>
+      Promise.all(
+        providers.map((p) =>
+          typeof p.searchEvents === 'function'
+            ? p.searchEvents({ query: cand.name, city: cand.city, countryCode }, env)
+            : Promise.resolve([])
+        )
+      )
+    )
+  );
+  let verified = [];
+  verifySettled.forEach((outcome) => {
+    if (outcome.status === 'fulfilled') outcome.value.forEach((providerResults) => { verified = verified.concat(providerResults); });
+  });
+
+  const eligible = verified.filter(isUpcoming).filter(hasRealPrice);
   const selected = selectDiverseRandom(eligible, TARGET_COUNT);
 
   return {

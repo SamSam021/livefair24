@@ -111,11 +111,15 @@ module.exports = {
       if (params.dateTo && isoDate > params.dateTo.slice(0, 10)) return null;
 
       const displayName = isTrending ? trendingArtists[i] : q;
+      // Avoid double-suffixing when this is called with an already-named
+      // candidate (e.g. trending's verification step re-querying
+      // "Solene Vale (demo)" by name) — only append if not already there.
+      const finalName = displayName.endsWith('(demo)') ? displayName : `${displayName} (demo)`;
 
       return {
         source: 'demo',
         sourceLabel: 'Demo',
-        name: `${displayName} (demo)`,
+        name: finalName,
         attractionId: `demo-${i}`, // unique per demo act — mirrors the real attractionId field, keeps dedup-by-artist logic working correctly in demo mode too
         genre: null,
         venue: venues[(seed + i) % venues.length],

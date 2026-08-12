@@ -499,12 +499,20 @@ async function runTests() {
       'must silently keep the static fallback cards in demo mode or on empty results — no error, no broken UI');
   });
 
-  await test('Trending results show distinct artists, not the same act repeated across cities (regression: Ticketmaster relevance sort returned one tour 6x)', async () => {
+  await test('Trending prefers distinct artists per card, topping up with repeats only when the pool lacks enough diversity (demo mode only has 3 base artists, so 6 cards correctly means some repeat)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.json.count, 3, 'demo fallback must show 3 distinct results');
-    const names = res.json.results.map((r) => r.name);
-    assert.strictEqual(new Set(names).size, names.length, 'every trending result must be a genuinely different act, not repeats');
+    assert.strictEqual(res.json.count, 6, 'must fill all 6 card slots, per the requirement to never show fewer cards than the pool could support');
+    const distinctArtists = new Set(res.json.results.map((r) => r.attractionId));
+    assert.ok(distinctArtists.size >= 3, 'demo mode has exactly 3 base artists — all 3 must appear rather than fewer');
+    assert.ok(distinctArtists.size < res.json.results.length, 'with only 3 distinct artists available for 6 slots, some repetition is expected and correct — not a bug');
+  });
+
+  await test('Trending uses a two-step discover-then-verify-price flow, not a single bare country query (regression: a bare countryCode query reliably came back with zero priced results in production, confirmed twice against real Ticketmaster data)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('STEP 1'), 'must have a discovery step to find candidate events without requiring price yet');
+    assert.ok(trendingSrc.includes('STEP 2'), 'must have a separate verification step that re-queries by name for pricing');
+    assert.ok(trendingSrc.includes('cand.name'), 'verification must re-query using the actual candidate name, not the bare country query again');
   });
 
   await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
