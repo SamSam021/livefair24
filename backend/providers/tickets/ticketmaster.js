@@ -146,6 +146,12 @@ module.exports = {
           // can be precisely identified later, per the requirement that
           // ticket/hotel lookups target the exact correct event.
           eventId: ev.id || null,
+          // Confirmed real field from an earlier captured response
+          // (dates.status.code: "onsale") — an event can be listed and
+          // discoverable before tickets actually go on sale, which would
+          // explain missing pricing regardless of query strategy. Using
+          // this directly instead of guessing at more query parameters.
+          saleStatus: ev.dates && ev.dates.status ? ev.dates.status.code : null,
           genre: genre ? genre.name : null,
           venue: venue ? venue.name : null,
           city: venue && venue.city ? venue.city.name : null,

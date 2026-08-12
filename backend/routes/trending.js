@@ -127,6 +127,18 @@ function hasRealPrice(ev) {
   return ev.lowestPrice != null;
 }
 
+// An event can be listed and discoverable before tickets actually go on
+// sale — confirmed via a real captured response showing dates.status.code.
+// Filtering for this BEFORE spending a verification call on a candidate
+// avoids wasting requests on events that structurally cannot have
+// pricing yet, regardless of query strategy. Treats a missing/unknown
+// status as passing rather than excluding it — providers without this
+// field (or events where Ticketmaster simply omits it) shouldn't be
+// penalized for a field we can't read, only ones explicitly NOT onsale.
+function isOnSaleOrUnknown(ev) {
+  return !ev.saleStatus || ev.saleStatus === 'onsale';
+}
+
 // How many discovered candidates to re-check for real pricing. Higher
 // means a better chance of finding TARGET_COUNT priced events, at the
 // cost of more provider API calls (each candidate is one extra request,
@@ -176,12 +188,21 @@ async function getTrendingEvents(clientIp, env) {
     return { detectedCountry, countryUsed: countryCode, demoMode, count: 0, results: [], debug };
   }
 
+  // Prefer onsale events for candidate selection — an event that isn't
+  // onsale yet cannot have pricing, regardless of how it's queried.
+  // Falls back to the full upcoming pool if filtering by sale status
+  // would leave nothing to check, rather than returning zero outright.
+  const onSaleDiscovered = upcomingDiscovered.filter(isOnSaleOrUnknown);
+  debug.onSaleCount = onSaleDiscovered.length;
+  debug.saleStatusSample = upcomingDiscovered.slice(0, 8).map((ev) => ev.saleStatus);
+  const discoveryPool = onSaleDiscovered.length > 0 ? onSaleDiscovered : upcomingDiscovered;
+
   // Pick candidates to verify pricing for — deliberately soonest-first
   // (not randomized) per the reasoning above: near-term events are more
   // likely to already have on-sale pricing, and discovery is already
   // date-sorted, so preserving that order here matters. Final display
   // selection is still fully randomized (below), just not this stage.
-  const candidates = selectDiverseSoonest(upcomingDiscovered, CANDIDATES_TO_VERIFY);
+  const candidates = selectDiverseSoonest(discoveryPool, CANDIDATES_TO_VERIFY);
   debug.candidatesChecked = candidates.length;
   debug.candidateNames = candidates.slice(0, 5).map((c) => c.name); // sample, not the full list
 

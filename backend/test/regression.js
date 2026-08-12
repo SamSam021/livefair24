@@ -536,6 +536,15 @@ async function runTests() {
     assert.ok(trendingSrc.includes('selectDiverseRandom(priced, TARGET_COUNT)'), 'final display selection must still randomize among already-priced results');
   });
 
+  await test('Trending prefers onsale events for candidate verification, using Ticketmaster\'s own confirmed dates.status.code field (an event can be listed before tickets go on sale, which would explain missing pricing regardless of query strategy)', async () => {
+    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
+    assert.ok(tmSrc.includes('saleStatus:') && tmSrc.includes('dates.status.code'), 'must extract the real onsale status field from Ticketmaster\'s response');
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('isOnSaleOrUnknown'), 'must filter candidates toward onsale events before spending a verification call on them');
+    assert.ok(trendingSrc.includes('onSaleDiscovered.length > 0 ? onSaleDiscovered : upcomingDiscovered'),
+      'must fall back to the full upcoming pool if onsale filtering would leave nothing, rather than returning zero outright');
+  });
+
   await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);
