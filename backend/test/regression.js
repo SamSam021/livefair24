@@ -255,6 +255,14 @@ async function runTests() {
     assert.ok(res.body.includes('class="rpill'), 'event page must have rating filter pills');
   });
 
+  await test('Event page hotel results use the same concise card layout as the homepage, not a table', async () => {
+    const res = await get('/events/nova-wren-berlin-2026-08-16.html');
+    assert.ok(res.body.includes('id="hotelScroll"'), 'event page must use the shared hotel-scroll card container');
+    assert.ok(res.body.includes('renderEventHotelList'), 'event page must render hotels as cards, not a table');
+    assert.ok(!res.body.includes('class="hotel-table"'), 'the old hotel table markup must be fully removed');
+    assert.ok(!res.body.includes('hotelTableBody'), 'no leftover references to the removed table body element');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {
