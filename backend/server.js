@@ -196,7 +196,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/trending' && req.method === 'GET') {
       try {
         const clientIp = getClientIp(req);
-        return sendJSON(res, 200, await trendingRoutes.getTrendingEvents(clientIp, registry.getMergedEnv()));
+        return sendJSON(res, 200, await trendingRoutes.getTrendingEvents(clientIp, registry.getMergedEnv(), query.country));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }

@@ -147,9 +147,15 @@ function isOnSaleOrUnknown(ev) {
 // costly in practice.
 const CANDIDATES_TO_VERIFY = 15;
 
-async function getTrendingEvents(clientIp, env) {
+async function getTrendingEvents(clientIp, env, overrideCountry) {
   const detectedCountry = await ipapi.getCountryCodeForIp(clientIp);
-  const countryCode = detectedCountry || FALLBACK_COUNTRY;
+  // Diagnostic-only override — lets ?country=GB be tested directly
+  // without needing to actually be in that country, specifically to
+  // isolate whether zero-priced-results is a Germany-specific data gap
+  // or a broader one. Not a real feature, just the fastest way to get a
+  // decisive answer after three query-strategy fixes all failed
+  // identically for DE.
+  const countryCode = overrideCountry || detectedCountry || FALLBACK_COUNTRY;
 
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
