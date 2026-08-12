@@ -90,7 +90,8 @@ module.exports = {
   // this specific thing".
   async searchEvents(params, env) {
     const key = env.TICKETMASTER_API_KEY;
-    const parts = [`apikey=${key}`, 'size=10'];
+    const size = params.limit || 10;
+    const parts = [`apikey=${key}`, `size=${size}`];
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
     if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
@@ -115,11 +116,17 @@ module.exports = {
       return events.map((ev) => {
         const range = (ev.priceRanges && ev.priceRanges[0]) || null;
         const venue = (ev._embedded && ev._embedded.venues && ev._embedded.venues[0]) || null;
+        const attraction = (ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0]) || null;
         const genre = (ev.classifications && ev.classifications[0] && ev.classifications[0].segment) || null;
         return {
           source: 'ticketmaster',
           sourceLabel: 'Ticketmaster',
           name: ev.name,
+          // The real attraction/artist ID — used to deduplicate multiple
+          // tour dates (or ticket-tier variants like "... | Premium
+          // Packages") of the same act down to one entry. Confirmed this
+          // field exists in the real response captured earlier.
+          attractionId: attraction ? attraction.id : null,
           genre: genre ? genre.name : null,
           venue: venue ? venue.name : null,
           city: venue && venue.city ? venue.city.name : null,

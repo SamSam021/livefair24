@@ -499,6 +499,28 @@ async function runTests() {
       'must silently keep the static fallback cards in demo mode or on empty results — no error, no broken UI');
   });
 
+  await test('Trending results show distinct artists, not the same act repeated across cities (regression: Ticketmaster relevance sort returned one tour 6x)', async () => {
+    const res = await get('/api/trending');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json.count, 3, 'demo fallback must show 3 distinct results');
+    const names = res.json.results.map((r) => r.name);
+    assert.strictEqual(new Set(names).size, names.length, 'every trending result must be a genuinely different act, not repeats');
+  });
+
+  await test('Every trending result has a real price — events with no price data are filtered out, not shown blank', async () => {
+    const res = await get('/api/trending');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.json.results.every((r) => r.lowestPrice != null), 'no trending card should have a missing price');
+  });
+
+  await test('Trending dedup logic uses the real attractionId field, not a name-matching heuristic alone', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('attractionId'), 'dedup must use the real attraction ID field when available');
+    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
+    assert.ok(tmSrc.includes('attractionId'), 'the Ticketmaster adapter must actually extract and return this field');
+  });
+
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {

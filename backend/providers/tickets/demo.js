@@ -79,7 +79,13 @@ module.exports = {
   // on every request.
   async searchEvents(params) {
     const countryCode = (params.countryCode || '').trim();
-    const q = (params.query || (countryCode ? 'Trending concert' : 'event')).trim() || 'event';
+    const isTrending = !!countryCode && !params.query;
+    // For trending (no keyword — "what's popular here"), each demo result
+    // needs to be a genuinely different act, not the same placeholder name
+    // three times — that broke the real dedup-by-artist logic upstream,
+    // which correctly collapsed three identical names down to one.
+    const trendingArtists = ['Solene Vale', 'The Amber Room', 'Kite & Compass'];
+    const q = (params.query || (isTrending ? '' : 'event')).trim() || 'event';
     const cityFilter = (params.city || '').trim();
     const seed = q.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) + countryCode.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0);
     const cities = cityFilter
@@ -104,10 +110,13 @@ module.exports = {
       if (params.dateFrom && isoDate < params.dateFrom.slice(0, 10)) return null;
       if (params.dateTo && isoDate > params.dateTo.slice(0, 10)) return null;
 
+      const displayName = isTrending ? trendingArtists[i] : q;
+
       return {
         source: 'demo',
         sourceLabel: 'Demo',
-        name: `${q} (demo)`,
+        name: `${displayName} (demo)`,
+        attractionId: `demo-${i}`, // unique per demo act — mirrors the real attractionId field, keeps dedup-by-artist logic working correctly in demo mode too
         genre: null,
         venue: venues[(seed + i) % venues.length],
         city: place.city,
