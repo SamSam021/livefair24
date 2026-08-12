@@ -374,7 +374,18 @@ async function runTests() {
     const res = await get('/');
     assert.ok(res.body.includes('name="city"'), 'must have a location field');
     assert.ok(res.body.includes('name="dateFrom"') && res.body.includes('name="dateTo"'), 'must have hidden date-range fields');
-    assert.ok(res.body.includes('id="searchDatePreset"'), 'must have the date preset dropdown');
+    assert.ok(res.body.includes('id="searchDatesBtn"') && res.body.includes('id="searchDatesPanel"'), 'must have the calendar date-range picker');
+    assert.ok(!res.body.includes('searchDatePreset'), 'the old preset dropdown must be fully removed, not left as dead markup');
+  });
+
+  await test('Calendar date-range picker script and location autocomplete are both wired in', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('search-date-range.js'), 'homepage must load the calendar picker script');
+    assert.ok(res.body.includes('search-location.js'), 'homepage must load the location autocomplete script');
+    const calScript = await get('/js/search-date-range.js');
+    assert.strictEqual(calScript.status, 200);
+    const locScript = await get('/js/search-location.js');
+    assert.strictEqual(locScript.status, 200);
   });
 
   await test('GET /api/search genuinely filters by city, not just accepting the param decoratively', async () => {
