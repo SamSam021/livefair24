@@ -147,6 +147,35 @@ function isOnSaleOrUnknown(ev) {
 // costly in practice.
 const CANDIDATES_TO_VERIFY = 15;
 
+// Determines which country to actually query. If any enabled provider
+// supports pricing for the visitor's real country, uses it as-is. If
+// none do (confirmed via Ticketmaster's own documentation: their Price
+// Ranges feature only works for US/CA/AU/NZ/MX — Germany, UK, and most
+// of the world structurally never return price data through it,
+// regardless of query strategy), falls back to a country that SOME
+// enabled provider does support, so trending still shows something real
+// rather than nothing. Deliberately dynamic, not a hardcoded "Germany
+// means US" rule — adding a second provider that covers Germany's
+// pricing later means this just starts using the real country
+// automatically, no changes needed here.
+function resolvePricingCountry(providers, requestedCountry) {
+  const anySupportsRequested = providers.some((p) =>
+    typeof p.isCountrySupportedForPricing !== 'function' || p.isCountrySupportedForPricing(requestedCountry)
+  );
+  if (anySupportsRequested) {
+    return { queryCountry: requestedCountry, usedPricingFallback: false };
+  }
+  for (const p of providers) {
+    if (typeof p.getFallbackPricingCountry === 'function') {
+      const fallback = p.getFallbackPricingCountry();
+      if (fallback) return { queryCountry: fallback, usedPricingFallback: true };
+    }
+  }
+  // No provider offers a fallback either — proceed with the originally
+  // requested country anyway; honest, even if it likely yields little.
+  return { queryCountry: requestedCountry, usedPricingFallback: false };
+}
+
 async function getTrendingEvents(clientIp, env, overrideCountry) {
   const detectedCountry = await ipapi.getCountryCodeForIp(clientIp);
   // Diagnostic-only override — lets ?country=GB be tested directly
@@ -155,10 +184,13 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // or a broader one. Not a real feature, just the fastest way to get a
   // decisive answer after three query-strategy fixes all failed
   // identically for DE.
-  const countryCode = overrideCountry || detectedCountry || FALLBACK_COUNTRY;
+  const requestedCountry = overrideCountry || detectedCountry || FALLBACK_COUNTRY;
 
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
+
+  const { queryCountry, usedPricingFallback } = resolvePricingCountry(providers, requestedCountry);
+  const countryCode = queryCountry;
 
   // Diagnostic counters — surfaced in the response temporarily so the
   // pipeline's actual behavior can be inspected directly (discovered vs.
@@ -166,6 +198,9 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // actually errored vs. how many came back priced), instead of guessing
   // blind from just the final count after two failed fix attempts.
   const debug = { discoveredCount: 0, upcomingCount: 0, candidatesChecked: 0, verifyErrors: 0, verifiedRawCount: 0, eligibleCount: 0 };
+  if (usedPricingFallback) {
+    debug.pricingFallback = `${requestedCountry} not supported for pricing by any enabled provider — querying ${queryCountry} instead`;
+  }
 
   // STEP 1 — Discover: broad country browse, no price required at this
   // stage. Confirmed via direct testing that this query shape (no

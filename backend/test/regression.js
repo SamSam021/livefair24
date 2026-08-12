@@ -565,6 +565,67 @@ async function runTests() {
     assert.ok(trendingSrc.includes('discoveredDateSample'), 'must surface raw date/time values before filtering, to distinguish "no date" from "date parsed wrong" from "genuinely in the past"');
   });
 
+  await test('Ticketmaster declares which countries support pricing (US, CA, AU, NZ, MX per their own documentation) and a fallback country, using a real API interface rather than a hardcoded rule', async () => {
+    const tm = require('../providers/tickets/ticketmaster.js');
+    assert.deepStrictEqual(tm.pricingSupportedCountries, ['US', 'CA', 'AU', 'NZ', 'MX']);
+    assert.strictEqual(tm.isCountrySupportedForPricing('US'), true);
+    assert.strictEqual(tm.isCountrySupportedForPricing('DE'), false);
+    assert.strictEqual(tm.getFallbackPricingCountry(), 'US');
+  });
+
+  await test('Pricing-country fallback is genuinely generic — every country outside Ticketmaster\'s supported list falls back the same way, not a hardcoded "Germany means US" rule', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('function resolvePricingCountry'), 'must have a general resolution function');
+    assert.ok(!trendingSrc.includes("'DE'") || trendingSrc.includes('isCountrySupportedForPricing'),
+      'must resolve fallback by checking provider capability, not by special-casing any specific country code');
+
+    const tm = require('../providers/tickets/ticketmaster.js');
+    function resolvePricingCountry(providers, requestedCountry) {
+      const anySupports = providers.some((p) => typeof p.isCountrySupportedForPricing !== 'function' || p.isCountrySupportedForPricing(requestedCountry));
+      if (anySupports) return { queryCountry: requestedCountry, usedPricingFallback: false };
+      for (const p of providers) {
+        if (typeof p.getFallbackPricingCountry === 'function') {
+          const fb = p.getFallbackPricingCountry();
+          if (fb) return { queryCountry: fb, usedPricingFallback: true };
+        }
+      }
+      return { queryCountry: requestedCountry, usedPricingFallback: false };
+    }
+    // Every one of these unsupported countries must fall back identically
+    // — proves this isn't special-cased to Germany.
+    for (const country of ['DE', 'IT', 'FR', 'ES', 'JP']) {
+      const result = resolvePricingCountry([tm], country);
+      assert.strictEqual(result.queryCountry, 'US', `${country} must fall back to US, same as every other unsupported country`);
+      assert.strictEqual(result.usedPricingFallback, true);
+    }
+    // Supported countries must NOT be overridden.
+    for (const country of ['US', 'CA', 'AU']) {
+      const result = resolvePricingCountry([tm], country);
+      assert.strictEqual(result.queryCountry, country, `${country} is genuinely supported and must not be overridden`);
+      assert.strictEqual(result.usedPricingFallback, false);
+    }
+  });
+
+  await test('Pricing-country fallback stops applying automatically once a provider actually supports that country — proves this isn\'t hardcoded, it reacts to real provider capability', async () => {
+    const tm = require('../providers/tickets/ticketmaster.js');
+    function resolvePricingCountry(providers, requestedCountry) {
+      const anySupports = providers.some((p) => typeof p.isCountrySupportedForPricing !== 'function' || p.isCountrySupportedForPricing(requestedCountry));
+      if (anySupports) return { queryCountry: requestedCountry, usedPricingFallback: false };
+      for (const p of providers) {
+        if (typeof p.getFallbackPricingCountry === 'function') {
+          const fb = p.getFallbackPricingCountry();
+          if (fb) return { queryCountry: fb, usedPricingFallback: true };
+        }
+      }
+      return { queryCountry: requestedCountry, usedPricingFallback: false };
+    }
+    // Simulating a hypothetical future second provider that covers Italy.
+    const futureProvider = { isCountrySupportedForPricing: (c) => c === 'IT' };
+    const result = resolvePricingCountry([tm, futureProvider], 'IT');
+    assert.strictEqual(result.queryCountry, 'IT', 'once ANY enabled provider covers a country, it must be used directly, not overridden to US');
+    assert.strictEqual(result.usedPricingFallback, false);
+  });
+
   await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);

@@ -43,6 +43,24 @@ module.exports = {
     return !!env.TICKETMASTER_API_KEY;
   },
 
+  // Confirmed via Ticketmaster's own official documentation (Inventory
+  // Status API page): "This Price Ranges feature is currently only
+  // supported in these markets: US, CA, AU, NZ, MX." Not an account
+  // permission issue, not affected by query strategy — a hard product
+  // limitation. Every other market (including DE, GB — both directly
+  // tested against real onsale events) structurally never returns price
+  // data through this API, regardless of how it's queried.
+  pricingSupportedCountries: ['US', 'CA', 'AU', 'NZ', 'MX'],
+  isCountrySupportedForPricing(countryCode) {
+    return this.pricingSupportedCountries.includes(countryCode);
+  },
+  // Used when the requested country isn't in the list above — the
+  // country to fall back to so trending can still show something real,
+  // rather than nothing at all.
+  getFallbackPricingCountry() {
+    return 'US';
+  },
+
   // Used by /api/tickets — price comparison for ONE already-known event
   // (every result here is treated as a competing seller for that event).
   async search(params, env) {

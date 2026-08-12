@@ -37,6 +37,18 @@ module.exports = {
   isEnabled(env) {
     return !!env.SEATGEEK_CLIENT_ID;
   },
+  // UNVERIFIED — SeatGeek's actual country/pricing coverage hasn't been
+  // confirmed against a live response (this provider isn't configured
+  // yet). Set conservatively based on SeatGeek being a primarily US/
+  // Canada-focused platform; confirm and adjust this list once
+  // SEATGEEK_CLIENT_ID is actually set and testable.
+  pricingSupportedCountries: ['US', 'CA'],
+  isCountrySupportedForPricing(countryCode) {
+    return this.pricingSupportedCountries.includes(countryCode);
+  },
+  getFallbackPricingCountry() {
+    return 'US';
+  },
   async search(params, env) {
     const clientId = env.SEATGEEK_CLIENT_ID;
     const q = encodeURIComponent(params.artist || params.query || '');

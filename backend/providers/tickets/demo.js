@@ -37,6 +37,13 @@ module.exports = {
   isEnabled() {
     return true; // always available as a fallback
   },
+  // Fabricated data has no real market restriction — supports every
+  // country, so the country-support fallback logic in trending.js never
+  // needs to kick in for demo mode (matches its existing behavior
+  // exactly, no change).
+  isCountrySupportedForPricing() {
+    return true;
+  },
   async search(params) {
     const base = Number(params.basePrice) || 50;
     // Bucket by hour so demo prices drift slightly over time — this is what
