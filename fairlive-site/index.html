@@ -21,50 +21,6 @@
 .event-panel-header .ep-price{ text-align:right; }
 .event-panel-header .ep-price .lbl{ font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.07em; font-family:'JetBrains Mono',monospace; }
 .event-panel-header .ep-price .amt{ font-family:'Sora',sans-serif; font-weight:800; font-size:32px; color:var(--gold); line-height:1; }
-
-/* ---- Ticket seller comparison cards (row layout on wider screens, stacked on mobile) ---- */
-.ticket-panel-intro{ margin-bottom:20px; }
-.ticket-panel-intro h2{ font-family:'Sora',sans-serif; font-weight:800; font-size:26px; }
-.ticket-panel-intro p{ color:var(--ink-dim); font-size:14px; margin-top:6px; }
-.seller-cards{ display:flex; flex-direction:column; gap:20px; margin-top:20px; }
-.seller-card{ position:relative; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:24px 24px 22px; }
-.seller-card.best{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
-.seller-badge-best{ position:absolute; top:-13px; left:20px; background:var(--gold); color:#241a00; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:10.5px; letter-spacing:.06em; padding:6px 12px; border-radius:8px; z-index:1; }
-.seller-left{ display:flex; gap:14px; align-items:flex-start; }
-.seller-badge-sq{ width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:#0a0a0f; flex-shrink:0; background:linear-gradient(135deg,#c9d6ff,#8fa5ff); }
-.seller-badge-sq.p-tm{ background:linear-gradient(135deg,#7fe7db,#5ec9ff); }
-.seller-badge-sq.p-tn{ background:linear-gradient(135deg,#ffe08a,#ffab5e); }
-.seller-badge-sq.p-vs{ background:linear-gradient(135deg,#ffb4e6,#e879c2); }
-.seller-badge-sq.p-sh{ background:linear-gradient(135deg,#a9f0c2,#57cf85); }
-.seller-badge-sq.p-gt{ background:linear-gradient(135deg,#b9c3ff,#8f9bff); }
-.seller-badge-sq.p-sg{ background:linear-gradient(135deg,#ffd6a5,#ff9a5c); }
-.seller-badge-sq.p-dm{ background:linear-gradient(135deg,#d8dde6,#aab2c0); }
-.seller-name{ font-family:'Sora',sans-serif; font-weight:700; font-size:17px; }
-.seller-meta{ font-size:13px; color:var(--ink-dim); margin-top:4px; }
-.seller-rating{ font-size:12.5px; color:var(--ink-dim); margin-top:4px; }
-.seller-rating b{ color:var(--gold); }
-.seller-divider{ position:relative; border-top:1.5px dashed var(--line); margin:18px -24px; }
-.seller-divider::before,.seller-divider::after{ content:''; position:absolute; top:-10px; width:20px; height:20px; border-radius:50%; background:var(--surface-2); }
-.seller-divider::before{ left:-10px; }
-.seller-divider::after{ right:-10px; }
-.seller-right{ text-align:left; }
-.seller-total-lbl{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; }
-.seller-total-amt{ font-family:'Sora',sans-serif; font-weight:800; font-size:32px; color:var(--ink); line-height:1.15; margin-top:4px; }
-.seller-card.best .seller-total-amt{ color:var(--gold); }
-.seller-total-breakdown{ font-size:12.5px; color:var(--ink-faint); margin-top:4px; font-family:'JetBrains Mono',monospace; }
-.seller-cta{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:16px; padding:14px; border-radius:12px; background:var(--blue); color:#fff; font-weight:700; font-size:14.5px; }
-.seller-cta:hover{ background:var(--blue-deep); }
-
-/* Wider screens: seller info left, price block right, vertical divider between */
-@media(min-width:680px){
-  .seller-card{ flex-direction:row; align-items:center; padding:22px 28px; }
-  .seller-left{ flex:1; align-items:center; }
-  .seller-divider{ align-self:stretch; border-top:none; border-left:1.5px dashed var(--line); margin:0 32px; width:0; }
-  .seller-divider::before{ top:-10px; left:-10px; }
-  .seller-divider::after{ bottom:-10px; top:auto; left:-10px; }
-  .seller-right{ text-align:right; display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; min-width:190px; }
-  .seller-cta{ width:auto; align-self:flex-end; padding:12px 24px; }
-}
 </style>
 
 <!-- Open Graph -->
@@ -154,9 +110,7 @@
     <div class="pill-row" style="margin-top:20px;">
       <span style="font-size:12px;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;align-self:center;">Try:</span>
       <a href="/events/nova-wren-berlin-2026-08-16.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">Nova Wren Berlin</a>
-      <a href="/events/silvertone-dublin-2026-08-18.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">Silvertone Dublin</a>
-      <a href="/events/kaito-reyes-paris-2026-08-29.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">Kaito Reyes Paris</a>
-      <a href="/events/the-quiet-static-new-york-2026-09-03.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">The Quiet Static NYC</a>
+      <a href="/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">Bergkristall vs Rheingold</a>
     </div>
   </div>
 </header>
