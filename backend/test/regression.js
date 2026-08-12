@@ -412,6 +412,15 @@ async function runTests() {
     assert.ok(!res.body.includes('if (!root.contains(e.target))'), 'must not use the exact target-based containment check that caused this bug (comments explaining the fix are fine)');
   });
 
+  await test('Calendar date format is unambiguous ("12 Aug 2026"), not confusing MM/DD/YYYY', async () => {
+    const res = await get('/js/search-date-range.js');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.body.includes('formatDate') && res.body.includes('formatRangeLabel'), 'must have the unambiguous date formatting functions');
+    assert.ok(!res.body.includes('formatMMDDYYYY'), 'the old ambiguous MM/DD/YYYY formatter must be fully removed, not left dangling');
+    const homepage = await get('/');
+    assert.ok(!homepage.body.includes('MM/DD/YYYY'), 'no page should show the ambiguous placeholder format anymore');
+  });
+
   await test('GET /api/search genuinely filters by city, not just accepting the param decoratively', async () => {
     const res = await get('/api/search?q=Coldplay&city=Berlin');
     assert.strictEqual(res.status, 200);
