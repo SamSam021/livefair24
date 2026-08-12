@@ -463,6 +463,15 @@ async function runTests() {
     assert.ok(!res.body.includes('runSearch(getQueryParam(\'q\'))'), 'must not call runSearch with only the query string — that was the exact bug (location-only searches did nothing)');
   });
 
+  await test('Homepage "How LiveFair24 works" appears exactly once, positioned after "Browse concerts by country"', async () => {
+    const res = await get('/');
+    const matches = res.body.match(/How LiveFair24 works/g) || [];
+    assert.strictEqual(matches.length, 1, 'must appear exactly once — this section was accidentally duplicated once already while being repositioned');
+    const countryIdx = res.body.indexOf('Browse concerts by country');
+    const howItWorksIdx = res.body.indexOf('How LiveFair24 works');
+    assert.ok(countryIdx > -1 && howItWorksIdx > countryIdx, '"How LiveFair24 works" must come after "Browse concerts by country" in the page');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {
