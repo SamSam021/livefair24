@@ -15,6 +15,7 @@ const { port } = require('./config');
 const { handleTickets } = require('./routes/tickets');
 const { handleHotels } = require('./routes/hotels');
 const watcherRoutes = require('./routes/watchers');
+const eventRoutes = require('./routes/events');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -170,6 +171,45 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/health') {
       return sendJSON(res, 200, { ok: true });
+    }
+    if (pathname === '/api/events' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await eventRoutes.listUpcomingEvents(query));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/events\/type\/[^/]+$/) && req.method === 'GET') {
+      const eventType = decodeURIComponent(pathname.split('/').pop());
+      try {
+        return sendJSON(res, 200, await eventRoutes.listEventsByType(eventType, query));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/events\/artist\/[^/]+$/) && req.method === 'GET') {
+      const slug = decodeURIComponent(pathname.split('/').pop());
+      try {
+        return sendJSON(res, 200, await eventRoutes.listEventsByArtist(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/events\/venue\/[^/]+$/) && req.method === 'GET') {
+      const slug = decodeURIComponent(pathname.split('/').pop());
+      try {
+        return sendJSON(res, 200, await eventRoutes.listEventsByVenue(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/events\/[^/]+$/) && req.method === 'GET') {
+      const slug = decodeURIComponent(pathname.split('/').pop());
+      try {
+        return sendJSON(res, 200, await eventRoutes.getEvent(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
     }
     if (pathname === '/api/watchers' && req.method === 'POST') {
       const body = await readBody(req);
