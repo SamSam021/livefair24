@@ -545,6 +545,26 @@ async function runTests() {
       'must fall back to the full upcoming pool if onsale filtering would leave nothing, rather than returning zero outright');
   });
 
+  await test('Trending verification uses Ticketmaster\'s get-by-ID detail endpoint, not keyword re-search (regression: real evidence across two markets showed keyword re-search of confirmed-onsale, well-known artists never returning priced results)', async () => {
+    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
+    assert.ok(tmSrc.includes('async getEventDetails('), 'must have a get-by-ID detail lookup function');
+    assert.ok(tmSrc.includes('/discovery/v2/events/${encodeURIComponent(eventId)}.json'), 'must call the real per-event detail endpoint, not the list/search endpoint');
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('sourceProvider.getEventDetails'), 'verification must actually call the detail endpoint when available');
+    assert.ok(trendingSrc.includes('fallbackResults'), 'must still fall back to keyword search for providers without a detail-by-ID method (demo mode, future providers)');
+  });
+
+  await test('Trending endpoint accepts a diagnostic country override (?country=XX) to test markets other than the visitor\'s detected one, without needing a VPN', async () => {
+    const res = await get('/api/trending?country=GB');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json.countryUsed, 'GB', 'override must actually take effect');
+  });
+
+  await test('Trending debug output includes raw discovered date samples, to catch date-parsing issues separately from pricing issues (regression: a real US query showed 40 discovered events but 0 upcoming, an unrelated bug this field is meant to help diagnose)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('discoveredDateSample'), 'must surface raw date/time values before filtering, to distinguish "no date" from "date parsed wrong" from "genuinely in the past"');
+  });
+
   await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);

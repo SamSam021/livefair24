@@ -187,6 +187,10 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   });
   debug.discoveredCount = discovered.length;
   if (discoveryErrors.length) debug.discoveryErrors = discoveryErrors;
+  // Raw date/time as received, before any filtering — the fastest way
+  // to see whether isUpcoming is rejecting real future dates due to a
+  // parsing issue, versus the discovered events genuinely lacking dates.
+  debug.discoveredDateSample = discovered.slice(0, 5).map((ev) => ({ name: ev.name, date: ev.date, time: ev.time }));
 
   const upcomingDiscovered = discovered.filter(isUpcoming);
   debug.upcomingCount = upcomingDiscovered.length;
@@ -212,27 +216,40 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   debug.candidatesChecked = candidates.length;
   debug.candidateNames = candidates.slice(0, 5).map((c) => c.name); // sample, not the full list
 
-  // STEP 2 — Verify pricing: re-query each candidate BY NAME. This is
-  // the same query shape /api/search and /api/tickets already use for
-  // real, user-initiated searches, and the only one directly confirmed
-  // (via a real captured response earlier in this project) to include
-  // priceRanges data at least some of the time. Demo mode never reaches
-  // this step with an empty query in practice, but is unaffected either
-  // way — demo.js always returns priced results.
+  // STEP 2 — Verify pricing: fetch each candidate's full details directly
+  // by its real Ticketmaster event ID, instead of re-searching by
+  // keyword. Confirmed with real evidence (two markets, both showing
+  // confirmed-onsale, well-known artists with zero priced results after
+  // a keyword re-search) that the keyword approach doesn't reliably work
+  // — this tries the one remaining, genuinely different hypothesis: a
+  // get-by-ID detail endpoint returning more complete data than a list/
+  // search endpoint, a common REST API pattern. Falls back to the old
+  // keyword re-search for any provider without a detail-by-ID method
+  // (demo mode, and any future provider that doesn't offer one).
   const verifySettled = await Promise.allSettled(
-    candidates.map((cand) =>
-      Promise.all(
+    candidates.map(async (cand) => {
+      const sourceProvider = providers.find((p) => p.id === cand.source);
+      if (sourceProvider && typeof sourceProvider.getEventDetails === 'function' && cand.eventId) {
+        const detail = await sourceProvider.getEventDetails(cand.eventId, env);
+        return detail ? [detail] : [];
+      }
+      const fallbackResults = await Promise.all(
         providers.map((p) =>
           typeof p.searchEvents === 'function'
             ? p.searchEvents({ query: cand.name, city: cand.city, countryCode }, env)
             : Promise.resolve([])
         )
-      )
-    )
+      );
+      return fallbackResults.flat();
+    })
   );
   let verified = [];
   verifySettled.forEach((outcome) => {
-    if (outcome.status === 'fulfilled') outcome.value.forEach((providerResults) => { verified = verified.concat(providerResults); });
+    // Each candidate's promise now resolves to an already-flat array of
+    // events directly (from either getEventDetails or the flattened
+    // fallback search), unlike the old nested-array-of-per-provider-
+    // results shape — concat the whole thing at once, not per-item.
+    if (outcome.status === 'fulfilled') verified = verified.concat(outcome.value);
     else debug.verifyErrors += 1;
   });
   debug.verifiedRawCount = verified.length;

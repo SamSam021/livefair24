@@ -125,53 +125,82 @@ module.exports = {
     try {
       const data = await httpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
-      return events.map((ev) => {
-        const range = (ev.priceRanges && ev.priceRanges[0]) || null;
-        const venue = (ev._embedded && ev._embedded.venues && ev._embedded.venues[0]) || null;
-        const attraction = (ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0]) || null;
-        const genre = (ev.classifications && ev.classifications[0] && ev.classifications[0].segment) || null;
-        return {
-          source: 'ticketmaster',
-          sourceLabel: 'Ticketmaster',
-          name: ev.name,
-          // The real attraction/artist ID — used to deduplicate multiple
-          // tour dates (or ticket-tier variants like "... | Premium
-          // Packages") of the same act down to one entry. Confirmed this
-          // field exists in the real response captured earlier.
-          attractionId: attraction ? attraction.id : null,
-          // Ticketmaster's own event ID — the actual unique identifier
-          // for this specific occurrence (this artist, this date, this
-          // venue), distinct from attractionId which identifies the
-          // artist across all their dates. Stored so the selected event
-          // can be precisely identified later, per the requirement that
-          // ticket/hotel lookups target the exact correct event.
-          eventId: ev.id || null,
-          // Confirmed real field from an earlier captured response
-          // (dates.status.code: "onsale") — an event can be listed and
-          // discoverable before tickets actually go on sale, which would
-          // explain missing pricing regardless of query strategy. Using
-          // this directly instead of guessing at more query parameters.
-          saleStatus: ev.dates && ev.dates.status ? ev.dates.status.code : null,
-          genre: genre ? genre.name : null,
-          venue: venue ? venue.name : null,
-          city: venue && venue.city ? venue.city.name : null,
-          country: venue && venue.country ? venue.country.name : null,
-          // Confirmed field names/shape (venue.location.latitude/longitude,
-          // as strings) against the real response captured earlier in this
-          // project — not a documented-but-untested guess like some of the
-          // other fields here.
-          lat: venue && venue.location ? parseFloat(venue.location.latitude) : null,
-          lng: venue && venue.location ? parseFloat(venue.location.longitude) : null,
-          date: ev.dates && ev.dates.start ? ev.dates.start.localDate : null,
-          time: ev.dates && ev.dates.start ? ev.dates.start.localTime : null,
-          lowestPrice: range ? range.min : null,
-          currency: range ? range.currency : null,
-          url: ev.url || '#',
-        };
-      });
+      return events.map(mapEventToResult);
     } catch (err) {
       console.warn('[ticketmaster provider] searchEvents', err.message);
       return [];
     }
   },
+
+  // Fetches ONE event by its real Ticketmaster ID directly, instead of
+  // re-searching by keyword. Added after confirming — with real evidence
+  // across two different countries (DE and GB), both showing confirmed
+  // onsale, well-known artists — that neither sort order, keyword
+  // re-search, nor onsale-status filtering ever surfaced priceRanges
+  // data. The one thing not yet tried: REST APIs commonly return more
+  // complete data from a get-by-ID detail endpoint than from a list/
+  // search endpoint, even for the same underlying resource. UNVERIFIED
+  // against a live call, same as several other pieces here — this is a
+  // genuinely different hypothesis, not a guess dressed up as one.
+  async getEventDetails(eventId, env) {
+    const key = env.TICKETMASTER_API_KEY;
+    const url = `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
+    try {
+      const ev = await httpGet(url);
+      return mapEventToResult(ev);
+    } catch (err) {
+      console.warn('[ticketmaster provider] getEventDetails', err.message);
+      return null;
+    }
+  },
 };
+
+// Shared per-event mapping — used by both the list/search endpoint
+// (searchEvents, where each item comes from _embedded.events[]) and the
+// get-by-ID detail endpoint (getEventDetails, where the whole response
+// IS one such event object). Kept as one function so both code paths
+// stay in sync rather than risking the two silently drifting apart.
+function mapEventToResult(ev) {
+  const range = (ev.priceRanges && ev.priceRanges[0]) || null;
+  const venue = (ev._embedded && ev._embedded.venues && ev._embedded.venues[0]) || null;
+  const attraction = (ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0]) || null;
+  const genre = (ev.classifications && ev.classifications[0] && ev.classifications[0].segment) || null;
+  return {
+    source: 'ticketmaster',
+    sourceLabel: 'Ticketmaster',
+    name: ev.name,
+    // The real attraction/artist ID — used to deduplicate multiple
+    // tour dates (or ticket-tier variants like "... | Premium
+    // Packages") of the same act down to one entry. Confirmed this
+    // field exists in the real response captured earlier.
+    attractionId: attraction ? attraction.id : null,
+    // Ticketmaster's own event ID — the actual unique identifier
+    // for this specific occurrence (this artist, this date, this
+    // venue), distinct from attractionId which identifies the
+    // artist across all their dates. Stored so the selected event
+    // can be precisely identified later, per the requirement that
+    // ticket/hotel lookups target the exact correct event.
+    eventId: ev.id || null,
+    // Confirmed real field from an earlier captured response
+    // (dates.status.code: "onsale") — an event can be listed and
+    // discoverable before tickets actually go on sale, which would
+    // explain missing pricing regardless of query strategy. Using
+    // this directly instead of guessing at more query parameters.
+    saleStatus: ev.dates && ev.dates.status ? ev.dates.status.code : null,
+    genre: genre ? genre.name : null,
+    venue: venue ? venue.name : null,
+    city: venue && venue.city ? venue.city.name : null,
+    country: venue && venue.country ? venue.country.name : null,
+    // Confirmed field names/shape (venue.location.latitude/longitude,
+    // as strings) against the real response captured earlier in this
+    // project — not a documented-but-untested guess like some of the
+    // other fields here.
+    lat: venue && venue.location ? parseFloat(venue.location.latitude) : null,
+    lng: venue && venue.location ? parseFloat(venue.location.longitude) : null,
+    date: ev.dates && ev.dates.start ? ev.dates.start.localDate : null,
+    time: ev.dates && ev.dates.start ? ev.dates.start.localTime : null,
+    lowestPrice: range ? range.min : null,
+    currency: range ? range.currency : null,
+    url: ev.url || '#',
+  };
+}
