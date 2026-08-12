@@ -388,6 +388,18 @@ async function runTests() {
     assert.strictEqual(locScript.status, 200);
   });
 
+  await test('Calendar picker disables past dates — cannot select an already-passed day', async () => {
+    const res = await get('/js/search-date-range.js');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.body.includes('isPastDate'), 'must have past-date detection logic');
+    assert.ok(res.body.includes('cal-day-disabled'), 'must render disabled styling for past dates');
+    // The key correctness property: past-date cells must be rendered as
+    // non-interactive <span>, not clickable <button> — the click-handler
+    // wiring only queries 'button.cal-day', which naturally excludes them.
+    assert.ok(res.body.includes("querySelectorAll('button.cal-day')"),
+      'click handlers must only attach to real buttons, not disabled date spans');
+  });
+
   await test('GET /api/search genuinely filters by city, not just accepting the param decoratively', async () => {
     const res = await get('/api/search?q=Coldplay&city=Berlin');
     assert.strictEqual(res.status, 200);
