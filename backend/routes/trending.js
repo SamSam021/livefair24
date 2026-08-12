@@ -105,6 +105,13 @@ async function getTrendingEvents(clientIp, env) {
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
 
+  // Diagnostic counters — surfaced in the response temporarily so the
+  // pipeline's actual behavior can be inspected directly (discovered vs.
+  // upcoming vs. candidates checked vs. how many verification calls
+  // actually errored vs. how many came back priced), instead of guessing
+  // blind from just the final count after two failed fix attempts.
+  const debug = { discoveredCount: 0, upcomingCount: 0, candidatesChecked: 0, verifyErrors: 0, verifiedRawCount: 0, eligibleCount: 0 };
+
   // STEP 1 — Discover: broad country browse, no price required at this
   // stage. Confirmed via direct testing that this query shape (no
   // keyword, country-only) reliably comes back with priceRanges missing
@@ -118,19 +125,26 @@ async function getTrendingEvents(clientIp, env) {
     )
   );
   let discovered = [];
+  const discoveryErrors = [];
   discoverySettled.forEach((outcome) => {
     if (outcome.status === 'fulfilled') discovered = discovered.concat(outcome.value);
+    else discoveryErrors.push(String(outcome.reason && outcome.reason.message || outcome.reason));
   });
+  debug.discoveredCount = discovered.length;
+  if (discoveryErrors.length) debug.discoveryErrors = discoveryErrors;
 
   const upcomingDiscovered = discovered.filter(isUpcoming);
+  debug.upcomingCount = upcomingDiscovered.length;
   if (upcomingDiscovered.length === 0) {
-    return { detectedCountry, countryUsed: countryCode, demoMode, count: 0, results: [] };
+    return { detectedCountry, countryUsed: countryCode, demoMode, count: 0, results: [], debug };
   }
 
   // Pick a diverse, randomized pool of CANDIDATES to verify pricing for
   // — more than TARGET_COUNT, since some candidates' keyword re-search
   // below may still come back unpriced or empty.
   const candidates = selectDiverseRandom(upcomingDiscovered, CANDIDATES_TO_VERIFY);
+  debug.candidatesChecked = candidates.length;
+  debug.candidateNames = candidates.slice(0, 5).map((c) => c.name); // sample, not the full list
 
   // STEP 2 — Verify pricing: re-query each candidate BY NAME. This is
   // the same query shape /api/search and /api/tickets already use for
@@ -153,9 +167,12 @@ async function getTrendingEvents(clientIp, env) {
   let verified = [];
   verifySettled.forEach((outcome) => {
     if (outcome.status === 'fulfilled') outcome.value.forEach((providerResults) => { verified = verified.concat(providerResults); });
+    else debug.verifyErrors += 1;
   });
+  debug.verifiedRawCount = verified.length;
 
   const eligible = verified.filter(isUpcoming).filter(hasRealPrice);
+  debug.eligibleCount = eligible.length;
   const selected = selectDiverseRandom(eligible, TARGET_COUNT);
 
   return {
@@ -164,6 +181,7 @@ async function getTrendingEvents(clientIp, env) {
     demoMode,
     count: selected.length,
     results: selected,
+    debug,
   };
 }
 
