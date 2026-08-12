@@ -507,10 +507,26 @@ async function runTests() {
     assert.strictEqual(new Set(names).size, names.length, 'every trending result must be a genuinely different act, not repeats');
   });
 
-  await test('Every trending result has a real price — events with no price data are filtered out, not shown blank', async () => {
+  await test('Trending results are sorted priced-first, but events with no price are still shown rather than excluded (real Ticketmaster country searches can return zero priced results)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);
-    assert.ok(res.json.results.every((r) => r.lowestPrice != null), 'no trending card should have a missing price');
+    // Demo mode always generates prices, so this can't directly prove an
+    // unpriced event survives — that's confirmed by the dedicated logic
+    // test below instead. This checks the sort order property that DOES
+    // hold regardless: once you hit a null-price result, every result
+    // after it must also be null (priced ones never appear after unpriced
+    // ones).
+    let seenUnpriced = false;
+    for (const r of res.json.results) {
+      if (r.lowestPrice == null) seenUnpriced = true;
+      else assert.ok(!seenUnpriced, 'a priced result must not appear after an unpriced one — priced results must sort first');
+    }
+  });
+
+  await test('Trending backend does not hard-require a price (regression: a real Germany search returned demoMode:false, count:0 because every result lacked pricing)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(!trendingSrc.includes('.filter(hasRealPrice)'), 'must not hard-filter out unpriced events — that caused a real production bug where a whole country legitimately returned zero results');
+    assert.ok(trendingSrc.includes('pricedFirst'), 'must still prioritize priced results via sorting, just not require them');
   });
 
   await test('Trending dedup logic uses the real attractionId field, not a name-matching heuristic alone', async () => {
@@ -542,6 +558,13 @@ async function runTests() {
     // EVENTS[0] before an in-flight trending fetch replaced its contents).
     const loadListenerCount = (res.body.match(/window\.addEventListener\('load'/g) || []).length;
     assert.strictEqual(loadListenerCount, 1, 'exactly one load listener should drive homepage event initialization');
+  });
+
+  await test('Trending cards with no price show honest "Price TBA", not a broken-looking blank or fake $0', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes("'TBA'"), 'unpriced trending events must map to an honest TBA marker, not $0');
+    assert.ok(res.body.includes('Price TBA'), 'must display an honest label for unpriced events');
+    assert.ok(!res.body.includes("r.lowestPrice != null ? `$${Math.round(r.lowestPrice)}` : '$0'"), 'must not fake a $0 price for events with no real price data');
   });
 
 

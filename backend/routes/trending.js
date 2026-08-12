@@ -40,12 +40,20 @@ function dedupeByAttraction(events) {
 }
 
 // Many Ticketmaster events genuinely have no priceRanges data in this
-// endpoint (a real characteristic of their API, not a bug) — showing
-// those with a blank price looked broken. Filtering them out means every
-// card shown has a real number, at the cost of needing more raw
-// candidates to fill 6 slots (handled by requesting a larger limit below).
-function hasRealPrice(ev) {
-  return ev.lowestPrice != null;
+// endpoint — confirmed against a real live request for Germany: every
+// single dedupe-surviving result came back with lowestPrice: null,
+// which made a strict "must have a price" filter reject everything,
+// leaving zero results. Real variety of artists matters more than
+// guaranteed pricing, so this now sorts priced results first rather than
+// requiring them — an event with no price still shows (as "Price TBA" on
+// the frontend), it just doesn't get priority over one that has a price.
+function pricedFirst(events) {
+  return [...events].sort((a, b) => {
+    if (a.lowestPrice == null && b.lowestPrice == null) return 0;
+    if (a.lowestPrice == null) return 1;
+    if (b.lowestPrice == null) return -1;
+    return a.lowestPrice - b.lowestPrice;
+  });
 }
 
 async function getTrendingEvents(clientIp, env) {
@@ -58,10 +66,10 @@ async function getTrendingEvents(clientIp, env) {
   const settled = await Promise.allSettled(
     providers.map((p) =>
       typeof p.searchEvents === 'function'
-        // Requesting more than TARGET_COUNT here deliberately — after
-        // deduping repeat tour dates and filtering out events with no
-        // price data, a raw fetch of just 6 could easily end up with far
-        // fewer (or zero) usable results.
+        // Requesting more than TARGET_COUNT here deliberately — even
+        // without the old strict price filter, deduping repeat tour
+        // dates alone can still shrink a raw fetch of just 6 down to far
+        // fewer usable, distinct artists.
         ? p.searchEvents({ query: '', city: '', countryCode, limit: 40 }, env)
         : Promise.resolve([])
     )
@@ -72,7 +80,7 @@ async function getTrendingEvents(clientIp, env) {
     if (outcome.status === 'fulfilled') results = results.concat(outcome.value);
   });
 
-  const filtered = dedupeByAttraction(results).filter(hasRealPrice);
+  const filtered = pricedFirst(dedupeByAttraction(results));
 
   return {
     detectedCountry: detectedCountry, // null if geolocation didn't resolve — distinct from the fallback actually used
