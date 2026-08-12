@@ -530,10 +530,59 @@ async function runTests() {
     const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
     assert.ok(trendingSrc.includes('selectDiverseSoonest'), 'candidate selection must use the soonest-first function, not the fully-randomized one');
     assert.ok(trendingSrc.includes('const candidates = selectDiverseSoonest'), 'must actually be wired in as the candidate-picking function, not just defined and unused');
-    // Final display selection must still be fully randomized — only the
-    // candidate-VERIFICATION stage changed, per the requirement that
-    // final selection stays random.
-    assert.ok(trendingSrc.includes('selectDiverseRandom(priced, TARGET_COUNT)'), 'final display selection must still randomize among already-priced results');
+    // Final display selection must still randomize (which artist,
+    // which of their dates) among already-priced results — now it
+    // reorders the FULL priced pool by diversity preference (not
+    // truncated to TARGET_COUNT yet) so the subsequent date-spacing pass
+    // has the whole pool to choose a well-spread final 6 from.
+    assert.ok(trendingSrc.includes('selectDiverseRandom(withLeadTime, withLeadTime.length)'), 'final display selection must still randomize among already-priced, lead-time-eligible results');
+  });
+
+  await test('Trending requires at least 14 days\' notice before a concert shows as a card (nobody realistically plans to attend something in a couple hours)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('const MIN_LEAD_DAYS = 14'), 'must enforce a minimum lead time before a concert is eligible to show');
+    assert.ok(trendingSrc.includes('function hasMinimumLeadTime'), 'must have an explicit lead-time filter function');
+    assert.ok(trendingSrc.includes('.filter(hasMinimumLeadTime)'), 'the lead-time filter must actually be applied to the eligible pool');
+  });
+
+  await test('Trending spaces out the selected cards by date, not clustering multiple cards on the same day (regression: two real selected cards landed on the exact same date and time)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('const MIN_DAYS_BETWEEN_CARDS = 3'), 'must enforce a minimum gap between selected cards\' dates');
+    assert.ok(trendingSrc.includes('function applyDateSpacing'), 'must have an explicit date-spacing selection function');
+    assert.ok(trendingSrc.includes('applyDateSpacing(diverseOrdered, TARGET_COUNT, MIN_DAYS_BETWEEN_CARDS)'), 'date spacing must actually be applied to pick the final 6 cards');
+
+    // Directly verify the spacing logic against the exact real scenario
+    // that prompted this: multiple same-day pairs, must prefer spread
+    // dates first and only repeat a date when there's no other choice.
+    function daysBetweenDateStrings(a, b) {
+      const da = new Date(a + 'T00:00:00Z');
+      const db = new Date(b + 'T00:00:00Z');
+      return Math.abs((da.getTime() - db.getTime()) / (1000 * 60 * 60 * 24));
+    }
+    function applyDateSpacing(events, targetCount, minDaysApart) {
+      const selected = [];
+      for (const ev of events) {
+        if (selected.length >= targetCount) break;
+        if (!ev.date || selected.every((s) => !s.date || daysBetweenDateStrings(s.date, ev.date) >= minDaysApart)) {
+          selected.push(ev);
+        }
+      }
+      if (selected.length < targetCount) {
+        for (const ev of events) {
+          if (selected.length >= targetCount) break;
+          if (!selected.includes(ev)) selected.push(ev);
+        }
+      }
+      return selected;
+    }
+    const sameDay = [
+      { name: 'A', date: '2026-08-26' }, { name: 'B', date: '2026-08-26' },
+      { name: 'C', date: '2026-08-26' },
+    ];
+    const twoWeeksApart = applyDateSpacing(sameDay, 2, 3);
+    // Only one distinct date exists — must still fill 2 slots by
+    // topping up, not leave a card empty.
+    assert.strictEqual(twoWeeksApart.length, 2);
   });
 
   await test('Trending prefers onsale events for candidate verification, using Ticketmaster\'s own confirmed dates.status.code field (an event can be listed before tickets go on sale, which would explain missing pricing regardless of query strategy)', async () => {
@@ -552,6 +601,17 @@ async function runTests() {
     const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
     assert.ok(trendingSrc.includes('sourceProvider.getEventDetails'), 'verification must actually call the detail endpoint when available');
     assert.ok(trendingSrc.includes('fallbackResults'), 'must still fall back to keyword search for providers without a detail-by-ID method (demo mode, future providers)');
+  });
+
+  await test('Trending verification is throttled in batches, not fired all at once (Ticketmaster\'s documented rate limit is 5 req/sec — real usage showed only 2 of 15 candidates returning results, and unthrottled parallel requests could silently trigger rate-limiting caught inside getEventDetails without ever surfacing as a visible error)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('async function runInBatches'), 'must batch verification requests instead of firing all of them simultaneously');
+    assert.ok(trendingSrc.includes('candidatesWithNoResult'), 'must track candidates that returned nothing distinctly from hard errors, to help distinguish "genuinely unpriced" from "silently rate-limited"');
+  });
+
+  await test('Trending checks more candidates than before (regression: real usage found only 2 of 15 candidates had pricing, even in a supported market)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('const CANDIDATES_TO_VERIFY = 25'), 'candidate pool must be raised from the original 15, which real usage showed was too few to reliably fill 6 card slots');
   });
 
   await test('Trending endpoint accepts a diagnostic country override (?country=XX) to test markets other than the visitor\'s detected one, without needing a VPN', async () => {

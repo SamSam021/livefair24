@@ -139,6 +139,51 @@ function hasRealPrice(ev) {
   return ev.lowestPrice != null;
 }
 
+// A concert happening in a few hours (or even a few days) isn't
+// realistic for someone to plan around — explicit requirement that
+// shown cards need at least MIN_LEAD_DAYS of notice. Applied to the
+// final priced pool, not the raw discovery pool, so it doesn't waste
+// verification calls filtering candidates that would be excluded anyway
+// for other reasons first.
+const MIN_LEAD_DAYS = 14;
+function hasMinimumLeadTime(ev) {
+  if (!ev.date) return false;
+  const minDateStr = new Date(Date.now() + MIN_LEAD_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return ev.date >= minDateStr;
+}
+
+function daysBetweenDateStrings(dateStrA, dateStrB) {
+  const a = new Date(dateStrA + 'T00:00:00Z');
+  const b = new Date(dateStrB + 'T00:00:00Z');
+  return Math.abs((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// Real evidence: two selected cards both landed on the exact same date
+// and time — realistic for a big market with a lot happening, but reads
+// as a bug, not a curated selection. Greedily walks the (already
+// diversity-ordered) candidate list, only accepting an event if its date
+// is far enough from every one already picked. Tops up with whatever's
+// left, spacing constraint dropped, if there simply aren't enough
+// distinct dates to fill every slot — same "don't return fewer cards
+// than the pool could support" principle used for artist diversity.
+const MIN_DAYS_BETWEEN_CARDS = 3;
+function applyDateSpacing(events, targetCount, minDaysApart) {
+  const selected = [];
+  for (const ev of events) {
+    if (selected.length >= targetCount) break;
+    if (!ev.date || selected.every((s) => !s.date || daysBetweenDateStrings(s.date, ev.date) >= minDaysApart)) {
+      selected.push(ev);
+    }
+  }
+  if (selected.length < targetCount) {
+    for (const ev of events) {
+      if (selected.length >= targetCount) break;
+      if (!selected.includes(ev)) selected.push(ev);
+    }
+  }
+  return selected;
+}
+
 // An event can be listed and discoverable before tickets actually go on
 // sale — confirmed via a real captured response showing dates.status.code.
 // Filtering for this BEFORE spending a verification call on a candidate
@@ -151,13 +196,36 @@ function isOnSaleOrUnknown(ev) {
   return !ev.saleStatus || ev.saleStatus === 'onsale';
 }
 
-// How many discovered candidates to re-check for real pricing. Higher
-// means a better chance of finding TARGET_COUNT priced events, at the
-// cost of more provider API calls (each candidate is one extra request,
-// subject to Ticketmaster's rate limit). 15 is a middle ground — kept as
-// a named constant so it's easy to tune if it proves too low or too
-// costly in practice.
-const CANDIDATES_TO_VERIFY = 15;
+// How many discovered candidates to re-check for real pricing. Raised
+// from 15 after confirming real usage where only 2 of 15 had pricing —
+// even in a supported market, most events apparently lack it. Higher
+// improves the odds of finding TARGET_COUNT priced events, at the cost
+// of more provider API calls — mitigated below by throttling rather
+// than firing them all at once.
+const CANDIDATES_TO_VERIFY = 25;
+
+// Ticketmaster's documented rate limit is 5 requests/second. Firing all
+// CANDIDATES_TO_VERIFY requests simultaneously (the previous behavior)
+// risked silently exceeding that — a 429 gets caught inside
+// getEventDetails and just resolves to an empty result, not a visible
+// error, so rate-limiting could have been quietly suppressing results
+// without ever showing up in verifyErrors. Batching at a conservative
+// size with a pause between batches keeps this safely under the limit.
+const VERIFY_BATCH_SIZE = 4;
+const VERIFY_BATCH_DELAY_MS = 1100;
+
+async function runInBatches(items, batchSize, delayMs, fn) {
+  const settled = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchSettled = await Promise.allSettled(batch.map(fn));
+    settled.push(...batchSettled);
+    if (i + batchSize < items.length) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  return settled;
+}
 
 // Determines which country to actually query. If any enabled provider
 // supports pricing for the visitor's real country, uses it as-is. If
@@ -285,39 +353,58 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // search endpoint, a common REST API pattern. Falls back to the old
   // keyword re-search for any provider without a detail-by-ID method
   // (demo mode, and any future provider that doesn't offer one).
-  const verifySettled = await Promise.allSettled(
-    candidates.map(async (cand) => {
-      const sourceProvider = providers.find((p) => p.id === cand.source);
-      if (sourceProvider && typeof sourceProvider.getEventDetails === 'function' && cand.eventId) {
-        const detail = await sourceProvider.getEventDetails(cand.eventId, env);
-        return detail ? [detail] : [];
-      }
-      const fallbackResults = await Promise.all(
-        providers.map((p) =>
-          typeof p.searchEvents === 'function'
-            ? p.searchEvents({ query: cand.name, city: cand.city, countryCode }, env)
-            : Promise.resolve([])
-        )
-      );
-      return fallbackResults.flat();
-    })
-  );
+  const verifySettled = await runInBatches(candidates, VERIFY_BATCH_SIZE, VERIFY_BATCH_DELAY_MS, async (cand) => {
+    const sourceProvider = providers.find((p) => p.id === cand.source);
+    if (sourceProvider && typeof sourceProvider.getEventDetails === 'function' && cand.eventId) {
+      const detail = await sourceProvider.getEventDetails(cand.eventId, env);
+      return detail ? [detail] : [];
+    }
+    const fallbackResults = await Promise.all(
+      providers.map((p) =>
+        typeof p.searchEvents === 'function'
+          ? p.searchEvents({ query: cand.name, city: cand.city, countryCode }, env)
+          : Promise.resolve([])
+      )
+    );
+    return fallbackResults.flat();
+  });
   let verified = [];
+  let candidatesWithNoResult = 0;
   verifySettled.forEach((outcome) => {
     // Each candidate's promise now resolves to an already-flat array of
     // events directly (from either getEventDetails or the flattened
     // fallback search), unlike the old nested-array-of-per-provider-
     // results shape — concat the whole thing at once, not per-item.
-    if (outcome.status === 'fulfilled') verified = verified.concat(outcome.value);
-    else debug.verifyErrors += 1;
+    if (outcome.status === 'fulfilled') {
+      if (outcome.value.length === 0) candidatesWithNoResult += 1;
+      verified = verified.concat(outcome.value);
+    } else {
+      debug.verifyErrors += 1;
+    }
   });
   debug.verifiedRawCount = verified.length;
+  // Distinguishes "candidate lookup succeeded but had nothing" from a
+  // hard error — a high number here alongside verifyErrors: 0 would
+  // suggest rate-limiting or similar silently swallowed inside
+  // getEventDetails's own try/catch, not a genuine lack of pricing.
+  debug.candidatesWithNoResult = candidatesWithNoResult;
 
   const eligible = verified.filter(isUpcoming);
   debug.verifiedUpcomingCount = eligible.length; // split from eligibleCount below — isolates whether the date filter or the price filter is the actual bottleneck, if this still doesn't fully solve it
   const priced = eligible.filter(hasRealPrice);
-  debug.eligibleCount = priced.length;
-  const selected = selectDiverseRandom(priced, TARGET_COUNT);
+  debug.pricedBeforeLeadTimeFilter = priced.length;
+  const withLeadTime = priced.filter(hasMinimumLeadTime);
+  debug.eligibleCount = withLeadTime.length;
+  // Diversity ordering happens first (establishing preference — a
+  // different artist per card, whenever the pool allows it), THEN date
+  // spacing greedily picks from that preference-ordered list — so the
+  // final 6 respect both constraints, not just whichever was applied
+  // last. Passing withLeadTime.length (not TARGET_COUNT) to the first
+  // call means it reorders the WHOLE pool by diversity preference
+  // instead of cutting it down to 6 before spacing gets a chance to work
+  // with it.
+  const diverseOrdered = selectDiverseRandom(withLeadTime, withLeadTime.length);
+  const selected = applyDateSpacing(diverseOrdered, TARGET_COUNT, MIN_DAYS_BETWEEN_CARDS);
 
   return {
     detectedCountry: detectedCountry, // null if geolocation didn't resolve — distinct from the fallback actually used
