@@ -58,6 +58,7 @@
     if (!btn || !panel) return;
 
     const today = new Date();
+    const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
     let viewYear = today.getFullYear();
     let viewMonth = today.getMonth();
     let selStart = null; // { year, month, day }
@@ -79,6 +80,12 @@
       return key === dateKeyOf(selStart) || key === dateKeyOf(selEnd);
     }
 
+    function isPastDate(year, month, day) {
+      // Comparing date keys (strings) rather than Date objects sidesteps
+      // any timezone/hour subtlety — todayKey is always local midnight.
+      return toDateKey(year, month, day) < todayKey;
+    }
+
     function renderMonth(year, month) {
       const cells = getMonthGrid(year, month);
       const rows = [];
@@ -87,6 +94,9 @@
         <div class="cal-week">
           ${row.map((day) => {
             if (day == null) return '<span class="cal-day cal-day-empty"></span>';
+            if (isPastDate(year, month, day)) {
+              return `<span class="cal-day cal-day-disabled" aria-disabled="true">${day}</span>`;
+            }
             const classes = ['cal-day'];
             if (isEndpoint(year, month, day)) classes.push('cal-day-endpoint');
             else if (isInRange(year, month, day)) classes.push('cal-day-inrange');
@@ -106,7 +116,9 @@
       const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
       const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
       monthsWrap.innerHTML = renderMonth(viewYear, viewMonth) + renderMonth(nextYear, nextMonth);
-      monthsWrap.querySelectorAll('.cal-day:not(.cal-day-empty)').forEach((cell) => {
+      // Only real <button> cells are clickable — disabled past dates are
+      // rendered as <span>, so this selector naturally excludes them.
+      monthsWrap.querySelectorAll('button.cal-day').forEach((cell) => {
         cell.addEventListener('click', () => {
           const y = parseInt(cell.dataset.y, 10);
           const m = parseInt(cell.dataset.m, 10);
@@ -114,6 +126,7 @@
           handleDayClick(y, m, d);
         });
       });
+      prevBtn.disabled = (viewYear === today.getFullYear() && viewMonth === today.getMonth());
     }
 
     function syncTextInputs() {

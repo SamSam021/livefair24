@@ -407,6 +407,9 @@ img{max-width:100%;display:block;}
 .cal-day-empty{ cursor:default; }
 .cal-day-inrange{ background:var(--blue-soft); color:var(--blue-deep); }
 .cal-day-endpoint{ background:var(--blue); color:#fff; font-weight:700; }
+.cal-day-disabled{ color:var(--ink-faint); opacity:.4; cursor:not-allowed; }
+.cal-nav-btn:disabled{ opacity:.35; cursor:not-allowed; }
+.cal-nav-btn:disabled:hover{ background:var(--surface-2); color:var(--ink-dim); }
 .cal-actions-row{ display:flex; justify-content:space-between; align-items:center; margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
 .cal-reset-btn{ background:none; border:none; color:var(--blue); font-weight:700; font-size:13.5px; cursor:pointer; }
 .cal-actions-right{ display:flex; gap:10px; }
