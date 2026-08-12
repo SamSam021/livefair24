@@ -344,43 +344,32 @@
       <span class="freshness fresh" id="hotelFreshness">● Updated 6 min ago</span>
     </div>
 
-    <div class="hotel-filters">
+    <div class="panel-layout">
       <div>
-        <label class="hf-label">Max price / night</label>
-        <div class="range-row">
-          <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
-          <span class="range-val" id="hpVal">$500+</span>
+        <div id="eventHotelMap" class="hotel-map-el"></div>
+        <div class="hotel-filters">
+          <div>
+            <label class="hf-label">Max price / night</label>
+            <div class="range-row">
+              <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
+              <span class="range-val" id="hpVal">$500+</span>
+            </div>
+          </div>
+          <div>
+            <label class="hf-label">Min rating</label>
+            <div class="rating-pills">
+              <button class="rpill active" data-r="0">Any</button>
+              <button class="rpill" data-r="3.5">3.5+</button>
+              <button class="rpill" data-r="4">4.0+</button>
+              <button class="rpill" data-r="4.5">4.5+</button>
+            </div>
+          </div>
         </div>
       </div>
-      <div>
-        <label class="hf-label">Min rating</label>
-        <div class="rating-pills">
-          <button class="rpill active" data-r="0">Any</button>
-          <button class="rpill" data-r="3.5">3.5+</button>
-          <button class="rpill" data-r="4">4.0+</button>
-          <button class="rpill" data-r="4.5">4.5+</button>
-        </div>
-      </div>
-    </div>
 
-    <div class="panel-layout" style="margin-top:20px;">
-      <div id="eventHotelMap" class="hotel-map-el"></div>
-
-      <div class="table-scroll hotel-scroll-wrap" style="background:var(--surface);border:1px solid var(--line);border-radius:16px;">
-        <table class="hotel-table">
-          <thead>
-            <tr>
-              <th>Hotel</th>
-              <th>Distance</th>
-              <th>Rating</th>
-              <th>Price / night</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="hotelTableBody">
-            <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-faint);">Loading hotels…</td></tr>
-          </tbody>
-        </table>
+      <div class="hotel-right">
+        <div class="hotel-count-bar" id="hotelCountBar">Loading hotels…</div>
+        <div class="hotel-scroll" id="hotelScroll"></div>
       </div>
     </div>
     <p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">Distances are straight-line from Waldbühne. Prices are per room per night. Hotel links open the provider's booking page.</p>
@@ -657,32 +646,51 @@ function filteredEventHotels(){
   );
 }
 
+let eventHotelMarkers = [];
+
+function renderEventHotelList(){
+  const filtered = filteredEventHotels();
+  document.getElementById('hotelCountBar').textContent =
+    `${filtered.length} of ${allHotels.length} hotels near venue`;
+
+  if(filtered.length === 0){
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels match these filters.<br>Try raising the price or lowering the rating.</div>';
+    return;
+  }
+
+  document.getElementById('hotelScroll').innerHTML = filtered.map((h,i)=>`
+    <div class="hcard" data-idx="${i}">
+      <div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div>
+      <div class="hrow">
+        <span class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km from venue':'Distance n/a'}</span>
+        <span class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span class="hrev">${h.reviews!=null?`(${h.reviews.toLocaleString()})`:''}</span>`:''}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'Price n/a'}</div>
+        <a href="${h.url||'#'}" class="hbook" target="_blank" rel="noopener" onclick="event.stopPropagation()">Book →</a>
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('#hotelScroll .hcard').forEach(card=>{
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('#hotelScroll .hcard').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      const idx = parseInt(card.dataset.idx);
+      if(eventHotelMarkers[idx] && eventMap){
+        eventMap.setView(eventHotelMarkers[idx].getLatLng(),16);
+        eventHotelMarkers[idx].openPopup();
+      }
+    });
+  });
+}
+
 function buildVenueIcon(){
   return L.divIcon({
     className:'',
     html:`<div style="background:var(--blue);width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.3)"><svg style="transform:rotate(45deg);" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20V8a1 1 0 0 1 .4-.8l7-5.25a1 1 0 0 1 1.2 0l7 5.25a1 1 0 0 1 .4.8v12"/><path d="M9 20v-4a3 3 0 0 1 6 0v4"/></svg></div>`,
     iconSize:[36,36], iconAnchor:[18,36]
   });
-}
-
-function renderEventHotelTable(){
-  const filtered = filteredEventHotels();
-  const tbody = document.getElementById('hotelTableBody');
-  document.getElementById('hotelSubtext').textContent =
-    `${filtered.length} of ${allHotels.length} hotels near the venue · sorted by distance`;
-
-  if(filtered.length === 0){
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-faint);">No hotels match these filters.<br>Try raising the price or lowering the rating.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = filtered.map((h,i) => `
-    <tr>
-      <td><div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div></td>
-      <td class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km':'—'}</td>
-      <td class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">${h.reviews!=null?'('+h.reviews.toLocaleString()+')':''}</span>`:'—'}</td>
-      <td><div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'—'}</div></td>
-      <td><a href="${h.url||'#'}" class="book-btn" target="_blank" rel="noopener">Book →</a></td>
-    </tr>`).join('');
 }
 
 function renderEventHotelMap(){
@@ -697,18 +705,20 @@ function renderEventHotelMap(){
   }
 
   eventMapLayer.clearLayers();
+  eventHotelMarkers = [];
 
   L.marker([EVENT_VENUE.lat, EVENT_VENUE.lng], { icon: buildVenueIcon() }).addTo(eventMapLayer)
     .bindPopup(`<b>${EVENT_VENUE.name}</b><br>${EVENT_VENUE.city}`);
 
   filtered.forEach(h => {
-    if(h.lat==null || h.lng==null || h.pricePerNight==null) return;
+    if(h.lat==null || h.lng==null || h.pricePerNight==null) { eventHotelMarkers.push(null); return; }
     const icon = L.divIcon({
       className:'', html:`<div class="price-pin">$${h.pricePerNight}</div>`,
       iconSize:[48,26], iconAnchor:[24,26]
     });
-    L.marker([h.lat, h.lng], { icon }).addTo(eventMapLayer)
+    const m = L.marker([h.lat, h.lng], { icon }).addTo(eventMapLayer)
       .bindPopup(`<b>${h.name}</b><br>$${h.pricePerNight}/night${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}`);
+    eventHotelMarkers.push(m);
   });
 
   setTimeout(() => eventMap.invalidateSize(), 200);
@@ -827,12 +837,12 @@ async function loadEventData(){
   try{
     const hotelData = await fetchEventHotels();
     allHotels = hotelData.results || [];
-    renderEventHotelTable();
+    renderEventHotelList();
     if(typeof L !== 'undefined') renderEventHotelMap();
   } catch(err){
     console.error(err);
-    document.getElementById('hotelTableBody').innerHTML =
-      '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red);">Could not load hotels right now.</td></tr>';
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load hotels right now.</div>';
   }
 
   try{
@@ -854,7 +864,7 @@ hpSlider.addEventListener('input', () => {
   const v = parseInt(hpSlider.value);
   eventMaxPrice = v;
   document.getElementById('hpVal').textContent = v>=500 ? '$500+' : '$'+v;
-  renderEventHotelTable();
+  renderEventHotelList();
   if(typeof L !== 'undefined' && eventMap) renderEventHotelMap();
 });
 
@@ -863,7 +873,7 @@ document.querySelectorAll('.rpill').forEach(btn => {
     document.querySelectorAll('.rpill').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     eventMinRating = parseFloat(btn.dataset.r);
-    renderEventHotelTable();
+    renderEventHotelList();
     if(typeof L !== 'undefined' && eventMap) renderEventHotelMap();
   });
 });
