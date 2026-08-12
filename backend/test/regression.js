@@ -520,6 +520,30 @@ async function runTests() {
     assert.ok(tmSrc.includes('attractionId'), 'the Ticketmaster adapter must actually extract and return this field');
   });
 
+  await test('Trending cards fully replace EVENTS and reuse the existing selectEvent() system (not a separate simplified card)', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('EVENTS.length = 0'), 'must mutate the shared EVENTS array in place, not reassign it — fetchTickets/fetchHotels/selectEvent all close over this same array reference');
+    assert.ok(res.body.includes('renderTrendingEventCards'), 'must re-render real cards using the same interactive card system as the static fallback');
+    assert.ok(res.body.includes("selectEvent(${i},'ticket')") || res.body.includes('selectEvent(${i},\'ticket\')'),
+      'trending cards must wire into the same selectEvent() ticket-comparison flow the static cards use, not link out separately');
+  });
+
+  await test('Trending events missing venue coordinates are dropped, not shown with a broken hotel map', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('ev.lat != null && ev.lng != null'), 'events without real coordinates must be filtered out before becoming clickable cards');
+  });
+
+  await test('Homepage initialization is properly sequenced — selectEvent(0) only runs after the trending swap resolves (race condition fix)', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('await loadTrendingConcerts()'), 'must await the trending fetch before reading EVENTS[0]');
+    assert.ok(res.body.includes('initHomepageEvents'), 'must use one coordinated initializer, not two independent load listeners racing each other');
+    // Only one 'load' listener should exist for this purpose — two
+    // independent ones was the exact bug (selectEvent(0) could read
+    // EVENTS[0] before an in-flight trending fetch replaced its contents).
+    const loadListenerCount = (res.body.match(/window\.addEventListener\('load'/g) || []).length;
+    assert.strictEqual(loadListenerCount, 1, 'exactly one load listener should drive homepage event initialization');
+  });
+
 
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
