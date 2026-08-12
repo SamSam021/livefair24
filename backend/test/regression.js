@@ -421,6 +421,20 @@ async function runTests() {
     assert.ok(!homepage.body.includes('MM/DD/YYYY'), 'no page should show the ambiguous placeholder format anymore');
   });
 
+  await test('Calendar month/year title has explicit text color (not invisible white-on-white)', async () => {
+    const res = await get('/css/style.css');
+    assert.strictEqual(res.status, 200);
+    // The whole hero section sets color:#fff (white, for the blue
+    // background). That inherits into every descendant by default,
+    // including the calendar popup — which has a WHITE background. Any
+    // text element in there without its own explicit color renders
+    // invisible: technically present in the DOM, impossible to see. This
+    // exact bug hit .cal-month-title once already.
+    const match = res.body.match(/\.cal-month-title\{([^}]*)\}/);
+    assert.ok(match, '.cal-month-title rule must exist');
+    assert.ok(match[1].includes('color:'), '.cal-month-title must set its own explicit color, not inherit the hero section\'s white text');
+  });
+
   await test('GET /api/search genuinely filters by city, not just accepting the param decoratively', async () => {
     const res = await get('/api/search?q=Coldplay&city=Berlin');
     assert.strictEqual(res.status, 200);
