@@ -549,38 +549,71 @@ function formatTrendingDate(dateStr, timeStr){
   return timeStr ? `${dayLabel} · ${timeStr.slice(0,5)}` : dayLabel;
 }
 
-function renderTrendingCards(results){
+// Renders real trending cards using the EXACT same markup/classes/onclick
+// pattern as the static fallback cards below, so they're fully
+// interactive through the existing selectEvent() system — clicking
+// "Compare" or "Hotels" updates the same panels the static cards do,
+// just with real ticket/hotel data for a real event instead of demo data.
+function renderTrendingEventCards(events){
   const grid = document.getElementById('eventCardGrid');
-  if(!grid || results.length === 0) return;
+  if(!grid) return;
 
-  grid.innerHTML = results.map((r) => `
-    <a href="/search/?q=${encodeURIComponent(r.name || '')}&city=${encodeURIComponent(r.city || '')}" class="card event-card" style="text-decoration:none;">
-      <div class="genre">${r.genre || 'Live'}</div>
-      <h3>${r.name || 'Untitled event'}</h3>
-      <div class="meta">${[r.venue, r.city, r.country].filter(Boolean).join(', ')}</div>
-      <div class="date">${formatTrendingDate(r.date, r.time)}</div>
+  grid.innerHTML = events.map((ev, i) => `
+    <div class="card event-card${i===0?' active':''}" data-id="${i}">
+      <div class="genre">${ev.genre || 'Live'}</div>
+      <h3>${ev.artist}</h3>
+      <div class="meta">${ev.venue}, ${ev.city}, ${ev.country}</div>
+      <div class="date">${ev.date}</div>
       <div class="card-foot">
-        <span class="from">${r.lowestPrice != null ? `from <b>$${Number(r.lowestPrice).toFixed(0)}</b>` : ''}</span>
+        <span class="from">from <b>${ev.ticket}</b></span>
         <div class="card-actions">
-          <span class="cta">Compare →</span>
+          <a href="${ev.sourceUrl || '#'}" target="_blank" rel="noopener" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">Compare →</a>
+          <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(${i},'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
         </div>
       </div>
-    </a>`).join('');
+    </div>`).join('');
 }
 
+// Fetches real trending events and, if a full set of genuinely usable
+// results comes back, REPLACES the EVENTS array's contents (mutated in
+// place with length=0+push, not reassigned, since fetchTickets/
+// fetchHotels/selectEvent all close over this same array reference) and
+// re-renders the cards. Returns true if it did this, false if it left
+// the static fictional fallback untouched (demo mode, too few usable
+// results, or a request failure) — the caller uses this to decide
+// whether the initial panel refresh below needs one.
 async function loadTrendingConcerts(){
   try{
     const res = await fetch('/api/trending');
-    if(!res.ok) return; // fail silently — static fallback cards stay exactly as they are
+    if(!res.ok) return false;
     const data = await res.json();
-    if(data.demoMode || data.results.length === 0) return; // same: no visible change from today
-    renderTrendingCards(data.results);
+    if(data.demoMode || data.results.length === 0) return false;
+
+    const mapped = data.results.map((r) => ({
+      artist: r.name,
+      genre: r.genre,
+      venue: r.venue,
+      city: r.city,
+      country: r.country,
+      date: formatTrendingDate(r.date, r.time),
+      isoDate: r.date,
+      ticket: r.lowestPrice != null ? `$${Math.round(r.lowestPrice)}` : '$0',
+      lat: r.lat,
+      lng: r.lng,
+      sourceUrl: r.url,
+    })).filter((ev) => ev.lat != null && ev.lng != null); // hotel search needs real coordinates — drop anything missing them rather than silently break the map
+
+    if(mapped.length === 0) return false;
+
+    EVENTS.length = 0;
+    mapped.forEach((ev, i) => EVENTS.push({ ...ev, id: i }));
+    renderTrendingEventCards(EVENTS);
+    return true;
   } catch(err){
-    console.error(err); // static fallback cards remain untouched either way
+    console.error(err);
+    return false;
   }
 }
-
-window.addEventListener('load', loadTrendingConcerts);
 
 const EVENTS = [
   { id:0, artist:'Rosa Calder',               venue:'Pier 2',           city:'Bremen',       country:'Germany',        date:'Thu, 13 Aug 2026 · 20:00', isoDate:'2026-08-13', ticket:'$38', lat:53.0793, lng:8.8017  },
@@ -801,7 +834,17 @@ document.querySelectorAll('.rpill').forEach(btn=>{
 });
 
 /* ---- Auto-init first event ---- */
-window.addEventListener('load', ()=> selectEvent(0));
+// Sequenced deliberately: wait for the trending swap to fully finish
+// (whether it replaced EVENTS with real data or left the static fallback
+// untouched) before selectEvent(0) reads EVENTS[0] — calling both
+// independently on 'load' would race, since selectEvent(0) reads EVENTS
+// synchronously the instant it's called, potentially before an in-flight
+// trending fetch has replaced its contents.
+async function initHomepageEvents(){
+  await loadTrendingConcerts();
+  selectEvent(0);
+}
+window.addEventListener('load', initHomepageEvents);
 </script>
 <script src="js/cookie-banner.js" defer></script>
 <script src="js/search-autocomplete.js" defer></script>
