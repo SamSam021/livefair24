@@ -515,6 +515,12 @@ async function runTests() {
     assert.ok(trendingSrc.includes('cand.name'), 'verification must re-query using the actual candidate name, not the bare country query again');
   });
 
+  await test('Static fallback\'s initial "Compare live prices" panel content matches the active card (regression: showed Nova Wren while Rosa Calder card was marked active, causing a visible wrong-data flash before JS corrected it on load)', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('id="ticketEpTitle">Rosa Calder<'), 'ticket panel initial content must match whichever card has the "active" class');
+    assert.ok(res.body.includes('id="epTitle">Hotels near Rosa Calder'), 'hotel panel initial content must also match — this one was already correct, confirming only the ticket panel had drifted');
+  });
+
   await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
     const res = await get('/api/trending');
     assert.strictEqual(res.status, 200);
