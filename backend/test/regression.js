@@ -400,6 +400,18 @@ async function runTests() {
       'click handlers must only attach to real buttons, not disabled date spans');
   });
 
+  await test('Calendar picker does not close itself when selecting a date range (composedPath fix)', async () => {
+    const res = await get('/js/search-date-range.js');
+    assert.strictEqual(res.status, 200);
+    // The outside-click-closes-panel listener must use composedPath(),
+    // not root.contains(e.target) — the latter breaks because
+    // handleDayClick() re-renders (and thus detaches) the just-clicked
+    // button before this listener runs, making every date click look like
+    // a click "outside" the panel and closing it prematurely.
+    assert.ok(res.body.includes('e.composedPath'), 'must use composedPath() for the outside-click check');
+    assert.ok(!res.body.includes('if (!root.contains(e.target))'), 'must not use the exact target-based containment check that caused this bug (comments explaining the fix are fine)');
+  });
+
   await test('GET /api/search genuinely filters by city, not just accepting the param decoratively', async () => {
     const res = await get('/api/search?q=Coldplay&city=Berlin');
     assert.strictEqual(res.status, 200);
