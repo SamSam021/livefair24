@@ -565,7 +565,7 @@ function renderTrendingEventCards(events){
       <div class="meta">${ev.venue}, ${ev.city}, ${ev.country}</div>
       <div class="date">${ev.date}</div>
       <div class="card-foot">
-        <span class="from">from <b>${ev.ticket}</b></span>
+        <span class="from">${ev.ticket === 'TBA' ? '<span style="color:var(--ink-faint);">Price TBA</span>' : `from <b>${ev.ticket}</b>`}</span>
         <div class="card-actions">
           <a href="${ev.sourceUrl || '#'}" target="_blank" rel="noopener" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">Compare →</a>
           <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(${i},'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
@@ -597,7 +597,7 @@ async function loadTrendingConcerts(){
       country: r.country,
       date: formatTrendingDate(r.date, r.time),
       isoDate: r.date,
-      ticket: r.lowestPrice != null ? `$${Math.round(r.lowestPrice)}` : '$0',
+      ticket: r.lowestPrice != null ? `$${Math.round(r.lowestPrice)}` : 'TBA',
       lat: r.lat,
       lng: r.lng,
       sourceUrl: r.url,
