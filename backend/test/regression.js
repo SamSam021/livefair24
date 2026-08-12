@@ -565,6 +565,12 @@ async function runTests() {
     assert.ok(trendingSrc.includes('discoveredDateSample'), 'must surface raw date/time values before filtering, to distinguish "no date" from "date parsed wrong" from "genuinely in the past"');
   });
 
+  await test('Trending discovery explicitly requests events from right now onward (regression: real evidence showed 2025-dated events being returned when "now" was August 2026 — sort=date,asc alone doesn\'t exclude past events, only an explicit startDateTime does)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('dateFrom: nowIso'), 'discovery must explicitly pass the current moment as dateFrom, not rely on sort order alone to exclude past events');
+    assert.ok(trendingSrc.includes("new Date().toISOString()"), 'must compute the current moment fresh at request time, not a hardcoded or stale date');
+  });
+
   await test('Ticketmaster declares which countries support pricing (US, CA, AU, NZ, MX per their own documentation) and a fallback country, using a real API interface rather than a hardcoded rule', async () => {
     const tm = require('../providers/tickets/ticketmaster.js');
     assert.deepStrictEqual(tm.pricingSupportedCountries, ['US', 'CA', 'AU', 'NZ', 'MX']);

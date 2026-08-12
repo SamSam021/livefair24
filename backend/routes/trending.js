@@ -207,10 +207,17 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // keyword, country-only) reliably comes back with priceRanges missing
   // on every result, regardless of sort order — so this step exists
   // purely to find out WHAT'S happening, not to get final pricing from.
+  // Real evidence (a debug trace showing 2025-dated events while "now"
+  // is August 2026) confirmed the query never told Ticketmaster "only
+  // from today onward" — sort=date,asc alone just starts from whatever's
+  // earliest in their whole database, past events included. Explicit
+  // startDateTime fixes this at the query level, not just relying on the
+  // client-side isUpcoming() filter to clean up afterward.
+  const nowIso = new Date().toISOString().split('.')[0] + 'Z';
   const discoverySettled = await Promise.allSettled(
     providers.map((p) =>
       typeof p.searchEvents === 'function'
-        ? p.searchEvents({ query: '', city: '', countryCode, limit: 40 }, env)
+        ? p.searchEvents({ query: '', city: '', countryCode, limit: 40, dateFrom: nowIso }, env)
         : Promise.resolve([])
     )
   );
