@@ -104,8 +104,36 @@
     <h1>Live happens once.<br>Don't miss it.</h1>
     <p>Same seat. Different price. Find the best deal. Compare ticket prices from 5+ sellers, find the cheapest hotel near the venue, and see your complete trip cost — all in one search.</p>
 
-    <form class="search-form" action="/search/" method="get" role="search" aria-label="Search concerts">
-      <input class="search-input" type="search" name="q" placeholder="Artist, event or city — e.g. Coldplay Berlin" autocomplete="off" aria-label="Search for a concert">
+    <form class="search-form search-form-segmented" action="/search/" method="get" role="search" aria-label="Search concerts">
+      <div class="search-segment search-segment-location">
+        <label class="search-segment-label" for="searchLocation">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          Location
+        </label>
+        <input type="text" id="searchLocation" name="city" class="search-segment-input" placeholder="City or Zip Code" autocomplete="off">
+      </div>
+      <div class="search-segment search-segment-dates">
+        <label class="search-segment-label" for="searchDatePreset">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+          Dates
+        </label>
+        <select id="searchDatePreset" class="search-segment-select">
+          <option value="all">All Dates</option>
+          <option value="today">Today</option>
+          <option value="weekend">This Weekend</option>
+          <option value="month">This Month</option>
+          <option value="3months">Next 3 Months</option>
+        </select>
+        <input type="hidden" name="dateFrom" id="searchDateFrom">
+        <input type="hidden" name="dateTo" id="searchDateTo">
+      </div>
+      <div class="search-segment search-segment-query">
+        <label class="search-segment-label" for="searchQueryInput">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+          Search
+        </label>
+        <input class="search-input" id="searchQueryInput" type="search" name="q" placeholder="Artist, event or city — e.g. Coldplay Berlin" autocomplete="off" aria-label="Search for a concert">
+      </div>
       <button class="search-btn" type="submit">Search →</button>
     </form>
 
@@ -469,6 +497,55 @@
 </footer>
 
 <script>
+/* ============================================================
+   Hero search bar — Location + Dates + Search. Dates uses a preset
+   dropdown (All Dates / Today / This Weekend / This Month / Next 3
+   Months) that gets converted to real ISO dateFrom/dateTo values and
+   submitted as hidden fields alongside the visible fields — this is
+   what lets /api/search do genuine date filtering, not just decorative
+   UI.
+   ============================================================ */
+
+function computeDateRange(preset){
+  function toISO(d){ return d.toISOString().split('.')[0] + 'Z'; }
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if(preset === 'today'){
+    const end = new Date(startOfToday); end.setHours(23,59,59);
+    return { from: toISO(startOfToday), to: toISO(end) };
+  }
+  if(preset === 'weekend'){
+    const day = startOfToday.getDay(); // 0=Sun ... 6=Sat
+    const daysUntilSat = (6 - day + 7) % 7;
+    const sat = new Date(startOfToday); sat.setDate(sat.getDate() + daysUntilSat);
+    const sun = new Date(sat); sun.setDate(sun.getDate() + 1); sun.setHours(23,59,59);
+    return { from: toISO(sat), to: toISO(sun) };
+  }
+  if(preset === 'month'){
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    return { from: toISO(startOfToday), to: toISO(end) };
+  }
+  if(preset === '3months'){
+    const end = new Date(startOfToday); end.setDate(end.getDate() + 90); end.setHours(23,59,59);
+    return { from: toISO(startOfToday), to: toISO(end) };
+  }
+  return { from: '', to: '' }; // 'all' — no date filter
+}
+
+(function(){
+  const presetSelect = document.getElementById('searchDatePreset');
+  const fromInput = document.getElementById('searchDateFrom');
+  const toInput = document.getElementById('searchDateTo');
+  if(!presetSelect || !fromInput || !toInput) return;
+
+  presetSelect.addEventListener('change', function(){
+    const range = computeDateRange(this.value);
+    fromInput.value = range.from;
+    toInput.value = range.to;
+  });
+})();
+
 /* ============================================================
    Homepage hotel panel — event selection + Leaflet map + hotel
    list with price/rating filters. All hotel data is mock/demo.
