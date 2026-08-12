@@ -311,6 +311,44 @@ async function runTests() {
     assert.ok(res.body.includes('>Upcoming matches<'), 'sports section must have its own clear heading');
   });
 
+  await test('GET /api/search aggregates and sorts results by price', async () => {
+    const res = await get('/api/search?q=Coldplay');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json.query, 'Coldplay');
+    assert.ok(Array.isArray(res.json.results));
+    assert.ok(res.json.results.length > 0, 'demo fallback must always return something');
+    for (let i = 1; i < res.json.results.length; i++) {
+      const prev = res.json.results[i - 1].lowestPrice;
+      const curr = res.json.results[i].lowestPrice;
+      if (prev != null && curr != null) {
+        assert.ok(prev <= curr, 'results must be sorted by price ascending');
+      }
+    }
+  });
+
+  await test('GET /api/search with an empty query returns cleanly, not an error', async () => {
+    const res = await get('/api/search');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json.count, 0);
+  });
+
+  await test('The real /search/ page exists and works — the homepage search bar\'s target', async () => {
+    const home = await get('/');
+    assert.ok(home.body.includes('action="/search/"'), 'homepage search form must point to the real search page');
+    const searchPage = await get('/search/');
+    assert.strictEqual(searchPage.status, 200);
+    const oldBrokenPath = await get('/search');
+    assert.strictEqual(oldBrokenPath.status, 404, 'confirms the bare /search path genuinely never worked, motivating this fix');
+  });
+
+  await test('Every page\'s "Search concerts" nav button points to the real search page', async () => {
+    const pagesToCheck = ['/', '/artists/nova-wren.html', '/venues/waldbuhne-berlin.html', '/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html'];
+    for (const page of pagesToCheck) {
+      const res = await get(page);
+      assert.ok(res.body.includes('href="/search/" class="nav-cta"'), `${page} nav-cta must point to /search/`);
+    }
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {

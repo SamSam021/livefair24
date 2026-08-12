@@ -72,4 +72,38 @@ module.exports = {
       return [];
     }
   },
+
+  // Used by /api/search — same purpose as ticketmaster.js's searchEvents:
+  // find MULTIPLE matching events, one result per event, not per seller.
+  // NOTE: unlike the Ticketmaster version, this hasn't been verified
+  // against a real SeatGeek key/response yet — same caveat as search()
+  // above. Confirm the field names below against a live response before
+  // relying on it.
+  async searchEvents(queryText, env) {
+    const clientId = env.SEATGEEK_CLIENT_ID;
+    const q = encodeURIComponent(queryText || '');
+    const url = `https://api.seatgeek.com/2/events?client_id=${clientId}&q=${q}&per_page=10`;
+
+    try {
+      const data = await httpGet(url);
+      const events = data.events || [];
+      return events.map((ev) => ({
+        source: 'seatgeek',
+        sourceLabel: 'SeatGeek',
+        name: ev.title || ev.short_title || null,
+        genre: (ev.type || null),
+        venue: ev.venue ? ev.venue.name : null,
+        city: ev.venue ? ev.venue.city : null,
+        country: ev.venue ? ev.venue.country : null,
+        date: ev.datetime_local ? ev.datetime_local.slice(0, 10) : null,
+        time: ev.datetime_local ? ev.datetime_local.slice(11, 19) : null,
+        lowestPrice: ev.stats ? ev.stats.lowest_price : null,
+        currency: 'USD',
+        url: ev.url || '#',
+      }));
+    } catch (err) {
+      console.warn('[seatgeek provider] searchEvents', err.message);
+      return [];
+    }
+  },
 };

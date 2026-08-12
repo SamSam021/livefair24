@@ -17,6 +17,7 @@ const { handleHotels } = require('./routes/hotels');
 const watcherRoutes = require('./routes/watchers');
 const eventRoutes = require('./routes/events');
 const sportsRoutes = require('./routes/sports');
+const searchRoutes = require('./routes/search');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -172,6 +173,13 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/health') {
       return sendJSON(res, 200, { ok: true });
+    }
+    if (pathname === '/api/search' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await searchRoutes.searchEvents(query.q, registry.getMergedEnv()));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
     }
     if (pathname === '/api/events' && req.method === 'GET') {
       try {

@@ -71,4 +71,41 @@ module.exports = {
       };
     });
   },
+
+  // Fallback search-by-keyword when no real provider is configured (or as
+  // a supplement) — generates a few plausible, clearly-labeled demo events
+  // so /api/search always has something to show, deterministic per query
+  // so the same search doesn't jump around on every request.
+  async searchEvents(queryText) {
+    const q = (queryText || 'event').trim() || 'event';
+    const seed = q.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    const cities = [
+      { city: 'Berlin', country: 'Germany' },
+      { city: 'London', country: 'United Kingdom' },
+      { city: 'Chicago', country: 'United States' },
+    ];
+    const venues = ['Arena Hall', 'The Grand Theatre', 'Riverside Pavilion'];
+
+    return [0, 1, 2].map((i) => {
+      const jitter = seededJitter(seed + i * 13);
+      const place = cities[(seed + i) % cities.length];
+      const daysOut = 14 + Math.round(jitter * 60) + i * 9;
+      const date = new Date(Date.now() + daysOut * 24 * 60 * 60 * 1000);
+      return {
+        source: 'demo',
+        sourceLabel: 'Demo',
+        name: `${q} (demo)`,
+        genre: null,
+        venue: venues[(seed + i) % venues.length],
+        city: place.city,
+        country: place.country,
+        date: date.toISOString().slice(0, 10),
+        time: '19:30:00',
+        lowestPrice: Math.round((35 + jitter * 90) * 100) / 100,
+        currency: 'USD',
+        url: '#',
+        demo: true,
+      };
+    });
+  },
 };
