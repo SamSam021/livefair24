@@ -132,6 +132,13 @@ module.exports = {
           // Packages") of the same act down to one entry. Confirmed this
           // field exists in the real response captured earlier.
           attractionId: attraction ? attraction.id : null,
+          // Ticketmaster's own event ID — the actual unique identifier
+          // for this specific occurrence (this artist, this date, this
+          // venue), distinct from attractionId which identifies the
+          // artist across all their dates. Stored so the selected event
+          // can be precisely identified later, per the requirement that
+          // ticket/hotel lookups target the exact correct event.
+          eventId: ev.id || null,
           genre: genre ? genre.name : null,
           venue: venue ? venue.name : null,
           city: venue && venue.city ? venue.city.name : null,

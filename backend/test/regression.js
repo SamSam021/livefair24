@@ -566,6 +566,41 @@ async function runTests() {
       'the dynamically-rendered trending card template must have the same whole-card click handler');
   });
 
+  await test('The old redundant querySelectorAll click listener is removed, not double-firing alongside the new inline onclick handlers', async () => {
+    const res = await get('/');
+    assert.ok(!res.body.includes("selectEvent(parseInt(card.dataset.id))"),
+      'the old one-time-attachment listener (which only ever worked for the 6 static cards present at parse time, never for dynamically-injected trending cards) must be removed now that inline onclick handles both consistently');
+  });
+
+  await test('Trending selection prefers artist diversity but tops up with repeat-artist events rather than showing fewer cards or none at all', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('selectDiverseRandom'), 'must use the diversity-preferring selection function');
+    assert.ok(trendingSrc.includes('if (selected.length < targetCount)'), 'must top up with additional events from already-used artists when the pool lacks enough diversity, rather than returning fewer cards');
+  });
+
+  await test('Trending selection is randomized, not deterministically the same 6 events every time', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('Math.random()'), 'selection must include real randomization, not just a fixed sort order');
+  });
+
+  await test('Trending only considers genuinely upcoming events — explicit date/time check, not an assumption about provider default behavior', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('isUpcoming') && trendingSrc.includes('Date.now()'), 'must explicitly filter for events at or after the current moment');
+  });
+
+  await test('Real Ticketmaster event/attraction IDs are carried through to the selected event, for correct identification', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('ticketmasterEventId: r.eventId'), 'the real Ticketmaster event ID must be preserved on the selected event object');
+    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
+    assert.ok(tmSrc.includes('eventId: ev.id'), 'the Ticketmaster adapter must actually extract the real event ID, not just the attraction ID');
+  });
+
+  await test('Hotels Near shows a distinct "No hotels available" message when the API genuinely returns nothing, separate from the existing "no hotels match your filters" message', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('No hotels available.'), 'must have an honest, distinct empty state for genuinely zero API results');
+    assert.ok(res.body.includes('No hotels match these filters'), 'the existing filter-exclusion message must still exist, unchanged, for when hotels exist but the visitor\'s filters exclude them all');
+    assert.ok(res.body.includes('if(hotels.length===0)'), 'the two empty states must be distinguished by checking the raw unfiltered count, not just the filtered count');
+  });
 
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
