@@ -22,9 +22,6 @@
 .event-panel-header .ep-price .lbl{ font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.07em; font-family:'JetBrains Mono',monospace; }
 .event-panel-header .ep-price .amt{ font-family:'Sora',sans-serif; font-weight:800; font-size:32px; color:var(--gold); line-height:1; }
 
-.hotel-filters{ background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:18px; margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-@media(max-width:540px){ .hotel-filters{ grid-template-columns:1fr; } }
-
 /* ---- Ticket seller comparison cards (row layout on wider screens, stacked on mobile) ---- */
 .ticket-panel-intro{ margin-bottom:20px; }
 .ticket-panel-intro h2{ font-family:'Sora',sans-serif; font-weight:800; font-size:26px; }
@@ -68,15 +65,6 @@
   .seller-right{ text-align:right; display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; min-width:190px; }
   .seller-cta{ width:auto; align-self:flex-end; padding:12px 24px; }
 }
-.hf-label{ font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); margin-bottom:8px; display:block; }
-.range-row{ display:flex; align-items:center; gap:12px; }
-.range-row input[type=range]{ flex:1; appearance:none; height:4px; border-radius:2px; background:linear-gradient(90deg,var(--blue),#7fa8ff); outline:none; }
-.range-row input[type=range]::-webkit-slider-thumb{ appearance:none; width:17px; height:17px; border-radius:50%; background:#fff; border:3px solid var(--blue); cursor:pointer; box-shadow:0 2px 6px rgba(11,95,255,.3); }
-.range-val{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--blue-deep); white-space:nowrap; min-width:60px; text-align:right; }
-.rating-pills{ display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
-.rpill{ font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; padding:10px 14px; min-height:38px; display:inline-flex; align-items:center; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink-dim); cursor:pointer; transition:all .15s; }
-.rpill:hover{ border-color:#b9cdfd; color:var(--ink); }
-.rpill.active{ background:var(--blue); color:#fff; border-color:var(--blue); }
 
 .hotel-right{ display:flex; flex-direction:column; }
 .hotel-count-bar{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-faint); margin-bottom:10px; }
@@ -653,7 +641,10 @@ function renderHotelList(hotels){
         <span class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km from venue':'Distance n/a'}</span>
         <span class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span class="hrev">${h.reviews!=null?`(${h.reviews.toLocaleString()})`:''}</span>`:''}</span>
       </div>
-      <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'Price n/a'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'Price n/a'}</div>
+        <a href="${h.url||'#'}" class="hbook" target="_blank" rel="noopener" onclick="event.stopPropagation()">Book →</a>
+      </div>
     </div>`).join('');
 
   document.querySelectorAll('#hotelScroll .hcard').forEach(card=>{

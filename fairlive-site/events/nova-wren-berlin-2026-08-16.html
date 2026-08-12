@@ -339,12 +339,31 @@
     <div class="section-header">
       <div>
         <h2>Hotels near Waldbühne, Berlin</h2>
-        <p id="hotelSubtext">16 hotels within 6 km of the venue · sorted by price</p>
+        <p id="hotelSubtext">Loading hotels…</p>
       </div>
       <span class="freshness fresh" id="hotelFreshness">● Updated 6 min ago</span>
     </div>
 
-    <div class="panel-layout">
+    <div class="hotel-filters">
+      <div>
+        <label class="hf-label">Max price / night</label>
+        <div class="range-row">
+          <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
+          <span class="range-val" id="hpVal">$500+</span>
+        </div>
+      </div>
+      <div>
+        <label class="hf-label">Min rating</label>
+        <div class="rating-pills">
+          <button class="rpill active" data-r="0">Any</button>
+          <button class="rpill" data-r="3.5">3.5+</button>
+          <button class="rpill" data-r="4">4.0+</button>
+          <button class="rpill" data-r="4.5">4.5+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-layout" style="margin-top:20px;">
       <div id="eventHotelMap" class="hotel-map-el"></div>
 
       <div class="table-scroll hotel-scroll-wrap" style="background:var(--surface);border:1px solid var(--line);border-radius:16px;">
@@ -626,6 +645,18 @@ const EVENT_ISO_DATE = '2026-08-16';
 const EVENT_ARTIST = 'Nova Wren';
 const EVENT_BASE_PRICE = 66;
 
+let allHotels = [];
+let eventMaxPrice = 500;
+let eventMinRating = 0;
+let eventMap = null, eventMapLayer = null;
+
+function filteredEventHotels(){
+  return allHotels.filter(h =>
+    h.pricePerNight <= (eventMaxPrice>=500?99999:eventMaxPrice) &&
+    (h.rating==null || h.rating >= eventMinRating)
+  );
+}
+
 function buildVenueIcon(){
   return L.divIcon({
     className:'',
@@ -634,13 +665,17 @@ function buildVenueIcon(){
   });
 }
 
-function renderEventHotelTable(hotels){
+function renderEventHotelTable(){
+  const filtered = filteredEventHotels();
   const tbody = document.getElementById('hotelTableBody');
-  if(hotels.length === 0){
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-faint);">No hotels found right now.</td></tr>';
+  document.getElementById('hotelSubtext').textContent =
+    `${filtered.length} of ${allHotels.length} hotels near the venue · sorted by distance`;
+
+  if(filtered.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-faint);">No hotels match these filters.<br>Try raising the price or lowering the rating.</td></tr>';
     return;
   }
-  tbody.innerHTML = hotels.map((h,i) => `
+  tbody.innerHTML = filtered.map((h,i) => `
     <tr>
       <td><div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div></td>
       <td class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km':'—'}</td>
@@ -650,26 +685,33 @@ function renderEventHotelTable(hotels){
     </tr>`).join('');
 }
 
-function renderEventHotelMap(hotels){
-  const map = L.map('eventHotelMap', { scrollWheelZoom:false }).setView([EVENT_VENUE.lat, EVENT_VENUE.lng], 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19
-  }).addTo(map);
+function renderEventHotelMap(){
+  const filtered = filteredEventHotels();
 
-  L.marker([EVENT_VENUE.lat, EVENT_VENUE.lng], { icon: buildVenueIcon() }).addTo(map)
+  if(!eventMap){
+    eventMap = L.map('eventHotelMap', { scrollWheelZoom:false }).setView([EVENT_VENUE.lat, EVENT_VENUE.lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19
+    }).addTo(eventMap);
+    eventMapLayer = L.layerGroup().addTo(eventMap);
+  }
+
+  eventMapLayer.clearLayers();
+
+  L.marker([EVENT_VENUE.lat, EVENT_VENUE.lng], { icon: buildVenueIcon() }).addTo(eventMapLayer)
     .bindPopup(`<b>${EVENT_VENUE.name}</b><br>${EVENT_VENUE.city}`);
 
-  hotels.forEach(h => {
+  filtered.forEach(h => {
     if(h.lat==null || h.lng==null || h.pricePerNight==null) return;
     const icon = L.divIcon({
       className:'', html:`<div class="price-pin">$${h.pricePerNight}</div>`,
       iconSize:[48,26], iconAnchor:[24,26]
     });
-    L.marker([h.lat, h.lng], { icon }).addTo(map)
+    L.marker([h.lat, h.lng], { icon }).addTo(eventMapLayer)
       .bindPopup(`<b>${h.name}</b><br>$${h.pricePerNight}/night${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}`);
   });
 
-  setTimeout(() => map.invalidateSize(), 200);
+  setTimeout(() => eventMap.invalidateSize(), 200);
 }
 
 async function fetchEventHotels(){
@@ -780,15 +822,13 @@ function updateTripCalculator(hotels, tickets){
 }
 
 async function loadEventData(){
-  let hotels = [], tickets = [];
+  let tickets = [];
 
   try{
     const hotelData = await fetchEventHotels();
-    hotels = hotelData.results || [];
-    document.getElementById('hotelSubtext').textContent =
-      `${hotels.length} hotels near the venue · sorted by distance${hotelData.demoMode ? ' · demo data' : ''}`;
-    renderEventHotelTable(hotels);
-    if(typeof L !== 'undefined') renderEventHotelMap(hotels);
+    allHotels = hotelData.results || [];
+    renderEventHotelTable();
+    if(typeof L !== 'undefined') renderEventHotelMap();
   } catch(err){
     console.error(err);
     document.getElementById('hotelTableBody').innerHTML =
@@ -806,8 +846,27 @@ async function loadEventData(){
       '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--red);">Could not load prices right now.</td></tr>';
   }
 
-  updateTripCalculator(hotels, tickets);
+  updateTripCalculator(allHotels, tickets);
 }
+
+const hpSlider = document.getElementById('hpSlider');
+hpSlider.addEventListener('input', () => {
+  const v = parseInt(hpSlider.value);
+  eventMaxPrice = v;
+  document.getElementById('hpVal').textContent = v>=500 ? '$500+' : '$'+v;
+  renderEventHotelTable();
+  if(typeof L !== 'undefined' && eventMap) renderEventHotelMap();
+});
+
+document.querySelectorAll('.rpill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.rpill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    eventMinRating = parseFloat(btn.dataset.r);
+    renderEventHotelTable();
+    if(typeof L !== 'undefined' && eventMap) renderEventHotelMap();
+  });
+});
 
 window.addEventListener('load', loadEventData);
 </script>

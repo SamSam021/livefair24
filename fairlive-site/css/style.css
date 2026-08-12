@@ -280,3 +280,18 @@ img{max-width:100%;display:block;}
 @media(max-width:860px){ .panel-layout{ grid-template-columns:1fr; } }
 .hotel-map-el{ height:380px; border-radius:14px; overflow:hidden; border:1px solid var(--line); }
 .price-pin{ background:#fff; border:1.5px solid var(--gold); color:var(--ink); font-family:'Sora',sans-serif; font-weight:800; font-size:12px; padding:3px 8px; border-radius:999px; white-space:nowrap; box-shadow:0 3px 8px rgba(16,24,40,.25); }
+
+/* ---- Shared hotel filters — used by homepage and event detail pages ---- */
+.hotel-filters{ background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:18px; margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media(max-width:540px){ .hotel-filters{ grid-template-columns:1fr; } }
+.hf-label{ font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); margin-bottom:8px; display:block; }
+.range-row{ display:flex; align-items:center; gap:12px; }
+.range-row input[type=range]{ flex:1; appearance:none; height:4px; border-radius:2px; background:linear-gradient(90deg,var(--blue),#7fa8ff); outline:none; }
+.range-row input[type=range]::-webkit-slider-thumb{ appearance:none; width:17px; height:17px; border-radius:50%; background:#fff; border:3px solid var(--blue); cursor:pointer; box-shadow:0 2px 6px rgba(11,95,255,.3); }
+.range-val{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--blue-deep); white-space:nowrap; min-width:60px; text-align:right; }
+.rating-pills{ display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
+.rpill{ font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; padding:10px 14px; min-height:38px; display:inline-flex; align-items:center; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink-dim); cursor:pointer; transition:all .15s; }
+.rpill:hover{ border-color:#b9cdfd; color:var(--ink); }
+.rpill.active{ background:var(--blue); color:#fff; border-color:var(--blue); }
+.hcard .hbook{ display:inline-flex; align-items:center; gap:5px; margin-top:8px; padding:9px 14px; border-radius:8px; background:var(--blue); color:#fff; font-weight:700; font-size:12.5px; min-height:36px; }
+.hcard .hbook:hover{ background:var(--blue-deep); }
