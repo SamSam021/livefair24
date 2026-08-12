@@ -296,6 +296,21 @@ async function runTests() {
     }
   });
 
+  await test('Sports nav link exists and the hub page it points to actually works', async () => {
+    const home = await get('/');
+    assert.ok(home.body.includes('sports/index.html">Sports<'), 'homepage nav must include a Sports link');
+    const hub = await get('/sports/index.html');
+    assert.strictEqual(hub.status, 200);
+    assert.ok(hub.body.includes('FC Bergkristall vs Rheingold United'), 'sports hub must list the real seeded match');
+  });
+
+  await test('Homepage has separate Upcoming concerts and Upcoming matches sections, not mixed', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('id="concerts"'), 'homepage must have a distinct concerts section');
+    assert.ok(res.body.includes('id="sports"'), 'homepage must have a distinct sports section');
+    assert.ok(res.body.includes('>Upcoming matches<'), 'sports section must have its own clear heading');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {
