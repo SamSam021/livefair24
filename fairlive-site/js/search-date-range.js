@@ -170,7 +170,17 @@
     });
 
     document.addEventListener('click', (e) => {
-      if (!root.contains(e.target)) closePanel();
+      // Using composedPath() instead of root.contains(e.target) matters
+      // here specifically: handleDayClick() synchronously replaces the
+      // calendar's innerHTML (to re-render the new selection) WHILE this
+      // click event is still bubbling up to document. By the time this
+      // listener runs, the clicked button has already been detached from
+      // the page, so root.contains(e.target) would incorrectly return
+      // false and close the panel on every single date click.
+      // composedPath() captures the event's route at dispatch time, before
+      // any of that DOM mutation happened, so it stays correct regardless.
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
+      if (!path.includes(root)) closePanel();
     });
 
     prevBtn.addEventListener('click', () => {
