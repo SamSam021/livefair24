@@ -349,6 +349,27 @@ async function runTests() {
     }
   });
 
+  await test('Search autocomplete script is wired into both the homepage and /search/ page', async () => {
+    const home = await get('/');
+    assert.ok(home.body.includes('search-autocomplete.js'), 'homepage must load the autocomplete script');
+    assert.ok(home.body.includes('class="search-input"'), 'homepage input must have the class the script looks for');
+
+    const searchPage = await get('/search/');
+    assert.ok(searchPage.body.includes('search-autocomplete.js'), 'search page must load the autocomplete script');
+    assert.ok(searchPage.body.includes('search-form') && searchPage.body.includes('search-input'),
+      'search page form/input must have the classes the shared script looks for');
+  });
+
+  await test('Autocomplete script does not call form.submit() as executable code (would bypass custom submit handlers)', async () => {
+    const res = await get('/js/search-autocomplete.js');
+    assert.strictEqual(res.status, 200);
+    // Checking for the executable call pattern specifically (not just the
+    // substring "form.submit()", which also appears in this file's own
+    // explanatory comment about why it's avoided).
+    assert.ok(!/[^/]form\.submit\(\);/.test(res.body), 'must not call form.submit() as a statement — dispatch a real submit event instead');
+    assert.ok(res.body.includes("form.dispatchEvent(new Event('submit'"), 'must dispatch a proper submit event');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {
