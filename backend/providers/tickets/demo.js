@@ -78,9 +78,10 @@ module.exports = {
   // show, deterministic per query so the same search doesn't jump around
   // on every request.
   async searchEvents(params) {
-    const q = (params.query || 'event').trim() || 'event';
+    const countryCode = (params.countryCode || '').trim();
+    const q = (params.query || (countryCode ? 'Trending concert' : 'event')).trim() || 'event';
     const cityFilter = (params.city || '').trim();
-    const seed = q.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    const seed = q.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) + countryCode.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0);
     const cities = cityFilter
       ? [{ city: cityFilter, country: '' }]
       : [

@@ -18,6 +18,7 @@ const watcherRoutes = require('./routes/watchers');
 const eventRoutes = require('./routes/events');
 const sportsRoutes = require('./routes/sports');
 const searchRoutes = require('./routes/search');
+const trendingRoutes = require('./routes/trending');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -67,6 +68,17 @@ function serveFile(res, rootDir, relativePath) {
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
     res.end(data);
   });
+}
+
+// Behind Railway's proxy, req.socket.remoteAddress is the proxy's own IP,
+// not the visitor's — the real client IP is in X-Forwarded-For (which can
+// be a comma-separated chain if there are multiple proxies; the first
+// entry is the original client). Falls back to the socket address for
+// local/direct testing where no proxy is involved.
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.socket.remoteAddress;
 }
 
 function serveStatic(req, res, pathname) {
@@ -177,6 +189,14 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/search' && req.method === 'GET') {
       try {
         return sendJSON(res, 200, await searchRoutes.searchEvents(query, registry.getMergedEnv()));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/trending' && req.method === 'GET') {
+      try {
+        const clientIp = getClientIp(req);
+        return sendJSON(res, 200, await trendingRoutes.getTrendingEvents(clientIp, registry.getMergedEnv()));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }

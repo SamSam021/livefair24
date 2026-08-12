@@ -84,6 +84,7 @@ module.exports = {
     const parts = [`client_id=${clientId}`, 'per_page=10'];
     if (params.query) parts.push(`q=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`venue.city=${encodeURIComponent(params.city)}`);
+    if (params.countryCode) parts.push(`venue.country=${encodeURIComponent(params.countryCode)}`);
     if (params.dateFrom) parts.push(`datetime_local.gte=${encodeURIComponent(params.dateFrom)}`);
     if (params.dateTo) parts.push(`datetime_local.lte=${encodeURIComponent(params.dateTo)}`);
     const url = `https://api.seatgeek.com/2/events?${parts.join('&')}`;

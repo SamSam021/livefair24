@@ -85,12 +85,20 @@ module.exports = {
   // Used by /api/search — find MULTIPLE matching events for a free-text
   // query, and/or a city, and/or a date range (each result is a distinct
   // event, not a competing seller for one event). This is the shape a real
-  // search feature needs.
+  // search feature needs. Also used by /api/trending with countryCode set
+  // and no keyword — "what's happening in this country" rather than "find
+  // this specific thing".
   async searchEvents(params, env) {
     const key = env.TICKETMASTER_API_KEY;
     const parts = [`apikey=${key}`, 'size=10'];
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
+    if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
+    // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
+    // exactly what signals that uses (likely some mix of popularity and
+    // date proximity per their docs), not independently confirmed against
+    // a real response. Falls back to date order if this isn't respected.
+    if (params.countryCode && !params.query) parts.push('sort=relevance,desc');
     // Ticketmaster expects startDateTime/endDateTime as full ISO 8601 with
     // a trailing Z (UTC) — e.g. 2026-09-01T00:00:00Z. UNVERIFIED: unlike
     // keyword/city (confirmed working against a real live call earlier),
@@ -116,6 +124,12 @@ module.exports = {
           venue: venue ? venue.name : null,
           city: venue && venue.city ? venue.city.name : null,
           country: venue && venue.country ? venue.country.name : null,
+          // Confirmed field names/shape (venue.location.latitude/longitude,
+          // as strings) against the real response captured earlier in this
+          // project — not a documented-but-untested guess like some of the
+          // other fields here.
+          lat: venue && venue.location ? parseFloat(venue.location.latitude) : null,
+          lng: venue && venue.location ? parseFloat(venue.location.longitude) : null,
           date: ev.dates && ev.dates.start ? ev.dates.start.localDate : null,
           time: ev.dates && ev.dates.start ? ev.dates.start.localTime : null,
           lowestPrice: range ? range.min : null,
