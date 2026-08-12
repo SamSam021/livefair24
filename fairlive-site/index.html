@@ -530,6 +530,58 @@
    list with price/rating filters. All hotel data is mock/demo.
    ============================================================ */
 
+/* ============================================================
+   Trending concerts by visitor country — replaces the static
+   "Upcoming concerts" cards with real events when a real ticket
+   provider (Ticketmaster) is configured and returns something for the
+   visitor's detected country. Falls back silently to the static
+   EVENTS-driven cards below (unchanged, still fully interactive) when
+   running in demo mode or no results come back — no error shown, no
+   visible difference from today's behavior in that case.
+   ============================================================ */
+
+function formatTrendingDate(dateStr, timeStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayLabel = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return timeStr ? `${dayLabel} · ${timeStr.slice(0,5)}` : dayLabel;
+}
+
+function renderTrendingCards(results){
+  const grid = document.getElementById('eventCardGrid');
+  if(!grid || results.length === 0) return;
+
+  grid.innerHTML = results.map((r) => `
+    <a href="/search/?q=${encodeURIComponent(r.name || '')}&city=${encodeURIComponent(r.city || '')}" class="card event-card" style="text-decoration:none;">
+      <div class="genre">${r.genre || 'Live'}</div>
+      <h3>${r.name || 'Untitled event'}</h3>
+      <div class="meta">${[r.venue, r.city, r.country].filter(Boolean).join(', ')}</div>
+      <div class="date">${formatTrendingDate(r.date, r.time)}</div>
+      <div class="card-foot">
+        <span class="from">${r.lowestPrice != null ? `from <b>$${Number(r.lowestPrice).toFixed(0)}</b>` : ''}</span>
+        <div class="card-actions">
+          <span class="cta">Compare →</span>
+        </div>
+      </div>
+    </a>`).join('');
+}
+
+async function loadTrendingConcerts(){
+  try{
+    const res = await fetch('/api/trending');
+    if(!res.ok) return; // fail silently — static fallback cards stay exactly as they are
+    const data = await res.json();
+    if(data.demoMode || data.results.length === 0) return; // same: no visible change from today
+    renderTrendingCards(data.results);
+  } catch(err){
+    console.error(err); // static fallback cards remain untouched either way
+  }
+}
+
+window.addEventListener('load', loadTrendingConcerts);
+
 const EVENTS = [
   { id:0, artist:'Rosa Calder',               venue:'Pier 2',           city:'Bremen',       country:'Germany',        date:'Thu, 13 Aug 2026 · 20:00', isoDate:'2026-08-13', ticket:'$38', lat:53.0793, lng:8.8017  },
   { id:1, artist:'Nova Wren',                  venue:'Waldbühne',        city:'Berlin',       country:'Germany',        date:'Sun, 16 Aug 2026 · 19:30', isoDate:'2026-08-16', ticket:'$66', lat:52.5200, lng:13.4050 },
