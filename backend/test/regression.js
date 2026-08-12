@@ -244,6 +244,17 @@ async function runTests() {
     assert.ok(res.json.error.includes('PostgreSQL is not configured'));
   });
 
+  await test('Homepage hotel cards have a Book button', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('hbook'), 'homepage hotel cards must have a Book button (class="hbook")');
+  });
+
+  await test('Event page hotel section has price/rating filters, matching the homepage', async () => {
+    const res = await get('/events/nova-wren-berlin-2026-08-16.html');
+    assert.ok(res.body.includes('id="hpSlider"'), 'event page must have the price filter slider');
+    assert.ok(res.body.includes('class="rpill'), 'event page must have rating filter pills');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {

@@ -117,3 +117,92 @@ CREATE INDEX IF NOT EXISTS idx_live_events_type ON live_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_live_events_start ON live_events(start_datetime);
 CREATE INDEX IF NOT EXISTS idx_live_events_venue ON live_events(venue_id);
 CREATE INDEX IF NOT EXISTS idx_live_events_artist ON live_events(artist_id);
+
+-- ============================================================
+-- Step 8: Sports (Section 6/7). Hierarchy: Sport -> League -> Season ->
+-- Match -> Team -> Venue -> Tickets -> Hotels.
+--
+-- Naming note: Section 6's hierarchy text names both "Season" and
+-- "Competition" as separate levels, but Section 7's exact field list only
+-- defines one table for this level ("Seasons") — Matches.competition_id
+-- is specified there with no separate Competitions table ever defined.
+-- Treating "seasons" as what Match.competition_id references, since
+-- that's the only table Section 7 actually specifies for this level.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS sports (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  -- Semantic identifier (e.g. 'football'), NOT an emoji or literal icon
+  -- markup — the frontend maps this to a proper SVG icon, per Section 40's
+  -- "no emoji" rule.
+  icon VARCHAR(50)
+);
+
+CREATE TABLE IF NOT EXISTS leagues (
+  id SERIAL PRIMARY KEY,
+  sport_id INTEGER NOT NULL REFERENCES sports(id),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  country_id INTEGER REFERENCES countries(id),
+  logo_url TEXT
+);
+
+CREATE TABLE IF NOT EXISTS seasons (
+  id SERIAL PRIMARY KEY,
+  league_id INTEGER NOT NULL REFERENCES leagues(id),
+  name VARCHAR(255) NOT NULL,  -- e.g. '2026/27'
+  start_date DATE,
+  end_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS teams (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  sport_id INTEGER NOT NULL REFERENCES sports(id),
+  league_id INTEGER REFERENCES leagues(id),
+  country_id INTEGER REFERENCES countries(id),
+  logo_url TEXT,
+  venue_id INTEGER REFERENCES venues(id)
+);
+
+CREATE TABLE IF NOT EXISTS matches (
+  id SERIAL PRIMARY KEY,
+  competition_id INTEGER REFERENCES seasons(id),  -- see naming note above
+  home_team_id INTEGER NOT NULL REFERENCES teams(id),
+  away_team_id INTEGER NOT NULL REFERENCES teams(id),
+  venue_id INTEGER REFERENCES venues(id),
+  start_datetime TIMESTAMPTZ NOT NULL,
+  end_datetime TIMESTAMPTZ,
+  status VARCHAR(30) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','live','finished','postponed','cancelled')),
+  slug VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_leagues_sport ON leagues(sport_id);
+CREATE INDEX IF NOT EXISTS idx_seasons_league ON seasons(league_id);
+CREATE INDEX IF NOT EXISTS idx_teams_sport ON teams(sport_id);
+CREATE INDEX IF NOT EXISTS idx_teams_league ON teams(league_id);
+CREATE INDEX IF NOT EXISTS idx_matches_competition ON matches(competition_id);
+CREATE INDEX IF NOT EXISTS idx_matches_home_team ON matches(home_team_id);
+CREATE INDEX IF NOT EXISTS idx_matches_away_team ON matches(away_team_id);
+CREATE INDEX IF NOT EXISTS idx_matches_start ON matches(start_datetime);
+
+-- Extend LiveEvent with the SPORT-type specialization FK that Step 7's
+-- schema comment deliberately deferred until Team/Match existed.
+ALTER TABLE live_events ADD COLUMN IF NOT EXISTS match_id INTEGER REFERENCES matches(id);
+
+-- Replace Step 7's CHECK constraint (CONCERT-only) with one that also
+-- validates SPORT/match_id — DROP + re-ADD since Postgres has no
+-- "ALTER CONSTRAINT" for changing a CHECK condition. Safe to re-run: DROP
+-- IF EXISTS is idempotent, and re-adding the same constraint each run is a
+-- no-op in effect.
+ALTER TABLE live_events DROP CONSTRAINT IF EXISTS live_events_type_consistency;
+ALTER TABLE live_events ADD CONSTRAINT live_events_type_consistency CHECK (
+  (event_type = 'CONCERT' AND artist_id IS NOT NULL AND match_id IS NULL) OR
+  (event_type = 'SPORT' AND match_id IS NOT NULL AND artist_id IS NULL) OR
+  (event_type NOT IN ('CONCERT','SPORT') AND artist_id IS NULL AND match_id IS NULL)
+);
+
+CREATE INDEX IF NOT EXISTS idx_live_events_match ON live_events(match_id);
