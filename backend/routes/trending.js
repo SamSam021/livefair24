@@ -110,14 +110,26 @@ function selectDiverseSoonest(events, targetCount) {
   return selected;
 }
 
-// Explicit, not assumed: only events at or after this moment are
-// eligible, regardless of what a provider's default sort/filtering
-// already does — removes any reliance on an assumption about default
-// behavior that could silently change.
+// Explicit, not assumed: only events at or after today are eligible,
+// regardless of what a provider's default sort/filtering already does.
+//
+// Deliberately compares by DATE ONLY, not date+time — confirmed via real
+// evidence that comparing full date+time against server "now" was
+// wrong: ev.time is the VENUE'S LOCAL time (e.g. a US evening show),
+// but this had no reliable way to know that venue's UTC offset, so it
+// was constructing a Date as if that time were already in the server's
+// own timezone. That silently rejected same-day events happening later
+// today whenever the mismatch pushed the comparison the wrong way —
+// confirmed by a debug trace showing 40 discovered events, ALL dated
+// today, ALL still rejected. Day-level comparison sidesteps the
+// mismatch entirely: it can misjudge "today" by at most a few hours
+// around midnight, never by the weeks/months a timezone bug at
+// date+time precision could cause. Genuinely past dates (yesterday,
+// last month, last year) are still reliably excluded either way.
 function isUpcoming(ev) {
   if (!ev.date) return false;
-  const eventDateTime = new Date(`${ev.date}T${ev.time || '00:00:00'}`);
-  return eventDateTime.getTime() >= Date.now();
+  const todayDateStr = new Date().toISOString().slice(0, 10);
+  return ev.date >= todayDateStr;
 }
 
 // No valid ticket price, no card — explicit product requirement, not a

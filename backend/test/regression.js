@@ -708,9 +708,11 @@ async function runTests() {
     assert.ok(trendingSrc.includes('Math.random()'), 'selection must include real randomization, not just a fixed sort order');
   });
 
-  await test('Trending only considers genuinely upcoming events — explicit date/time check, not an assumption about provider default behavior', async () => {
+  await test('Trending only considers genuinely upcoming events — day-level date comparison, not date+time (regression: date+time comparison misjudged same-day events due to a timezone mismatch between venue-local event times and server time, confirmed via real evidence of 40 today-dated events all incorrectly rejected)', async () => {
     const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('isUpcoming') && trendingSrc.includes('Date.now()'), 'must explicitly filter for events at or after the current moment');
+    assert.ok(trendingSrc.includes('function isUpcoming'), 'must have an explicit upcoming-events filter');
+    assert.ok(trendingSrc.includes("ev.date >= todayDateStr"), 'must compare by date only — comparing full date+time re-introduces the exact timezone bug this replaced');
+    assert.ok(!trendingSrc.includes('eventDateTime.getTime() >= Date.now()'), 'the old date+time comparison must be fully removed, not left alongside the fix');
   });
 
   await test('Real Ticketmaster event/attraction IDs are carried through to the selected event, for correct identification', async () => {
