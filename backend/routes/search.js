@@ -7,20 +7,29 @@
 // source later (another ticket API, or eventually sports data) means only
 // giving that provider its own searchEvents() method — this aggregation
 // logic doesn't change at all.
+//
+// Accepts a keyword (q), and/or a city, and/or a date range — at least one
+// must be present. This lets a visitor search "everything in Berlin this
+// weekend" with no artist keyword at all, not just "keyword only."
 
 const registry = require('../providers/registry');
 
-async function searchEvents(queryText, env) {
-  const trimmed = (queryText || '').trim();
-  if (!trimmed) {
-    return { query: '', demoMode: true, count: 0, results: [] };
+async function searchEvents(params, env) {
+  const query = (params.q || '').trim();
+  const city = (params.city || '').trim();
+  const dateFrom = params.dateFrom || null;
+  const dateTo = params.dateTo || null;
+
+  if (!query && !city && !dateFrom) {
+    return { query, city, dateFrom, dateTo, demoMode: true, count: 0, results: [] };
   }
 
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
 
+  const searchParams = { query, city, dateFrom, dateTo };
   const settled = await Promise.allSettled(
-    providers.map((p) => (typeof p.searchEvents === 'function' ? p.searchEvents(trimmed, env) : Promise.resolve([])))
+    providers.map((p) => (typeof p.searchEvents === 'function' ? p.searchEvents(searchParams, env) : Promise.resolve([])))
   );
 
   let results = [];
@@ -39,7 +48,10 @@ async function searchEvents(queryText, env) {
   });
 
   return {
-    query: trimmed,
+    query,
+    city,
+    dateFrom,
+    dateTo,
     demoMode,
     providersUsed: providers.map((p) => p.id),
     count: results.length,

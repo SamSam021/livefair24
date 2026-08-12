@@ -176,7 +176,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/search' && req.method === 'GET') {
       try {
-        return sendJSON(res, 200, await searchRoutes.searchEvents(query.q, registry.getMergedEnv()));
+        return sendJSON(res, 200, await searchRoutes.searchEvents(query, registry.getMergedEnv()));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }

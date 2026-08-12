@@ -370,6 +370,32 @@ async function runTests() {
     assert.ok(res.body.includes("form.dispatchEvent(new Event('submit'"), 'must dispatch a proper submit event');
   });
 
+  await test('Homepage has the segmented Location/Dates/Search bar with all fields present', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('name="city"'), 'must have a location field');
+    assert.ok(res.body.includes('name="dateFrom"') && res.body.includes('name="dateTo"'), 'must have hidden date-range fields');
+    assert.ok(res.body.includes('id="searchDatePreset"'), 'must have the date preset dropdown');
+  });
+
+  await test('GET /api/search genuinely filters by city, not just accepting the param decoratively', async () => {
+    const res = await get('/api/search?q=Coldplay&city=Berlin');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.json.results.length > 0);
+    assert.ok(res.json.results.every((r) => r.city === 'Berlin'), 'every result must actually be in the requested city');
+  });
+
+  await test('GET /api/search genuinely filters by date range, excluding results outside it', async () => {
+    const res = await get('/api/search?q=Coldplay&dateFrom=2020-01-01T00:00:00Z&dateTo=2020-01-02T00:00:00Z');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json.count, 0, 'a date range far in the past must exclude all demo results, proving the filter is real');
+  });
+
+  await test('GET /api/search works with city alone, no keyword required', async () => {
+    const res = await get('/api/search?city=Berlin');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.json.results.length > 0, 'a location-only search must still return results');
+  });
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   if (failed.length > 0) {

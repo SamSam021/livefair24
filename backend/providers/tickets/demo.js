@@ -72,25 +72,37 @@ module.exports = {
     });
   },
 
-  // Fallback search-by-keyword when no real provider is configured (or as
-  // a supplement) — generates a few plausible, clearly-labeled demo events
-  // so /api/search always has something to show, deterministic per query
-  // so the same search doesn't jump around on every request.
-  async searchEvents(queryText) {
-    const q = (queryText || 'event').trim() || 'event';
+  // Fallback search-by-keyword/city/date when no real provider is
+  // configured (or as a supplement) — generates a few plausible,
+  // clearly-labeled demo events so /api/search always has something to
+  // show, deterministic per query so the same search doesn't jump around
+  // on every request.
+  async searchEvents(params) {
+    const q = (params.query || 'event').trim() || 'event';
+    const cityFilter = (params.city || '').trim();
     const seed = q.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-    const cities = [
-      { city: 'Berlin', country: 'Germany' },
-      { city: 'London', country: 'United Kingdom' },
-      { city: 'Chicago', country: 'United States' },
-    ];
+    const cities = cityFilter
+      ? [{ city: cityFilter, country: '' }]
+      : [
+          { city: 'Berlin', country: 'Germany' },
+          { city: 'London', country: 'United Kingdom' },
+          { city: 'Chicago', country: 'United States' },
+        ];
     const venues = ['Arena Hall', 'The Grand Theatre', 'Riverside Pavilion'];
 
     return [0, 1, 2].map((i) => {
       const jitter = seededJitter(seed + i * 13);
-      const place = cities[(seed + i) % cities.length];
+      const place = cities[i % cities.length];
       const daysOut = 14 + Math.round(jitter * 60) + i * 9;
       const date = new Date(Date.now() + daysOut * 24 * 60 * 60 * 1000);
+      const isoDate = date.toISOString().slice(0, 10);
+
+      // Respect an explicit date range if one was given — demo results
+      // outside the requested window are dropped rather than shown as if
+      // they matched, same honesty standard as the real providers.
+      if (params.dateFrom && isoDate < params.dateFrom.slice(0, 10)) return null;
+      if (params.dateTo && isoDate > params.dateTo.slice(0, 10)) return null;
+
       return {
         source: 'demo',
         sourceLabel: 'Demo',
@@ -99,13 +111,13 @@ module.exports = {
         venue: venues[(seed + i) % venues.length],
         city: place.city,
         country: place.country,
-        date: date.toISOString().slice(0, 10),
+        date: isoDate,
         time: '19:30:00',
         lowestPrice: Math.round((35 + jitter * 90) * 100) / 100,
         currency: 'USD',
         url: '#',
         demo: true,
       };
-    });
+    }).filter(Boolean);
   },
 };

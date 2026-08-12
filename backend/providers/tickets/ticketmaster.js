@@ -83,12 +83,23 @@ module.exports = {
   },
 
   // Used by /api/search — find MULTIPLE matching events for a free-text
-  // query (each result is a distinct event, not a competing seller for one
-  // event). This is the shape a real search feature needs.
-  async searchEvents(queryText, env) {
+  // query, and/or a city, and/or a date range (each result is a distinct
+  // event, not a competing seller for one event). This is the shape a real
+  // search feature needs.
+  async searchEvents(params, env) {
     const key = env.TICKETMASTER_API_KEY;
-    const keyword = encodeURIComponent(queryText || '');
-    const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&keyword=${keyword}&size=10`;
+    const parts = [`apikey=${key}`, 'size=10'];
+    if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
+    if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
+    // Ticketmaster expects startDateTime/endDateTime as full ISO 8601 with
+    // a trailing Z (UTC) — e.g. 2026-09-01T00:00:00Z. UNVERIFIED: unlike
+    // keyword/city (confirmed working against a real live call earlier),
+    // these two params are from documented conventions only — I haven't
+    // actually tested them against Ticketmaster's real system. Worth
+    // confirming with a real date-filtered search before relying on it.
+    if (params.dateFrom) parts.push(`startDateTime=${encodeURIComponent(params.dateFrom)}`);
+    if (params.dateTo) parts.push(`endDateTime=${encodeURIComponent(params.dateTo)}`);
+    const url = `https://app.ticketmaster.com/discovery/v2/events.json?${parts.join('&')}`;
 
     try {
       const data = await httpGet(url);

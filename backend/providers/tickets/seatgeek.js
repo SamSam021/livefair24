@@ -75,14 +75,18 @@ module.exports = {
 
   // Used by /api/search — same purpose as ticketmaster.js's searchEvents:
   // find MULTIPLE matching events, one result per event, not per seller.
-  // NOTE: unlike the Ticketmaster version, this hasn't been verified
-  // against a real SeatGeek key/response yet — same caveat as search()
-  // above. Confirm the field names below against a live response before
-  // relying on it.
-  async searchEvents(queryText, env) {
+  // NOTE: unlike the Ticketmaster version, none of this (including the
+  // city/date params) has been verified against a real SeatGeek key/
+  // response yet — same caveat as search() above. Confirm the field names
+  // below against a live response before relying on it.
+  async searchEvents(params, env) {
     const clientId = env.SEATGEEK_CLIENT_ID;
-    const q = encodeURIComponent(queryText || '');
-    const url = `https://api.seatgeek.com/2/events?client_id=${clientId}&q=${q}&per_page=10`;
+    const parts = [`client_id=${clientId}`, 'per_page=10'];
+    if (params.query) parts.push(`q=${encodeURIComponent(params.query)}`);
+    if (params.city) parts.push(`venue.city=${encodeURIComponent(params.city)}`);
+    if (params.dateFrom) parts.push(`datetime_local.gte=${encodeURIComponent(params.dateFrom)}`);
+    if (params.dateTo) parts.push(`datetime_local.lte=${encodeURIComponent(params.dateTo)}`);
+    const url = `https://api.seatgeek.com/2/events?${parts.join('&')}`;
 
     try {
       const data = await httpGet(url);
