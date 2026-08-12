@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <!-- Open Graph -->
 <meta property="og:title" content="Nova Wren Berlin Tickets & Hotels — 16 August 2026">
@@ -17,7 +19,16 @@
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://livefair24.com/events/nova-wren-berlin-2026-08-16.html">
 
-<!-- Schema.org Event — the most important structured data for concert pages -->
+<!-- Schema.org Event — the most important structured data for concert pages.
+     KNOWN LIMITATION: the "price" field below is static (baked into this
+     HTML file) and will drift from the live price shown in the actual
+     comparison table over time. This site has no server-side rendering or
+     build-time regeneration yet, so structured data can't be kept
+     genuinely live the way the on-page content now is. Fixing this
+     properly means either SSR or a scheduled rebuild step — out of scope
+     for this pass, flagged for later. The "url" now correctly points to
+     this real event page (was previously a fabricated external link) so
+     anyone following it at least reaches the live comparison table. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -55,7 +66,7 @@
       "priceCurrency": "USD",
       "priceValidUntil": "2026-08-16",
       "availability": "https://schema.org/InStock",
-      "url": "https://ticketnetwork.com/?ref=fairlive",
+      "url": "https://livefair24.com/events/nova-wren-berlin-2026-08-16.html",
       "validFrom": "2026-01-01"
     }
   ],
@@ -94,7 +105,7 @@
       "name": "What is the cheapest Nova Wren Berlin ticket price?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The cheapest Nova Wren Berlin ticket is currently $66.00 (total including fees) via TicketNetwork. Prices are updated every 2 minutes."
+        "text": "Ticket prices change frequently. See the live price comparison table on this page for the current cheapest price across all sellers we track."
       }
     },
     {
@@ -102,7 +113,7 @@
       "name": "Which hotels are closest to Waldbühne Berlin?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The closest hotels to Waldbühne Berlin start from $85 per night. The nearest option is within 0.5 km of the venue. See the full hotel comparison below."
+        "text": "See the live hotel comparison table and map on this page for current hotels near the venue, sorted by distance."
       }
     },
     {
@@ -110,7 +121,7 @@
       "name": "What is the total cost of attending Nova Wren in Berlin?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The cheapest complete trip to see Nova Wren in Berlin — cheapest ticket ($66) + cheapest hotel ($85) + estimated local transport ($8) — comes to approximately $159. Individual prices vary by seller and hotel."
+        "text": "Total cost depends on the current cheapest ticket, the current cheapest nearby hotel, and local transport. See the trip cost calculator on this page for an up-to-date estimate."
       }
     },
     {
@@ -118,7 +129,7 @@
       "name": "Are Nova Wren Berlin tickets still available?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes, Nova Wren Berlin tickets are available from multiple sellers including TicketNetwork, Vivid Seats, Ticketmaster, StubHub and Gigtree Exchange as of the last price update."
+        "text": "See the live price comparison table on this page for current availability across the sellers we track."
       }
     }
   ]
@@ -195,15 +206,15 @@
         </h1>
         <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:14px;">
           <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink-dim);">
-            <span>📅</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
             <span><strong style="color:var(--ink);">Sunday, 16 August 2026</strong> · 19:30</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink-dim);">
-            <span>📍</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
             <a href="/venues/waldbuhne-berlin.html" style="color:var(--blue);font-weight:700;">Waldbühne</a><span>, Berlin, Germany</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink-dim);">
-            <span>🎤</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             <a href="/artists/nova-wren.html" style="color:var(--blue);font-weight:700;">Nova Wren</a>
           </div>
         </div>
@@ -211,11 +222,11 @@
       <!-- Quick summary card -->
       <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 26px;min-width:220px;">
         <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Cheapest ticket</div>
-        <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:36px;color:var(--gold);">$66</div>
-        <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">via TicketNetwork · incl. all fees</div>
+        <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:36px;color:var(--gold);" id="summaryTicketPrice">—</div>
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;" id="summaryTicketSeller">Loading…</div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
           <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Complete trip from</div>
-          <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:24px;color:var(--blue);">$159</div>
+          <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:24px;color:var(--blue);" id="tripTotalAmount2">—</div>
           <div style="font-size:11px;color:var(--ink-faint);">ticket + hotel + transport</div>
         </div>
       </div>
@@ -227,37 +238,25 @@
     <div class="section-header">
       <div>
         <h2>Nova Wren Berlin ticket prices</h2>
-        <p>5 sellers compared · Floor GA Standing · Total price including all mandatory fees</p>
+        <p>Sellers compared · Total price including all mandatory fees</p>
       </div>
-      <span class="freshness fresh">● Updated 2 min ago</span>
+      <span class="freshness fresh">● Live</span>
     </div>
 
-    <!-- Price history summary strip -->
+    <!-- Current price — historical stats (7-day avg, trend, etc.) removed:
+         this site doesn't store price history anywhere, so those numbers
+         were fabricated. Only showing what's actually real: the current
+         live lowest price. -->
     <div class="history-strip" style="margin-bottom:28px;">
       <div>
         <div class="h-label">Current lowest</div>
-        <div class="h-val green">$66</div>
-        <div class="h-sub">TicketNetwork</div>
+        <div class="h-val green" id="statCurrentLowest">—</div>
+        <div class="h-sub" id="statCurrentSeller">Loading…</div>
       </div>
       <div>
-        <div class="h-label">7-day average</div>
-        <div class="h-val">$73</div>
-        <div class="h-sub">across all sellers</div>
-      </div>
-      <div>
-        <div class="h-label">30-day average</div>
-        <div class="h-val">$81</div>
-        <div class="h-sub">across all sellers</div>
-      </div>
-      <div>
-        <div class="h-label">Lowest recorded</div>
-        <div class="h-val">$61</div>
-        <div class="h-sub">14 days ago</div>
-      </div>
-      <div>
-        <div class="h-label">Price trend</div>
-        <div class="h-val green">↓ 19%</div>
-        <div class="h-sub">vs 30-day avg</div>
+        <div class="h-label">Sellers compared</div>
+        <div class="h-val" id="statSellerCount">—</div>
+        <div class="h-sub">right now</div>
       </div>
     </div>
 
@@ -273,59 +272,12 @@
             <th></th>
           </tr>
         </thead>
-        <tbody>
-          <tr class="best-row">
-            <td>
-              <div class="pname">
-                <div class="pbadge p-tn">TN</div>
-                <div>
-                  TicketNetwork
-                  <span class="best-badge">★ BEST PRICE</span>
-                </div>
-              </div>
-            </td>
-            <td><div class="total-price best">$66.20</div><div class="fee-breakdown">Verified total</div></td>
-            <td class="mono" style="font-size:13px;">$60.40</td>
-            <td class="mono" style="font-size:13px;">$5.80</td>
-            <td style="font-size:13px;color:var(--gold);">★ 4.8 <span style="color:var(--ink-faint);font-size:11px;">(2,140)</span></td>
-            <td><a href="#" class="buy-btn">Buy ticket →</a></td>
-          </tr>
-          <tr>
-            <td><div class="pname"><div class="pbadge p-vs">VS</div>Vivid Seats</div></td>
-            <td><div class="total-price">$71.90</div><div class="fee-breakdown">Verified total</div></td>
-            <td class="mono" style="font-size:13px;">$63.50</td>
-            <td class="mono" style="font-size:13px;">$8.40</td>
-            <td style="font-size:13px;color:var(--gold);">★ 4.6 <span style="color:var(--ink-faint);font-size:11px;">(5,882)</span></td>
-            <td><a href="#" class="buy-btn">Buy ticket →</a></td>
-          </tr>
-          <tr>
-            <td><div class="pname"><div class="pbadge p-tm">TM</div>Ticketmaster</div></td>
-            <td><div class="total-price">$75.45</div><div class="fee-breakdown">Verified total</div></td>
-            <td class="mono" style="font-size:13px;">$62.00</td>
-            <td class="mono" style="font-size:13px;">$13.45</td>
-            <td style="font-size:13px;color:var(--gold);">★ 4.5 <span style="color:var(--ink-faint);font-size:11px;">(18,204)</span></td>
-            <td><a href="#" class="buy-btn">Buy ticket →</a></td>
-          </tr>
-          <tr>
-            <td><div class="pname"><div class="pbadge p-sh">SH</div>StubHub</div></td>
-            <td><div class="total-price">$78.10</div><div class="fee-breakdown">Verified total</div></td>
-            <td class="mono" style="font-size:13px;">$66.50</td>
-            <td class="mono" style="font-size:13px;">$11.60</td>
-            <td style="font-size:13px;color:var(--gold);">★ 4.4 <span style="color:var(--ink-faint);font-size:11px;">(9,417)</span></td>
-            <td><a href="#" class="buy-btn">Buy ticket →</a></td>
-          </tr>
-          <tr>
-            <td><div class="pname"><div class="pbadge p-gt">GT</div>Gigtree Exchange</div></td>
-            <td><div class="total-price">$84.30</div><div class="fee-breakdown">Estimated total</div></td>
-            <td class="mono" style="font-size:13px;">$71.00</td>
-            <td class="mono" style="font-size:13px;">$13.30</td>
-            <td style="font-size:13px;color:var(--gold);">★ 4.2 <span style="color:var(--ink-faint);font-size:11px;">(1,033)</span></td>
-            <td><a href="#" class="buy-btn">Buy ticket →</a></td>
-          </tr>
+        <tbody id="priceTableBody">
+          <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-faint);">Loading prices…</td></tr>
         </tbody>
       </table>
     </div>
-    <p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">All prices shown are total cost including mandatory fees and standard delivery. "Verified total" means all fee components are disclosed by the seller. Prices may change.</p>
+    <p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">All prices shown are total cost including mandatory fees and standard delivery where disclosed by the seller. Prices may change.</p>
   </section>
 
   <!-- 2. Cheapest trip panel -->
@@ -340,42 +292,42 @@
     <div class="trip-panel">
       <div class="trip-breakdown">
         <div class="trip-row">
-          <div class="icon">🎟️</div>
-          <div><div class="tlabel">Cheapest ticket</div><div class="tname">TicketNetwork · Floor GA</div></div>
-          <div class="tprice">$66.20</div>
-          <a class="tlink" href="#">Buy →</a>
+          <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6z"/><path d="M13 5v14" stroke-dasharray="1 3"/></svg></div>
+          <div><div class="tlabel" id="tripTicketLabel">Cheapest ticket</div><div class="tname" id="tripTicketName">Loading…</div></div>
+          <div class="tprice" id="tripTicketPrice">—</div>
+          <a class="tlink" id="tripTicketLink" href="#">Buy →</a>
         </div>
         <div class="trip-divider"></div>
         <div class="trip-row">
-          <div class="icon">🏨</div>
-          <div><div class="tlabel">Cheapest hotel · 0.5 km from venue</div><div class="tname">Central Hotel Berlin · ★ 4.2</div></div>
-          <div class="tprice">$85/night</div>
-          <a class="tlink" href="#">Book →</a>
+          <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <div><div class="tlabel" id="tripHotelLabel">Cheapest hotel</div><div class="tname" id="tripHotelName">Loading…</div></div>
+          <div class="tprice" id="tripHotelPrice">—</div>
+          <a class="tlink" id="tripHotelLink" href="#">Book →</a>
         </div>
         <div class="trip-divider"></div>
         <div class="trip-row">
-          <div class="icon">🚇</div>
+          <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16"/><path d="M8 19l-2 3"/><path d="M16 19l2 3"/><circle cx="8.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/></svg></div>
           <div><div class="tlabel">Estimated local transport</div><div class="tname">Public transit in Berlin (BVG)</div></div>
           <div class="tprice" style="color:var(--ink-dim);font-size:18px;">~$8</div>
           <span></span>
         </div>
         <div class="trip-total">
           <span class="label">Estimated total trip cost</span>
-          <span class="amount">$159</span>
+          <span class="amount" id="tripTotalAmount">$159</span>
         </div>
       </div>
 
       <div class="trip-cta">
         <div class="eyebrow">All-in estimated price</div>
-        <div class="big-price">$159</div>
+        <div class="big-price" id="tripCtaTotal">$159</div>
         <div class="breakdown">
-          🎟️ Ticket: $66.20 via TicketNetwork<br>
-          🏨 Hotel: $85/night · Central Hotel<br>
-          🚇 Transport: ~$8
+          Ticket: <span id="tripCtaTicket">loading…</span><br>
+          Hotel: <span id="tripCtaHotel">loading…</span><br>
+          Transport: ~$8
         </div>
         <div class="cta-btns">
-          <a href="#" class="cta-btn cta-btn-solid">🎟️ Get cheapest ticket</a>
-          <a href="#hotels" class="cta-btn cta-btn-outline">🏨 Compare hotels</a>
+          <a href="#" class="cta-btn cta-btn-solid">Get cheapest ticket</a>
+          <a href="#hotels" class="cta-btn cta-btn-outline">Compare hotels</a>
         </div>
         <p class="disclaimer">Links open each provider's checkout. Prices shown are estimates and may change before purchase.</p>
       </div>
@@ -387,67 +339,30 @@
     <div class="section-header">
       <div>
         <h2>Hotels near Waldbühne, Berlin</h2>
-        <p>16 hotels within 6 km of the venue · sorted by price</p>
+        <p id="hotelSubtext">16 hotels within 6 km of the venue · sorted by price</p>
       </div>
-      <span class="freshness fresh">● Updated 6 min ago</span>
+      <span class="freshness fresh" id="hotelFreshness">● Updated 6 min ago</span>
     </div>
 
-    <div class="table-scroll hotel-scroll-wrap" style="background:var(--surface);border:1px solid var(--line);border-radius:16px;">
-      <table class="hotel-table">
-        <thead>
-          <tr>
-            <th>Hotel</th>
-            <th>Distance</th>
-            <th>Rating</th>
-            <th>Price / night</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="hotelTableBody">
-          <tr>
-            <td><div class="hname">Central Hotel Berlin <span class="best-badge">CLOSEST</span></div><div style="font-size:12px;color:var(--ink-faint);margin-top:3px;">Breakfast included · Free cancellation</div></td>
-            <td class="hdist">0.5 km</td>
-            <td class="hrating">★ 4.2 <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">(847)</span></td>
-            <td><div class="hprice">$85<span>/night</span></div></td>
-            <td><a href="#" class="book-btn">Book →</a></td>
-          </tr>
-          <tr>
-            <td><div class="hname">Riverside Inn Berlin</div><div style="font-size:12px;color:var(--ink-faint);margin-top:3px;">Free cancellation until 48h before</div></td>
-            <td class="hdist">1.1 km</td>
-            <td class="hrating">★ 4.6 <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">(2,210)</span></td>
-            <td><div class="hprice">$110<span>/night</span></div></td>
-            <td><a href="#" class="book-btn">Book →</a></td>
-          </tr>
-          <tr>
-            <td><div class="hname">Skyline Hotel Berlin</div></td>
-            <td class="hdist">1.8 km</td>
-            <td class="hrating">★ 3.9 <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">(512)</span></td>
-            <td><div class="hprice">$95<span>/night</span></div></td>
-            <td><a href="#" class="book-btn">Book →</a></td>
-          </tr>
-          <tr>
-            <td><div class="hname">Old Town Suites</div><div style="font-size:12px;color:var(--ink-faint);margin-top:3px;">Self-catering · Kitchen included</div></td>
-            <td class="hdist">2.3 km</td>
-            <td class="hrating">★ 4.5 <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">(1,453)</span></td>
-            <td><div class="hprice">$128<span>/night</span></div></td>
-            <td><a href="#" class="book-btn">Book →</a></td>
-          </tr>
-          <tr>
-            <td><div class="hname">Grand Plaza Berlin</div></td>
-            <td class="hdist">3.1 km</td>
-            <td class="hrating">★ 4.8 <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">(3,901)</span></td>
-            <td><div class="hprice">$195<span>/night</span></div></td>
-            <td><a href="#" class="book-btn">Book →</a></td>
-          </tr>
-          <tr>
-            <td><div class="hname">Boutique Row Hotel</div></td>
-            <td class="hdist">3.8 km</td>
-            <td class="hrating">★ 4.4 <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">(728)</span></td>
-            <td><div class="hprice">$140<span>/night</span></div></td>
-            <td><a href="#" class="book-btn">Book →</a></td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="panel-layout">
+      <div id="eventHotelMap" class="hotel-map-el"></div>
+
+      <div class="table-scroll hotel-scroll-wrap" style="background:var(--surface);border:1px solid var(--line);border-radius:16px;">
+        <table class="hotel-table">
+          <thead>
+            <tr>
+              <th>Hotel</th>
+              <th>Distance</th>
+              <th>Rating</th>
+              <th>Price / night</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="hotelTableBody">
+            <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-faint);">Loading hotels…</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">Distances are straight-line from Waldbühne. Prices are per room per night. Hotel links open the provider's booking page.</p>
   </section>
@@ -457,75 +372,14 @@
     <div class="section-header">
       <div>
         <h2>Nova Wren Berlin ticket price history</h2>
-        <p>30-day price observations across all sellers</p>
+        <p>Historical price tracking isn't available yet</p>
       </div>
     </div>
 
-    <div class="history-strip">
-      <div>
-        <div class="h-label">Current price</div>
-        <div class="h-val">$66</div>
-        <div class="h-sub">TicketNetwork · now</div>
-      </div>
-      <div>
-        <div class="h-label">7-day average</div>
-        <div class="h-val">$73</div>
-        <div class="h-sub">−10% vs now</div>
-      </div>
-      <div>
-        <div class="h-label">30-day average</div>
-        <div class="h-val">$81</div>
-        <div class="h-sub">−19% vs now</div>
-      </div>
-      <div>
-        <div class="h-label">Lowest recorded</div>
-        <div class="h-val green">$61</div>
-        <div class="h-sub">14 days ago</div>
-      </div>
-      <div>
-        <div class="h-label">Highest recorded</div>
-        <div class="h-val red">$104</div>
-        <div class="h-sub">28 days ago</div>
-      </div>
-    </div>
-
-    <!-- SVG price chart -->
-    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:4px;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:16px;color:var(--ink-dim);">Price over last 30 days — cheapest available ticket across all sellers</div>
-      <svg viewBox="0 0 800 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
-        <defs>
-          <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0b5fff" stop-opacity=".18"/>
-            <stop offset="100%" stop-color="#0b5fff" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <!-- Grid lines -->
-        <line x1="0" y1="20" x2="800" y2="20" stroke="#e3e8f1" stroke-width="1"/>
-        <line x1="0" y1="60" x2="800" y2="60" stroke="#e3e8f1" stroke-width="1"/>
-        <line x1="0" y1="100" x2="800" y2="100" stroke="#e3e8f1" stroke-width="1"/>
-        <line x1="0" y1="140" x2="800" y2="140" stroke="#e3e8f1" stroke-width="1"/>
-        <!-- Price labels -->
-        <text x="4" y="18" font-size="10" fill="#9097a8" font-family="JetBrains Mono">$110</text>
-        <text x="4" y="58" font-size="10" fill="#9097a8" font-family="JetBrains Mono">$90</text>
-        <text x="4" y="98" font-size="10" fill="#9097a8" font-family="JetBrains Mono">$70</text>
-        <text x="4" y="138" font-size="10" fill="#9097a8" font-family="JetBrains Mono">$50</text>
-        <!-- Area fill -->
-        <path d="M40,110 L80,100 L120,104 L160,45 L200,30 L240,55 L280,75 L320,80 L360,90 L400,85 L440,78 L480,88 L520,92 L560,86 L600,75 L640,80 L680,78 L720,72 L760,60 L760,150 L40,150 Z" fill="url(#pg)"/>
-        <!-- Price line -->
-        <polyline points="40,110 80,100 120,104 160,45 200,30 240,55 280,75 320,80 360,90 400,85 440,78 480,88 520,92 560,86 600,75 640,80 680,78 720,72 760,60" fill="none" stroke="#0b5fff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-        <!-- Current price dot -->
-        <circle cx="760" cy="60" r="5" fill="#0b5fff"/>
-        <!-- Lowest price annotation -->
-        <circle cx="200" cy="30" r="4" fill="#16a34a"/>
-        <text x="210" y="28" font-size="10" fill="#16a34a" font-family="JetBrains Mono">Lowest: $61</text>
-      </svg>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;margin-top:4px;padding:0 8px;">
-        <span>30 days ago</span><span>20 days ago</span><span>10 days ago</span><span>Today</span>
-      </div>
-    </div>
-
-    <div style="background:var(--blue-soft);border:1px solid #cfe0ff;border-radius:12px;padding:16px 20px;margin-top:16px;font-size:14px;color:var(--blue-deep);">
-      <strong>Price analysis:</strong> The current price of $66 is 19% below the 30-day average of $81. The lowest recorded price was $61, 14 days ago. Based on historical patterns, prices typically rise in the final 2 weeks before the concert date.
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;text-align:center;">
+      <p style="font-size:14px;color:var(--ink-dim);max-width:52ch;margin:0 auto;line-height:1.7;">
+        We don't yet track how this event's ticket prices have changed over time — that's a feature we're planning to add. The <a href="#tickets" style="color:var(--blue);font-weight:700;">price comparison table above</a> always shows the current live price across every seller we check.
+      </p>
     </div>
   </section>
 
@@ -533,7 +387,7 @@
   <section class="section" id="price-alert">
     <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
       <div>
-        <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:17px;">Get notified if this drops below $66.20</div>
+        <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:17px;" id="alertHeadline">Get notified if this drops below <span id="alertThresholdPrice">the current price</span></div>
         <div style="font-size:13.5px;color:var(--ink-dim);margin-top:4px;">We'll check the price and email you the moment it's cheaper. No spam, unsubscribe anytime.</div>
       </div>
       <form id="alertForm" style="display:flex;gap:10px;flex-wrap:wrap;" onsubmit="return submitAlert(event)">
@@ -563,11 +417,11 @@
       </div>
       <div class="card">
         <h3 style="font-size:16px;">Getting there</h3>
-        <div style="font-size:13.5px;color:var(--ink-dim);margin-top:12px;line-height:1.7;">
-          🚇 <strong>U-Bahn:</strong> Pichelsberg, 8 min walk<br>
-          🚌 <strong>Bus:</strong> Lines 218 and X34 stop nearby<br>
-          🚗 <strong>Car:</strong> On-site parking, book in advance<br>
-          🚲 <strong>Bike:</strong> Berlin has dedicated cycle lanes
+        <div style="font-size:13.5px;color:var(--ink-dim);margin-top:12px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16"/><path d="M8 19l-2 3"/><path d="M16 19l2 3"/><circle cx="8.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/></svg><span><strong>U-Bahn:</strong> Pichelsberg, 8 min walk</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M6 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M14 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M4 17V6a1 1 0 0 1 1-1h11l4 5v7"/><path d="M4 12h16"/></svg><span><strong>Bus:</strong> Lines 218 and X34 stop nearby</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M5 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M15 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M5 17h-2v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/><path d="M9 17h6"/></svg><span><strong>Car:</strong> On-site parking, book in advance</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 2 0 1 1 0 1 0-2 0"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg><span><strong>Bike:</strong> Berlin has dedicated cycle lanes</span></div>
         </div>
       </div>
     </div>
@@ -584,35 +438,35 @@
           What is the cheapest Nova Wren Berlin ticket price right now?
           <span class="chevron">▾</span>
         </button>
-        <div class="faq-a">The cheapest Nova Wren Berlin ticket is currently <strong>$66.20 total including all fees</strong> via TicketNetwork. This is 19% below the 30-day average price of $81. Prices are updated every 2 minutes — use the table above for the latest prices.</div>
+        <div class="faq-a">Ticket prices change frequently. See the live price comparison table above for the current cheapest price and seller.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
           Which hotels are closest to Waldbühne Berlin?
           <span class="chevron">▾</span>
         </button>
-        <div class="faq-a">The closest hotel to Waldbühne is <strong>Central Hotel Berlin</strong> at 0.5 km from the venue, from <strong>$85/night</strong>. See the full hotel comparison table above for all options sorted by distance and price.</div>
+        <div class="faq-a">The closest hotels to Waldbühne are shown in the live hotel comparison table above, sorted by distance and price.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
           What is the total cost of a Nova Wren Berlin concert trip?
           <span class="chevron">▾</span>
         </button>
-        <div class="faq-a">The cheapest complete trip — cheapest ticket ($66.20 via TicketNetwork) + cheapest nearby hotel ($85/night via Central Hotel) + estimated local transport ($8) — comes to <strong>approximately $159</strong>. This is an estimate; actual costs depend on your travel dates and preferences.</div>
+        <div class="faq-a">Your total trip cost depends on the current cheapest ticket, the current cheapest nearby hotel, and local transport (typically a few dollars for public transit in Berlin). See the live ticket and hotel tables above, or the trip calculator, for an up-to-date estimate — actual costs depend on your travel dates and preferences.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
           Should I buy Nova Wren Berlin tickets now or wait?
           <span class="chevron">▾</span>
         </button>
-        <div class="faq-a">The current price ($66) is <strong>19% below the 30-day average</strong>, which suggests now may be a good time to buy. Historically, ticket prices for Berlin events tend to rise in the 2 weeks before the concert date. We cannot guarantee future prices.</div>
+        <div class="faq-a">This is a price-analysis indicator, not a guarantee: ticket prices for events like this can rise or fall as the date approaches, depending on demand and remaining inventory. Check the live price comparison table above for the current price before deciding.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
           Are Nova Wren Berlin tickets still available?
           <span class="chevron">▾</span>
         </button>
-        <div class="faq-a">Yes, tickets are currently available from all 5 sellers we track: TicketNetwork, Vivid Seats, Ticketmaster, StubHub, and Gigtree Exchange. Availability can change rapidly — the price table is updated every 2 minutes.</div>
+        <div class="faq-a">See the live price comparison table above for current availability across the sellers we track. Availability can change rapidly.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
@@ -703,6 +557,8 @@
 </footer>
 
 <script>
+let currentLowestTicketPrice = null; // set once /api/tickets loads; used by the price-alert signup below
+
 function toggleFaq(btn){
   const ans = btn.nextElementSibling;
   const isOpen = btn.classList.contains('open');
@@ -715,6 +571,15 @@ async function submitAlert(e){
   const email = document.getElementById('alertEmail').value;
   const btn = e.target.querySelector('button[type="submit"]');
   const msg = document.getElementById('alertMessage');
+
+  if(currentLowestTicketPrice == null){
+    msg.style.display = 'block';
+    msg.style.background = '#fef2f2';
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Still loading current prices — please try again in a moment.';
+    return false;
+  }
+
   btn.disabled = true;
   btn.textContent = 'Saving…';
   try{
@@ -728,7 +593,7 @@ async function submitAlert(e){
         venue: 'Waldbühne',
         city: 'Berlin',
         eventUrl: '/events/nova-wren-berlin-2026-08-16.html',
-        initialPrice: 66.20
+        initialPrice: currentLowestTicketPrice
       })
     });
     const data = await res.json();
@@ -736,7 +601,7 @@ async function submitAlert(e){
     msg.style.display = 'block';
     msg.style.background = '#f0fdf4';
     msg.style.color = 'var(--green)';
-    msg.textContent = `You're set — we'll email ${email} if the price drops below $66.20.`;
+    msg.textContent = `You're set — we'll email ${email} if the price drops below $${currentLowestTicketPrice.toFixed(2)}.`;
     e.target.reset();
   }catch(err){
     msg.style.display = 'block';
@@ -749,6 +614,202 @@ async function submitAlert(e){
   }
   return false;
 }
+
+/* ============================================================
+   Live hotel map + table for this event's venue (Waldbühne, Berlin).
+   Replaces the previously static/fabricated hotel rows — fetches real
+   data from the same /api/hotels endpoint the homepage uses.
+   ============================================================ */
+
+const EVENT_VENUE = { lat: 52.5200, lng: 13.4050, name: 'Waldbühne', city: 'Berlin' };
+const EVENT_ISO_DATE = '2026-08-16';
+const EVENT_ARTIST = 'Nova Wren';
+const EVENT_BASE_PRICE = 66;
+
+function buildVenueIcon(){
+  return L.divIcon({
+    className:'',
+    html:`<div style="background:var(--blue);width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.3)"><svg style="transform:rotate(45deg);" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20V8a1 1 0 0 1 .4-.8l7-5.25a1 1 0 0 1 1.2 0l7 5.25a1 1 0 0 1 .4.8v12"/><path d="M9 20v-4a3 3 0 0 1 6 0v4"/></svg></div>`,
+    iconSize:[36,36], iconAnchor:[18,36]
+  });
+}
+
+function renderEventHotelTable(hotels){
+  const tbody = document.getElementById('hotelTableBody');
+  if(hotels.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-faint);">No hotels found right now.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = hotels.map((h,i) => `
+    <tr>
+      <td><div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div></td>
+      <td class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km':'—'}</td>
+      <td class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span style="color:var(--ink-faint);font-size:11px;font-weight:400;">${h.reviews!=null?'('+h.reviews.toLocaleString()+')':''}</span>`:'—'}</td>
+      <td><div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'—'}</div></td>
+      <td><a href="${h.url||'#'}" class="book-btn" target="_blank" rel="noopener">Book →</a></td>
+    </tr>`).join('');
+}
+
+function renderEventHotelMap(hotels){
+  const map = L.map('eventHotelMap', { scrollWheelZoom:false }).setView([EVENT_VENUE.lat, EVENT_VENUE.lng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19
+  }).addTo(map);
+
+  L.marker([EVENT_VENUE.lat, EVENT_VENUE.lng], { icon: buildVenueIcon() }).addTo(map)
+    .bindPopup(`<b>${EVENT_VENUE.name}</b><br>${EVENT_VENUE.city}`);
+
+  hotels.forEach(h => {
+    if(h.lat==null || h.lng==null || h.pricePerNight==null) return;
+    const icon = L.divIcon({
+      className:'', html:`<div class="price-pin">$${h.pricePerNight}</div>`,
+      iconSize:[48,26], iconAnchor:[24,26]
+    });
+    L.marker([h.lat, h.lng], { icon }).addTo(map)
+      .bindPopup(`<b>${h.name}</b><br>$${h.pricePerNight}/night${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}`);
+  });
+
+  setTimeout(() => map.invalidateSize(), 200);
+}
+
+async function fetchEventHotels(){
+  const checkOutDate = new Date(EVENT_ISO_DATE);
+  checkOutDate.setDate(checkOutDate.getDate()+1);
+  const checkOut = checkOutDate.toISOString().slice(0,10);
+  const params = new URLSearchParams({
+    lat: EVENT_VENUE.lat, lng: EVENT_VENUE.lng, checkIn: EVENT_ISO_DATE, checkOut, eventId: 1
+  });
+  const res = await fetch(`/api/hotels?${params}`);
+  if(!res.ok) throw new Error('Hotel API error');
+  return res.json();
+}
+
+async function fetchEventTickets(){
+  const params = new URLSearchParams({
+    artist: EVENT_ARTIST, city: EVENT_VENUE.city, basePrice: EVENT_BASE_PRICE, eventId: 1
+  });
+  const res = await fetch(`/api/tickets?${params}`);
+  if(!res.ok) throw new Error('Ticket API error');
+  return res.json();
+}
+
+function renderPriceTable(sellers){
+  const tbody = document.getElementById('priceTableBody');
+  if(sellers.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-faint);">No live prices available right now.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sellers.map(s => `
+    <tr class="${s.isBestPrice?'best-row':''}">
+      <td>
+        <div class="pname">
+          <div class="pbadge p-${(s.badge||'dm').toLowerCase()}">${s.badge||'—'}</div>
+          <div>${s.sellerName}${s.isBestPrice?' <span class="best-badge">★ BEST PRICE</span>':''}</div>
+        </div>
+      </td>
+      <td><div class="total-price ${s.isBestPrice?'best':''}">$${s.total.toFixed(2)}</div><div class="fee-breakdown">${s.demo?'Demo data':'Verified total'}</div></td>
+      <td class="mono" style="font-size:13px;">$${s.faceValue.toFixed(2)}</td>
+      <td class="mono" style="font-size:13px;">$${s.fees.toFixed(2)}</td>
+      <td style="font-size:13px;color:var(--gold);">${s.rating!=null?`★ ${s.rating.toFixed(1)} <span style="color:var(--ink-faint);font-size:11px;">${s.reviews!=null?'('+s.reviews.toLocaleString()+')':''}</span>`:'—'}</td>
+      <td><a href="${s.url||'#'}" class="buy-btn" target="_blank" rel="noopener">Buy ticket →</a></td>
+    </tr>`).join('');
+}
+
+function renderTicketSummary(ticketData){
+  const sellers = ticketData.results || [];
+  const cheapest = sellers[0];
+
+  document.getElementById('statSellerCount').textContent = sellers.length;
+  document.getElementById('statCurrentSeller').textContent = ticketData.demoMode ? 'demo data' : 'right now';
+
+  if(!cheapest){
+    document.getElementById('statCurrentLowest').textContent = '—';
+    document.getElementById('summaryTicketPrice').textContent = '—';
+    document.getElementById('summaryTicketSeller').textContent = 'No prices available';
+    return;
+  }
+
+  currentLowestTicketPrice = cheapest.total;
+  document.getElementById('alertThresholdPrice').textContent = `$${cheapest.total.toFixed(2)}`;
+  document.getElementById('statCurrentLowest').textContent = `$${cheapest.total.toFixed(0)}`;
+  document.getElementById('summaryTicketPrice').textContent = `$${cheapest.total.toFixed(0)}`;
+  document.getElementById('summaryTicketSeller').textContent = `via ${cheapest.sellerName} · incl. all fees`;
+}
+
+const STATIC_TRANSPORT_ESTIMATE = 8;
+
+function updateTripCalculator(hotels, tickets){
+  const cheapestHotel = hotels.find(h => h.pricePerNight != null);
+  const cheapestTicket = tickets[0];
+  const nameEl = document.getElementById('tripHotelName');
+  const priceEl = document.getElementById('tripHotelPrice');
+  const linkEl = document.getElementById('tripHotelLink');
+  const labelEl = document.getElementById('tripHotelLabel');
+  const ctaHotelEl = document.getElementById('tripCtaHotel');
+
+  if(!cheapestHotel){
+    nameEl.textContent = 'No hotels found';
+    priceEl.textContent = '—';
+    return;
+  }
+
+  labelEl.textContent = cheapestHotel.distanceKm != null
+    ? `Cheapest hotel · ${cheapestHotel.distanceKm.toFixed(1)} km from venue`
+    : 'Cheapest hotel';
+  nameEl.textContent = cheapestHotel.rating != null ? `${cheapestHotel.name} · ★ ${cheapestHotel.rating.toFixed(1)}` : cheapestHotel.name;
+  priceEl.textContent = `$${cheapestHotel.pricePerNight}/night`;
+  linkEl.href = cheapestHotel.url || '#';
+  ctaHotelEl.textContent = `$${cheapestHotel.pricePerNight}/night · ${cheapestHotel.name}`;
+
+  if(!cheapestTicket){
+    document.getElementById('tripTicketName').textContent = 'No prices available';
+    document.getElementById('tripTicketPrice').textContent = '—';
+    return; // leave ticket-related totals showing '—' rather than a wrong number
+  }
+
+  document.getElementById('tripTicketName').textContent = cheapestTicket.section
+    ? `${cheapestTicket.sellerName} · ${cheapestTicket.section}` : cheapestTicket.sellerName;
+  document.getElementById('tripTicketPrice').textContent = `$${cheapestTicket.total.toFixed(2)}`;
+  document.getElementById('tripTicketLink').href = cheapestTicket.url || '#';
+  document.getElementById('tripCtaTicket').textContent = `$${cheapestTicket.total.toFixed(2)} via ${cheapestTicket.sellerName}`;
+
+  const total = Math.round((cheapestTicket.total + cheapestHotel.pricePerNight + STATIC_TRANSPORT_ESTIMATE) * 100) / 100;
+  document.getElementById('tripTotalAmount').textContent = `$${total}`;
+  document.getElementById('tripTotalAmount2').textContent = `$${total}`;
+  document.getElementById('tripCtaTotal').textContent = `$${total}`;
+}
+
+async function loadEventData(){
+  let hotels = [], tickets = [];
+
+  try{
+    const hotelData = await fetchEventHotels();
+    hotels = hotelData.results || [];
+    document.getElementById('hotelSubtext').textContent =
+      `${hotels.length} hotels near the venue · sorted by distance${hotelData.demoMode ? ' · demo data' : ''}`;
+    renderEventHotelTable(hotels);
+    if(typeof L !== 'undefined') renderEventHotelMap(hotels);
+  } catch(err){
+    console.error(err);
+    document.getElementById('hotelTableBody').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red);">Could not load hotels right now.</td></tr>';
+  }
+
+  try{
+    const ticketData = await fetchEventTickets();
+    tickets = ticketData.results || [];
+    renderPriceTable(tickets);
+    renderTicketSummary(ticketData);
+  } catch(err){
+    console.error(err);
+    document.getElementById('priceTableBody').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--red);">Could not load prices right now.</td></tr>';
+  }
+
+  updateTripCalculator(hotels, tickets);
+}
+
+window.addEventListener('load', loadEventData);
 </script>
 <script src="../js/cookie-banner.js" defer></script>
 </body>

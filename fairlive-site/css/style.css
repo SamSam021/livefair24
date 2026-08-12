@@ -132,6 +132,8 @@ img{max-width:100%;display:block;}
 .price-table .p-vs{background:linear-gradient(135deg,#ffb4e6,#e879c2);}
 .price-table .p-sh{background:linear-gradient(135deg,#a9f0c2,#57cf85);}
 .price-table .p-gt{background:linear-gradient(135deg,#b9c3ff,#8f9bff);}
+.price-table .p-sg{background:linear-gradient(135deg,#ffd6a5,#ff9a5c);}
+.price-table .p-dm{background:linear-gradient(135deg,#d8dde6,#aab2c0);}
 .price-table .total-price{font-family:'Sora',sans-serif;font-weight:800;font-size:20px;}
 .price-table .total-price.best{color:var(--gold);}
 .price-table .fee-breakdown{font-size:11.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;margin-top:2px;}
@@ -272,3 +274,9 @@ img{max-width:100%;display:block;}
 .cookie-toggle:has(input:checked)::after{ transform:translateX(18px); }
 .cookie-toggle-locked{ opacity:.5; cursor:not-allowed; }
 .cookie-toggle-locked:has(input:checked)::before{ background:#5a6472; }
+
+/* ---- Shared map layout — used by homepage and event detail pages ---- */
+.panel-layout{ display:grid; grid-template-columns:1.3fr 1fr; gap:20px; }
+@media(max-width:860px){ .panel-layout{ grid-template-columns:1fr; } }
+.hotel-map-el{ height:380px; border-radius:14px; overflow:hidden; border:1px solid var(--line); }
+.price-pin{ background:#fff; border:1.5px solid var(--gold); color:var(--ink); font-family:'Sora',sans-serif; font-weight:800; font-size:12px; padding:3px 8px; border-radius:999px; white-space:nowrap; box-shadow:0 3px 8px rgba(16,24,40,.25); }
