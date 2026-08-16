@@ -256,6 +256,80 @@ function resolvePricingCountry(providers, requestedCountry) {
   return { queryCountry: requestedCountry, usedPricingFallback: false };
 }
 
+// Trending concert data doesn't need to be re-fetched fresh on every
+// single page load — the discovery+verification pipeline is genuinely
+// expensive (a wide discovery fetch plus up to 25 throttled candidate
+// lookups, confirmed in practice to take ~10 seconds end to end).
+// In-memory only (not persisted across restarts) — a cold cache after a
+// deploy just means one slow request, not broken data.
+//
+// TTL is sized to comfortably outlast a full rotation cycle below (all 5
+// countries take ROTATION_COUNT * BACKGROUND_REFRESH_INTERVAL_MS to each
+// get touched once) — otherwise a country's cache entry would expire
+// between its own refreshes, and visitors would fall back to the slow
+// lazy path anyway, defeating the point of pre-warming at all.
+const CACHE_TTL_MS = 18 * 60 * 60 * 1000; // 18 hours — see reasoning above
+const trendingCache = new Map(); // cacheKey -> { data, expiresAt }
+
+// Proactively refreshes cached trending data on a schedule, so real
+// visitors never have to wait for the slow pipeline themselves. Budgeted
+// to ~200 Ticketmaster API calls/day total, well under their ~5,000/day
+// free-tier quota — refreshing all 5 supported countries every cycle
+// (the original design) would have cost ~37,000 calls/day and exhausted
+// the quota within about 2 hours, breaking real user searches too, not
+// just trending. Rotating through ONE country per cycle instead, at a
+// 3-hour interval, costs ~26 calls/cycle × 8 cycles/day ≈ 208/day —
+// close to the requested 200/day budget — while still refreshing every
+// supported country at least once every 15 hours (comfortably inside
+// the 18-hour cache TTL above).
+const BACKGROUND_REFRESH_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours
+let backgroundRefreshRotationIndex = 0;
+
+async function backgroundRefreshTrending() {
+  // Re-reads env fresh on every cycle (not captured once at startup) so
+  // a Ticketmaster key added later via the admin panel gets picked up
+  // without needing a server restart.
+  const env = registry.getMergedEnv();
+  const providers = registry.getEnabledTicketProviders(env);
+  const demoMode = providers.every((p) => p.id === 'demo');
+  if (demoMode) return; // nothing slow to pre-warm — demo mode is always instant, no real API calls involved
+
+  const countriesToWarm = [];
+  for (const p of providers) {
+    if (Array.isArray(p.pricingSupportedCountries)) {
+      p.pricingSupportedCountries.forEach((c) => { if (!countriesToWarm.includes(c)) countriesToWarm.push(c); });
+    }
+  }
+  if (countriesToWarm.length === 0) countriesToWarm.push(FALLBACK_COUNTRY);
+
+  // One country per cycle, rotating — not all of them at once. US (or
+  // whichever country a provider lists first) gets warmed on the very
+  // first cycle at startup, which matters since that's the fallback
+  // target for most visitors whose own country isn't supported.
+  const country = countriesToWarm[backgroundRefreshRotationIndex % countriesToWarm.length];
+  backgroundRefreshRotationIndex += 1;
+
+  try {
+    const { queryCountry, usedPricingFallback } = resolvePricingCountry(providers, country);
+    const fresh = await runTrendingPipeline(queryCountry, demoMode, usedPricingFallback, country, providers, env);
+    trendingCache.set(`${queryCountry}:real`, { data: fresh, expiresAt: Date.now() + CACHE_TTL_MS });
+  } catch (err) {
+    // The existing cache entry (if any) just stays as-is until the next
+    // time this country comes up in rotation.
+    console.warn(`[trending background refresh] failed for ${country}:`, err.message);
+  }
+}
+
+function startBackgroundTrendingRefresh() {
+  // Fire immediately on startup — don't make the very first visitor
+  // after a deploy wait a full 5 minutes for a warm cache — then keep
+  // refreshing on the regular interval after that.
+  backgroundRefreshTrending().catch((err) => console.warn('[trending background refresh]', err.message));
+  setInterval(() => {
+    backgroundRefreshTrending().catch((err) => console.warn('[trending background refresh]', err.message));
+  }, BACKGROUND_REFRESH_INTERVAL_MS);
+}
+
 async function getTrendingEvents(clientIp, env, overrideCountry) {
   const detectedCountry = await ipapi.getCountryCodeForIp(clientIp);
   // Diagnostic-only override — lets ?country=GB be tested directly
@@ -272,6 +346,22 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   const { queryCountry, usedPricingFallback } = resolvePricingCountry(providers, requestedCountry);
   const countryCode = queryCountry;
 
+  // Cache key includes demoMode so a provider being added/removed while
+  // the server is running (e.g. via the admin panel) can't serve stale
+  // demo data as if it were real, or vice versa — it just starts a fresh
+  // cache entry instead.
+  const cacheKey = `${countryCode}:${demoMode ? 'demo' : 'real'}`;
+  const cached = trendingCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { ...cached.data, detectedCountry, cacheHit: true };
+  }
+
+  const fresh = await runTrendingPipeline(countryCode, demoMode, usedPricingFallback, requestedCountry, providers, env);
+  trendingCache.set(cacheKey, { data: fresh, expiresAt: Date.now() + CACHE_TTL_MS });
+  return { ...fresh, detectedCountry, cacheHit: false };
+}
+
+async function runTrendingPipeline(countryCode, demoMode, usedPricingFallback, requestedCountry, providers, env) {
   // Diagnostic counters — surfaced in the response temporarily so the
   // pipeline's actual behavior can be inspected directly (discovered vs.
   // upcoming vs. candidates checked vs. how many verification calls
@@ -279,7 +369,7 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // blind from just the final count after two failed fix attempts.
   const debug = { discoveredCount: 0, upcomingCount: 0, candidatesChecked: 0, verifyErrors: 0, verifiedRawCount: 0, eligibleCount: 0 };
   if (usedPricingFallback) {
-    debug.pricingFallback = `${requestedCountry} not supported for pricing by any enabled provider — querying ${queryCountry} instead`;
+    debug.pricingFallback = `${requestedCountry} not supported for pricing by any enabled provider — querying ${countryCode} instead`;
   }
 
   // STEP 1 — Discover: broad country browse, no price required at this
@@ -293,7 +383,6 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // earliest in their whole database, past events included. Explicit
   // startDateTime fixes this at the query level, not just relying on the
   // client-side isUpcoming() filter to clean up afterward.
-  //
   // Set to MIN_LEAD_DAYS out, not just "now" — confirmed via a real
   // debug trace that checking pricing soonest-first (correctly
   // prioritizing near-term events, more likely to be on sale) actively
@@ -302,11 +391,20 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   // eligible, wasting those verification calls on events that would be
   // rejected anyway. Discovery only returning already-eligible events
   // means every verification call has a real chance of counting.
+  //
+  // limit raised from 40 to 150 — confirmed via real evidence this fix
+  // introduced a NEW problem: sorting date,asc from the lead-time
+  // boundary meant all 40 discovered events clustered on that single
+  // boundary day (a high-volume market like the US easily has 40+ shows
+  // on any given day), leaving the date-spacing logic with no other
+  // dates to actually choose from. This is one discovery call, not
+  // multiplied per-candidate like verification is, so a much larger
+  // fetch here is cheap and gives real date variety to work with.
   const minLeadIso = new Date(Date.now() + MIN_LEAD_DAYS * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + 'Z';
   const discoverySettled = await Promise.allSettled(
     providers.map((p) =>
       typeof p.searchEvents === 'function'
-        ? p.searchEvents({ query: '', city: '', countryCode, limit: 40, dateFrom: minLeadIso }, env)
+        ? p.searchEvents({ query: '', city: '', countryCode, limit: 150, dateFrom: minLeadIso }, env)
         : Promise.resolve([])
     )
   );
@@ -326,7 +424,7 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   const upcomingDiscovered = discovered.filter(isUpcoming);
   debug.upcomingCount = upcomingDiscovered.length;
   if (upcomingDiscovered.length === 0) {
-    return { detectedCountry, countryUsed: countryCode, demoMode, count: 0, results: [], debug };
+    return { countryUsed: countryCode, demoMode, count: 0, results: [], debug };
   }
 
   // Prefer onsale events for candidate selection — an event that isn't
@@ -416,7 +514,6 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   const selected = applyDateSpacing(diverseOrdered, TARGET_COUNT, MIN_DAYS_BETWEEN_CARDS);
 
   return {
-    detectedCountry: detectedCountry, // null if geolocation didn't resolve — distinct from the fallback actually used
     countryUsed: countryCode,
     demoMode,
     count: selected.length,
@@ -425,4 +522,4 @@ async function getTrendingEvents(clientIp, env, overrideCountry) {
   };
 }
 
-module.exports = { getTrendingEvents, FALLBACK_COUNTRY };
+module.exports = { getTrendingEvents, FALLBACK_COUNTRY, startBackgroundTrendingRefresh };

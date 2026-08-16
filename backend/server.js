@@ -325,6 +325,11 @@ const server = http.createServer(async (req, res) => {
     console.log('Public API:  /api/tickets   /api/hotels   /api/watchers   /api/health');
     console.log(`Admin panel: http://localhost:${port}/admin`);
     console.log(`Storage:     ${persistence.isUsingDynamo() ? 'DynamoDB (' + process.env.DYNAMODB_TABLE + ')' : 'local file (backend/data/)'}`);
+    // Fire-and-forget — proactively keeps trending data warm on a
+    // schedule so real visitors never wait for the slow discovery+
+    // verification pipeline themselves. Started after listen() begins,
+    // not awaited, so it never delays the server actually coming up.
+    trendingRoutes.startBackgroundTrendingRefresh();
   });
 
   // Price-drop alert scheduler — re-checks every watched event once an hour.

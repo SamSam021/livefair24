@@ -495,8 +495,8 @@ async function runTests() {
   await test('Homepage loads the trending-concerts logic and falls back silently when unavailable', async () => {
     const res = await get('/');
     assert.ok(res.body.includes('loadTrendingConcerts'), 'homepage must attempt to load real trending concerts');
-    assert.ok(res.body.includes('data.demoMode || data.results.length === 0) return'),
-      'must silently keep the static fallback cards in demo mode or on empty results — no error, no broken UI');
+    assert.ok(res.body.includes('data.demoMode || data.results.length === 0){ restoreOriginalCards'),
+      'must restore the original static cards (not leave a stuck loading skeleton) in demo mode or on empty results — no error, no broken UI');
   });
 
   await test('Trending prefers distinct artists per card, topping up with repeats only when the pool lacks enough diversity (demo mode only has 3 base artists, so 6 cards correctly means some repeat)', async () => {
@@ -631,6 +631,92 @@ async function runTests() {
     assert.ok(trendingSrc.includes('Date.now() + MIN_LEAD_DAYS'), 'the discovery boundary must be computed from the same MIN_LEAD_DAYS constant used for eligibility, not a separately hardcoded value that could drift out of sync');
   });
 
+  await test('Discovery fetches a wide pool (150), not just 40 (regression: real evidence showed all 6 selected cards landing on the exact same date — sorting date,asc from the lead-time boundary with too small a fetch clustered every discovered event on that single boundary day, leaving date-spacing with nothing else to choose from)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('limit: 150'), 'discovery must fetch a wide enough pool to span multiple days, not just the boundary day — this is one call, not multiplied per-candidate, so a larger fetch here is cheap');
+  });
+
+  await test('Trending results are cached server-side so repeat requests are fast (real usage confirmed the full pipeline takes ~10 seconds due to throttled verification calls — caching means only the first request per country per cache window pays that cost)', async () => {
+    // Using a country not queried by any earlier test in this suite —
+    // otherwise the cache would already be warm by the time this runs,
+    // since the whole suite shares one server process.
+    const first = await get('/api/trending?country=AU');
+    assert.strictEqual(first.status, 200);
+    assert.strictEqual(first.json.cacheHit, false, 'the first request for a given country should be a genuine cache miss');
+    const second = await get('/api/trending?country=AU');
+    assert.strictEqual(second.status, 200);
+    assert.strictEqual(second.json.cacheHit, true, 'a repeat request for the same country should be served from cache, not re-run the full pipeline');
+    assert.strictEqual(first.json.count, second.json.count, 'cached data must be identical to what was originally computed');
+  });
+
+  await test('Trending cache key includes demoMode, so a provider being added/removed while the server is running can\'t serve stale demo data as real, or vice versa', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes("${countryCode}:${demoMode ? 'demo' : 'real'}"), 'cache key must distinguish demo mode from real data for the same country');
+  });
+
+  await test('Homepage shows a loading skeleton while trending data loads, instead of leaving wrong demo content visible that then jarringly swaps (regression: a real ~10 second fetch made this transition genuinely jarring, not just slow)', async () => {
+    const res = await get('/');
+    assert.ok(res.body.includes('function showTrendingLoadingSkeleton'), 'must show a neutral loading state immediately, before the fetch starts');
+    assert.ok(res.body.includes('const originalHTML = showTrendingLoadingSkeleton()'), 'the skeleton must actually be shown as part of homepage initialization, not just defined and unused');
+    assert.ok(res.body.includes('function restoreOriginalCards'), 'must be able to restore the original static cards exactly if the fetch fails or comes back empty');
+    assert.ok(res.body.includes('restoreOriginalCards(originalHTML)'), 'restoration must actually be wired into every failure path (fetch error, demo mode, empty results)');
+  });
+
+  await test('Trending data is proactively refreshed in the background on a schedule, so real visitors never have to wait for the slow pipeline themselves', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('async function backgroundRefreshTrending'), 'must have a background refresh function');
+    // 3-hour interval, rotating ONE country per cycle — not the original
+    // 5-minute-refresh-all-5-countries design, which would have cost
+    // ~37,000 Ticketmaster calls/day and exhausted their ~5,000/day
+    // quota in under 2 hours, breaking real user searches too, not just
+    // trending. This budgets to ~208 calls/day, close to the requested
+    // ~200/day target.
+    assert.ok(trendingSrc.includes('const BACKGROUND_REFRESH_INTERVAL_MS = 3 * 60 * 60 * 1000'), 'must refresh on a 3-hour schedule, not the original budget-breaking 5-minute one');
+    assert.ok(trendingSrc.includes('backgroundRefreshRotationIndex'), 'must rotate through one country per cycle, not refresh all 5 every time');
+    assert.ok(trendingSrc.includes('function startBackgroundTrendingRefresh'), 'must have a startup entry point');
+    assert.ok(trendingSrc.includes('setInterval'), 'must actually run on a repeating schedule, not just once at startup');
+
+    const serverSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
+    assert.ok(serverSrc.includes('trendingRoutes.startBackgroundTrendingRefresh()'), 'must actually be started when the server boots, not just defined and unused');
+  });
+
+  await test('Cache TTL is long enough to survive a full rotation cycle (regression: a short TTL alongside a slow multi-hour rotation would let a country\'s cache entry expire between its own refreshes, silently defeating the whole point of pre-warming)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('const CACHE_TTL_MS = 18 * 60 * 60 * 1000'), 'TTL must be set comfortably longer than a full 5-country rotation (5 countries × 3 hours = 15 hours) — 18 hours leaves real buffer');
+  });
+
+  await test('Background refresh pre-warms every country a provider declares pricing support for, covering every real visitor (they always resolve to one of these, directly or via fallback)', async () => {
+    const tm = require('../providers/tickets/ticketmaster.js');
+    const demo = require('../providers/tickets/demo.js');
+
+    function collectCountriesToWarm(providers, fallbackCountry) {
+      const countriesToWarm = new Set();
+      for (const p of providers) {
+        if (Array.isArray(p.pricingSupportedCountries)) {
+          p.pricingSupportedCountries.forEach((c) => countriesToWarm.add(c));
+        }
+      }
+      if (countriesToWarm.size === 0) countriesToWarm.add(fallbackCountry);
+      return countriesToWarm;
+    }
+
+    const withTicketmaster = collectCountriesToWarm([tm], 'US');
+    assert.deepStrictEqual([...withTicketmaster].sort(), ['AU', 'CA', 'MX', 'NZ', 'US'], 'must warm exactly the 5 countries Ticketmaster declares pricing support for');
+
+    const noRealProvider = collectCountriesToWarm([demo], 'US');
+    assert.deepStrictEqual([...noRealProvider], ['US'], 'must fall back to a sensible default if no provider declares specific support');
+  });
+
+  await test('Background refresh skips entirely in demo mode — nothing slow to pre-warm, no real API calls to make', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('if (demoMode) return'), 'must skip background refresh entirely when no real provider is configured');
+  });
+
+  await test('Background refresh re-reads env fresh on every cycle, not captured once at startup, so a Ticketmaster key added later via the admin panel is picked up without a restart', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('const env = registry.getMergedEnv();'), 'must fetch env fresh inside the background refresh function, not receive it as a stale parameter captured once');
+  });
+
   await test('Ticketmaster declares which countries support pricing (US, CA, AU, NZ, MX per their own documentation) and a fallback country, using a real API interface rather than a hardcoded rule', async () => {
     const tm = require('../providers/tickets/ticketmaster.js');
     assert.deepStrictEqual(tm.pricingSupportedCountries, ['US', 'CA', 'AU', 'NZ', 'MX']);
@@ -728,7 +814,7 @@ async function runTests() {
 
   await test('Homepage initialization is properly sequenced — selectEvent(0) only runs after the trending swap resolves (race condition fix)', async () => {
     const res = await get('/');
-    assert.ok(res.body.includes('await loadTrendingConcerts()'), 'must await the trending fetch before reading EVENTS[0]');
+    assert.ok(res.body.includes('await loadTrendingConcerts(originalHTML)'), 'must await the trending fetch before reading EVENTS[0]');
     assert.ok(res.body.includes('initHomepageEvents'), 'must use one coordinated initializer, not two independent load listeners racing each other');
     // Only one 'load' listener should exist for this purpose — two
     // independent ones was the exact bug (selectEvent(0) could read
