@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Find Concerts & Hotels Nearby — LiveFair24</title>
-<meta name="description" content="Discover upcoming concerts and find the right hotel nearby. See your event, your venue, and your stay — all in one place.">
+<title>Concert Tickets — Search Prices + Hotels | LiveFair24</title>
+<meta name="description" content="Search concert ticket prices and find the nearest hotel. See your total trip cost before you buy. Updated every 2 minutes.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://livefair24.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,8 +24,8 @@
 </style>
 
 <!-- Open Graph -->
-<meta property="og:title" content="Find Concerts & Hotels Nearby — LiveFair24">
-<meta property="og:description" content="Discover upcoming concerts and find the right hotel nearby.">
+<meta property="og:title" content="Concert Tickets — Search Prices + Hotels">
+<meta property="og:description" content="Search concert ticket prices, find a hotel near the venue, and see your total trip cost.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://livefair24.com/">
 
@@ -36,7 +36,7 @@
   "@type": "WebSite",
   "name": "LiveFair24",
   "url": "https://livefair24.com/",
-  "description": "Discover upcoming concerts and find hotels near the venue.",
+  "description": "Concert ticket search. Find ticket prices, find a hotel near the venue, and calculate your total trip cost.",
   "potentialAction": {
     "@type": "SearchAction",
     "target": "https://livefair24.com/search?q={search_term_string}",
@@ -54,7 +54,7 @@
   "url": "https://livefair24.com/",
   "logo": "https://livefair24.com/assets/logo.png",
   "sameAs": [],
-  "description": "Concert discovery and nearby-hotel matching."
+  "description": "Concert ticket and hotel search platform."
 }
 </script>
 </head>
@@ -100,9 +100,9 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <span class="badge badge-live" style="margin-bottom:20px;">● Discover concerts near you</span>
+    <span class="badge badge-live" style="margin-bottom:20px;">● Live prices — updated every 2 minutes</span>
     <h1>Live happens once.<br>Don't miss it.</h1>
-    <p>Find upcoming concerts and the right hotel nearby — your event, your venue, and your stay, all in one search.</p>
+    <p>Search ticket prices, find a hotel near the venue, and see your complete trip cost — all in one search.</p>
 
     <form class="search-form search-form-segmented" action="/search/" method="get" role="search" aria-label="Search concerts">
       <div class="search-segment search-segment-location">
@@ -187,7 +187,7 @@
     <!-- Event cards — clickable, first one pre-selected -->
     <div class="card-grid" id="eventCardGrid">
 
-      <div class="card event-card active" data-id="0" style="cursor:pointer;" onclick="selectEvent(0,'hotel')">
+      <div class="card event-card active" data-id="0" style="cursor:pointer;" onclick="selectEvent(0,'ticket')">
         <div class="genre">Singer-Songwriter</div>
         <h3>Rosa Calder</h3>
         <div class="meta">Pier 2, Bremen, Germany</div>
@@ -195,13 +195,13 @@
         <div class="card-foot">
           <span class="from">from <b>$38</b></span>
           <div class="card-actions">
-            <a href="/events/rosa-calder-bremen-2026-08-13.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(0,'ticket')">Price →</a>
+            <a href="/events/rosa-calder-bremen-2026-08-13.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(0,'ticket')">View tickets →</a>
             <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(0,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
           </div>
         </div>
       </div>
 
-      <div class="card event-card" data-id="1" style="cursor:pointer;" onclick="selectEvent(1,'hotel')">
+      <div class="card event-card" data-id="1" style="cursor:pointer;" onclick="selectEvent(1,'ticket')">
         <div class="genre">Pop / Rock</div>
         <h3>Nova Wren</h3>
         <div class="meta">Waldbühne, Berlin, Germany</div>
@@ -209,13 +209,13 @@
         <div class="card-foot">
           <span class="from">from <b>$66</b></span>
           <div class="card-actions">
-            <a href="/events/nova-wren-berlin-2026-08-16.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(1,'ticket')">Price →</a>
+            <a href="/events/nova-wren-berlin-2026-08-16.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(1,'ticket')">View tickets →</a>
             <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(1,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
           </div>
         </div>
       </div>
 
-      <div class="card event-card" data-id="2" style="cursor:pointer;" onclick="selectEvent(2,'hotel')">
+      <div class="card event-card" data-id="2" style="cursor:pointer;" onclick="selectEvent(2,'ticket')">
         <div class="genre">Rock</div>
         <h3>Silvertone</h3>
         <div class="meta">3Olympia Theatre, Dublin, Ireland</div>
@@ -223,13 +223,13 @@
         <div class="card-foot">
           <span class="from">from <b>$44</b></span>
           <div class="card-actions">
-            <a href="/events/silvertone-dublin-2026-08-18.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(2,'ticket')">Price →</a>
+            <a href="/events/silvertone-dublin-2026-08-18.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(2,'ticket')">View tickets →</a>
             <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(2,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
           </div>
         </div>
       </div>
 
-      <div class="card event-card" data-id="3" style="cursor:pointer;" onclick="selectEvent(3,'hotel')">
+      <div class="card event-card" data-id="3" style="cursor:pointer;" onclick="selectEvent(3,'ticket')">
         <div class="genre">Indie Pop</div>
         <h3>Delphine &amp; The Static Choir</h3>
         <div class="meta">Brixton Academy, London, UK</div>
@@ -237,13 +237,13 @@
         <div class="card-foot">
           <span class="from">from <b>$55</b></span>
           <div class="card-actions">
-            <a href="/events/delphine-london-2026-08-19.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(3,'ticket')">Price →</a>
+            <a href="/events/delphine-london-2026-08-19.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(3,'ticket')">View tickets →</a>
             <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(3,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
           </div>
         </div>
       </div>
 
-      <div class="card event-card" data-id="4" style="cursor:pointer;" onclick="selectEvent(4,'hotel')">
+      <div class="card event-card" data-id="4" style="cursor:pointer;" onclick="selectEvent(4,'ticket')">
         <div class="genre">Techno</div>
         <h3>Nocturne</h3>
         <div class="meta">Fabrique, Milan, Italy</div>
@@ -251,13 +251,13 @@
         <div class="card-foot">
           <span class="from">from <b>$36</b></span>
           <div class="card-actions">
-            <a href="/events/nocturne-milan-2026-08-28.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(4,'ticket')">Price →</a>
+            <a href="/events/nocturne-milan-2026-08-28.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(4,'ticket')">View tickets →</a>
             <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(4,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
           </div>
         </div>
       </div>
 
-      <div class="card event-card" data-id="5" style="cursor:pointer;" onclick="selectEvent(5,'hotel')">
+      <div class="card event-card" data-id="5" style="cursor:pointer;" onclick="selectEvent(5,'ticket')">
         <div class="genre">Hip-Hop</div>
         <h3>Kaito Reyes</h3>
         <div class="meta">Zénith Paris, Paris, France</div>
@@ -265,7 +265,7 @@
         <div class="card-foot">
           <span class="from">from <b>$59</b></span>
           <div class="card-actions">
-            <a href="/events/kaito-reyes-paris-2026-08-29.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(5,'ticket')">Price →</a>
+            <a href="/events/kaito-reyes-paris-2026-08-29.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(5,'ticket')">View tickets →</a>
             <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(5,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
           </div>
         </div>
@@ -273,11 +273,11 @@
 
     </div>
 
-    <!-- Ticket price — Ticketmaster only for now, not framed as a comparison -->
+    <!-- Live ticket prices — shown above the hotel/map panel -->
     <div class="event-panel" id="ticketPanel">
       <div class="ticket-panel-intro">
-        <h2>Price</h2>
-        <p><span id="ticketDemoBadge" class="badge badge-gold" style="display:none;">Demo mode — sample price, not real</span></p>
+        <h2>Ticket prices</h2>
+        <p>Same seat category, sorted by total price including fees. <span id="ticketDemoBadge" class="badge badge-gold" style="display:none;">Demo mode — sample prices, not real</span></p>
       </div>
       <div class="event-panel-header" style="margin-bottom:0;padding-bottom:0;border-bottom:none;">
         <div>
@@ -285,7 +285,7 @@
           <div class="ep-meta" id="ticketEpMeta">Pier 2, Bremen, Germany · Thu, 13 Aug 2026</div>
         </div>
         <div class="ep-price">
-          <div class="lbl">Price</div>
+          <div class="lbl">Lowest total price</div>
           <div class="amt" id="ticketEpPrice">$38.00</div>
         </div>
       </div>
@@ -300,6 +300,10 @@
         <div>
           <div class="ep-title" id="epTitle">Hotels near Rosa Calder — Pier 2, Bremen</div>
           <div class="ep-meta"><span id="epMeta">Thu, 13 Aug 2026 · 20:00 · Germany</span> <span id="hotelDemoBadge" class="badge badge-gold" style="display:none;">Demo mode</span></div>
+        </div>
+        <div class="ep-price">
+          <div class="lbl">Cheapest ticket</div>
+          <div class="amt" id="epTicket">$38</div>
         </div>
       </div>
 
@@ -340,12 +344,12 @@
 
   <!-- Upcoming matches — the sports equivalent of the concerts section above,
        kept as its own separate segment rather than mixed in, per your
-       request. Links out to the match's own full page (ticket comparison,
+       request. Links out to the match's own full page (ticket prices,
        hotel map/filters) rather than duplicating the embedded
        selectEvent() panel system here. -->
   <section class="section" id="sports">
     <div class="section-header">
-      <div><h2>Upcoming matches</h2><p>Real fixtures, matched with hotels nearby.</p></div>
+      <div><h2>Upcoming matches</h2><p>Live ticket prices, same search as concerts.</p></div>
       <a href="/sports/index.html">See all sports →</a>
     </div>
     <div class="card-grid">
@@ -355,8 +359,9 @@
         <div class="meta">Kristallpark, Munich, Germany</div>
         <div class="date">Sat, 12 Sep 2026 · 15:30</div>
         <div class="card-foot">
+          <span class="from">from <b>$45</b></span>
           <div class="card-actions">
-            <span class="cta">Price →</span>
+            <span class="cta">View tickets →</span>
           </div>
         </div>
       </a>
@@ -405,7 +410,7 @@
   <!-- How it works -->
   <section class="section">
     <div class="section-header">
-      <div><h2>How LiveFair24 works</h2><p>Three steps to your next concert.</p></div>
+      <div><h2>How LiveFair24 works</h2><p>Three steps to the cheapest concert trip.</p></div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;">
       <div class="card">
@@ -425,8 +430,8 @@
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
           </svg>
         </div>
-        <h3>2. View event details</h3>
-        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">See the artist, venue, and date at a glance, then head straight to the official ticket source when you're ready.</p>
+        <h3>2. See ticket prices</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">We show you the total price including all fees — not a misleading headline price.</p>
       </div>
       <div class="card">
         <div style="width:48px;height:48px;background:var(--blue-soft);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
@@ -435,8 +440,8 @@
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
         </div>
-        <h3>3. Find a hotel nearby</h3>
-        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">We find hotels near the venue and show you distance, rating, and price so you can plan your stay.</p>
+        <h3>3. Add hotel + total cost</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">We find hotels near the venue, calculate distance, and show you the complete trip cost: ticket + hotel + local transport.</p>
       </div>
     </div>
   </section>
@@ -444,24 +449,24 @@
   <!-- Trust -->
   <section class="section">
     <div class="section-header">
-      <div><h2>Why LiveFair24?</h2><p>Concert discovery, matched with a place to stay.</p></div>
+      <div><h2>Why LiveFair24?</h2><p>Not another ticket broker. Just a straight search.</p></div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
       <div class="card">
-        <h3 style="font-size:16px;">Real, upcoming concerts</h3>
-        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We pull real event listings — artist, venue, and date — and link you straight to the official ticket source.</p>
+        <h3 style="font-size:16px;">Total price, not headline price</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We show: face value + mandatory fees + delivery. Never the misleading "from $X" that doubles at checkout.</p>
       </div>
       <div class="card">
-        <h3 style="font-size:16px;">Hotels near every venue</h3>
-        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">See distance, rating, and price for hotels near the venue, right alongside the event you're planning around.</p>
+        <h3 style="font-size:16px;">Real, live ticket prices</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">Prices update every 2 minutes so what you see is what you'll pay.</p>
       </div>
       <div class="card">
-        <h3 style="font-size:16px;">One search for both</h3>
-        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">Find the concert and the place to stay in the same view, instead of juggling separate tabs and searches.</p>
+        <h3 style="font-size:16px;">Hotel + ticket in one search</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We calculate distance from venue, show nearby hotels, and show your complete trip cost in one view.</p>
       </div>
       <div class="card">
-        <h3 style="font-size:16px;">No hidden markup on hotels</h3>
-        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We earn affiliate commission when you click through. You pay the hotel's own price — we never add our own markup.</p>
+        <h3 style="font-size:16px;">No markup, no hidden fees</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We earn affiliate commission when you click through. You pay the seller's price. We never add our own markup.</p>
       </div>
     </div>
   </section>
@@ -473,7 +478,7 @@
   <div class="footer-inner">
     <div>
       <div class="footer-logo">● LiveFair24</div>
-      <p class="footer-tagline">Find upcoming concerts and the right hotel nearby.</p>
+      <p class="footer-tagline">The cheapest way to attend any concert. Ticket prices + hotels + total trip cost.</p>
     </div>
     <div class="footer-col">
       <h4>Browse</h4>
@@ -487,21 +492,28 @@
       </ul>
     </div>
     <div class="footer-col">
-      <h4>Explore</h4>
+      <h4>Guides</h4>
       <ul>
+        <li><a href="/guides/cheapest-concert-tickets.html">Cheapest tickets</a></li>
         <li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li>
+        <li><a href="/guides/hotels-near-venues.html">Hotels near venues</a></li>
         <li><a href="/guides/how-it-works.html">How it works</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h4>Company</h4>
       <ul>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/guides/methodology.html">Methodology</a></li>
+        <li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li>
         <li><a href="/privacy.html">Privacy</a></li>
-        <li><a href="/impressum.html">Impressum</a></li></ul>
+        <li><a href="/contact.html">Contact</a></li>
+      <li><a href="impressum.html">Impressum</a></li></ul>
     </div>
   </div>
   <div class="footer-bottom">
     <span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span>
+    <span>Prices updated every 2 minutes. All prices include fees where disclosed.</span>
   </div>
 </footer>
 
@@ -540,16 +552,14 @@ function formatTrendingDate(dateStr, timeStr){
 // Renders real trending cards using the EXACT same markup/classes/onclick
 // pattern as the static fallback cards below, so they're fully
 // interactive through the existing selectEvent() system — clicking
-// anywhere on the card, or "Hotels" specifically, updates the same hotel
-// panel the static cards do, just with real data for a real event
-// instead of demo data. "View event" is now a real link to the source,
-// not a panel trigger.
+// "Compare" or "Hotels" updates the same panels the static cards do,
+// just with real ticket/hotel data for a real event instead of demo data.
 function renderTrendingEventCards(events){
   const grid = document.getElementById('eventCardGrid');
   if(!grid) return;
 
   grid.innerHTML = events.map((ev, i) => `
-    <div class="card event-card${i===0?' active':''}" data-id="${i}" style="cursor:pointer;" onclick="selectEvent(${i},'hotel')">
+    <div class="card event-card${i===0?' active':''}" data-id="${i}" style="cursor:pointer;" onclick="selectEvent(${i},'ticket')">
       <div class="genre">${ev.genre || 'Live'}</div>
       <h3>${ev.artist}</h3>
       <div class="meta">${ev.venue}, ${ev.city}, ${ev.country}</div>
@@ -557,7 +567,7 @@ function renderTrendingEventCards(events){
       <div class="card-foot">
         <span class="from">from <b>${ev.ticket}</b></span>
         <div class="card-actions">
-          <a href="${ev.sourceUrl || '#'}" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">Price →</a>
+          <a href="${ev.sourceUrl || '#'}" target="_blank" rel="noopener" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">View tickets →</a>
           <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(${i},'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
         </div>
       </div>
@@ -683,33 +693,28 @@ async function fetchHotels(ev){
   return res.json();
 }
 
-// Shows a single price, not a comparison — filters down to Ticketmaster
-// only, even if the underlying /api/tickets response includes other
-// sellers, so nothing here implies we're comparing across providers.
-// Other providers' permissions are still being sought; this keeps the
-// display honest about what's actually shown today.
 function renderSellerCards(data){
-  const allSellers = data.results || [];
-  const sellers = allSellers.filter((s) => s.source === 'ticketmaster' || s.source === 'demo');
+  const sellers = data.results || [];
   document.getElementById('ticketDemoBadge') && (document.getElementById('ticketDemoBadge').style.display = data.demoMode ? 'inline-flex' : 'none');
 
   if(sellers.length === 0){
     document.getElementById('ticketEpPrice').textContent = '—';
     document.getElementById('sellerCards').innerHTML =
-      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No price available for this event right now.</div>';
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.</div>';
     return;
   }
 
-  const s = sellers[0];
-  document.getElementById('ticketEpPrice').textContent = `$${s.total.toFixed(2)}`;
+  document.getElementById('ticketEpPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
 
-  document.getElementById('sellerCards').innerHTML = `
-    <div class="seller-card">
+  document.getElementById('sellerCards').innerHTML = sellers.map((s)=>`
+    <div class="seller-card ${s.isBestPrice?'best':''}">
+      ${s.isBestPrice?'<div class="seller-badge-best">★ BEST PRICE</div>':''}
       <div class="seller-left">
         <div class="seller-badge-sq p-${s.badge.toLowerCase()}">${s.badge}</div>
         <div>
           <div class="seller-name">${s.sellerName}</div>
           <div class="seller-meta">${s.section || 'See seller for details'}</div>
+          <div class="seller-rating">${s.rating!=null ? `Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}` : 'Rating not provided by this seller'}</div>
         </div>
       </div>
       <div class="seller-divider"></div>
@@ -719,7 +724,7 @@ function renderSellerCards(data){
         <div class="seller-total-breakdown">$${s.faceValue.toFixed(2)} + $${s.fees.toFixed(2)}</div>
         <a href="${s.url}" class="seller-cta" target="_blank" rel="noopener">Get tickets →</a>
       </div>
-    </div>`;
+    </div>`).join('');
 }
 
 let map=null, mapLayer=null, currentMarkers=[], currentHotels=[];
@@ -735,9 +740,10 @@ async function selectEvent(idx, scrollTo=null){
 
   document.getElementById('epTitle').textContent  = `Hotels near ${ev.artist} — ${ev.venue}, ${ev.city}`;
   document.getElementById('epMeta').textContent   = `${ev.date} · ${ev.country}`;
+  document.getElementById('epTicket').textContent = ev.ticket;
   document.getElementById('ticketEpTitle').textContent = ev.artist;
   document.getElementById('ticketEpMeta').textContent = `${ev.venue}, ${ev.city}, ${ev.country} · ${ev.date.split(' · ')[0]}`;
-  document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading price…</div>';
+  document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading prices…</div>';
   document.getElementById('hotelScroll').innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading hotels…</div>';
 
   try{
@@ -753,7 +759,7 @@ async function selectEvent(idx, scrollTo=null){
   } catch(err){
     if(thisLoad !== loadToken) return;
     console.error(err);
-    document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load price right now.</div>';
+    document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load prices right now.</div>';
     document.getElementById('hotelScroll').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load hotels right now.</div>';
   }
 
