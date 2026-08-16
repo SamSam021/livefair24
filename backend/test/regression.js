@@ -499,299 +499,6 @@ async function runTests() {
       'must restore the original static cards (not leave a stuck loading skeleton) in demo mode or on empty results — no error, no broken UI');
   });
 
-  await test('Trending prefers distinct artists per card, topping up with repeats only when the pool lacks enough diversity (demo mode only has 3 base artists, so 6 cards correctly means some repeat)', async () => {
-    const res = await get('/api/trending');
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.json.count, 6, 'must fill all 6 card slots, per the requirement to never show fewer cards than the pool could support');
-    const distinctArtists = new Set(res.json.results.map((r) => r.attractionId));
-    assert.ok(distinctArtists.size >= 3, 'demo mode has exactly 3 base artists — all 3 must appear rather than fewer');
-    assert.ok(distinctArtists.size < res.json.results.length, 'with only 3 distinct artists available for 6 slots, some repetition is expected and correct — not a bug');
-  });
-
-  await test('Trending uses a two-step discover-then-verify-price flow, not a single bare country query (regression: a bare countryCode query reliably came back with zero priced results in production, confirmed twice against real Ticketmaster data)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('STEP 1'), 'must have a discovery step to find candidate events without requiring price yet');
-    assert.ok(trendingSrc.includes('STEP 2'), 'must have a separate verification step that re-queries by name for pricing');
-    assert.ok(trendingSrc.includes('cand.name'), 'verification must re-query using the actual candidate name, not the bare country query again');
-  });
-
-  await test('Static fallback\'s initial "Compare live prices" panel content matches the active card (regression: showed Nova Wren while Rosa Calder card was marked active, causing a visible wrong-data flash before JS corrected it on load)', async () => {
-    const res = await get('/');
-    assert.ok(res.body.includes('id="ticketEpTitle">Rosa Calder<'), 'ticket panel initial content must match whichever card has the "active" class');
-    assert.ok(res.body.includes('id="epTitle">Hotels near Rosa Calder'), 'hotel panel initial content must also match — this one was already correct, confirming only the ticket panel had drifted');
-  });
-
-  await test('Trending discovery filters to music events only (regression: a live debug trace showed comedy shows and a children\'s museum being pulled in as "trending concerts")', async () => {
-    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
-    assert.ok(tmSrc.includes('classificationName=music'), 'discovery must filter to music events, confirmed necessary by real non-concert results appearing in production');
-  });
-
-  await test('Trending candidate selection preserves soonest-first date order rather than randomizing across the whole discovered pool (near-term events are more likely to have on-sale pricing)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('selectDiverseSoonest'), 'candidate selection must use the soonest-first function, not the fully-randomized one');
-    assert.ok(trendingSrc.includes('const candidates = selectDiverseSoonest'), 'must actually be wired in as the candidate-picking function, not just defined and unused');
-    // Final display selection must still randomize (which artist,
-    // which of their dates) among already-priced results — now it
-    // reorders the FULL priced pool by diversity preference (not
-    // truncated to TARGET_COUNT yet) so the subsequent date-spacing pass
-    // has the whole pool to choose a well-spread final 6 from.
-    assert.ok(trendingSrc.includes('selectDiverseRandom(withLeadTime, withLeadTime.length)'), 'final display selection must still randomize among already-priced, lead-time-eligible results');
-  });
-
-  await test('Trending requires at least 14 days\' notice before a concert shows as a card (nobody realistically plans to attend something in a couple hours)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('const MIN_LEAD_DAYS = 14'), 'must enforce a minimum lead time before a concert is eligible to show');
-    assert.ok(trendingSrc.includes('function hasMinimumLeadTime'), 'must have an explicit lead-time filter function');
-    assert.ok(trendingSrc.includes('.filter(hasMinimumLeadTime)'), 'the lead-time filter must actually be applied to the eligible pool');
-  });
-
-  await test('Trending spaces out the selected cards by date, not clustering multiple cards on the same day (regression: two real selected cards landed on the exact same date and time)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('const MIN_DAYS_BETWEEN_CARDS = 3'), 'must enforce a minimum gap between selected cards\' dates');
-    assert.ok(trendingSrc.includes('function applyDateSpacing'), 'must have an explicit date-spacing selection function');
-    assert.ok(trendingSrc.includes('applyDateSpacing(diverseOrdered, TARGET_COUNT, MIN_DAYS_BETWEEN_CARDS)'), 'date spacing must actually be applied to pick the final 6 cards');
-
-    // Directly verify the spacing logic against the exact real scenario
-    // that prompted this: multiple same-day pairs, must prefer spread
-    // dates first and only repeat a date when there's no other choice.
-    function daysBetweenDateStrings(a, b) {
-      const da = new Date(a + 'T00:00:00Z');
-      const db = new Date(b + 'T00:00:00Z');
-      return Math.abs((da.getTime() - db.getTime()) / (1000 * 60 * 60 * 24));
-    }
-    function applyDateSpacing(events, targetCount, minDaysApart) {
-      const selected = [];
-      for (const ev of events) {
-        if (selected.length >= targetCount) break;
-        if (!ev.date || selected.every((s) => !s.date || daysBetweenDateStrings(s.date, ev.date) >= minDaysApart)) {
-          selected.push(ev);
-        }
-      }
-      if (selected.length < targetCount) {
-        for (const ev of events) {
-          if (selected.length >= targetCount) break;
-          if (!selected.includes(ev)) selected.push(ev);
-        }
-      }
-      return selected;
-    }
-    const sameDay = [
-      { name: 'A', date: '2026-08-26' }, { name: 'B', date: '2026-08-26' },
-      { name: 'C', date: '2026-08-26' },
-    ];
-    const twoWeeksApart = applyDateSpacing(sameDay, 2, 3);
-    // Only one distinct date exists — must still fill 2 slots by
-    // topping up, not leave a card empty.
-    assert.strictEqual(twoWeeksApart.length, 2);
-  });
-
-  await test('Trending prefers onsale events for candidate verification, using Ticketmaster\'s own confirmed dates.status.code field (an event can be listed before tickets go on sale, which would explain missing pricing regardless of query strategy)', async () => {
-    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
-    assert.ok(tmSrc.includes('saleStatus:') && tmSrc.includes('dates.status.code'), 'must extract the real onsale status field from Ticketmaster\'s response');
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('isOnSaleOrUnknown'), 'must filter candidates toward onsale events before spending a verification call on them');
-    assert.ok(trendingSrc.includes('onSaleDiscovered.length > 0 ? onSaleDiscovered : upcomingDiscovered'),
-      'must fall back to the full upcoming pool if onsale filtering would leave nothing, rather than returning zero outright');
-  });
-
-  await test('Trending verification uses Ticketmaster\'s get-by-ID detail endpoint, not keyword re-search (regression: real evidence across two markets showed keyword re-search of confirmed-onsale, well-known artists never returning priced results)', async () => {
-    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
-    assert.ok(tmSrc.includes('async getEventDetails('), 'must have a get-by-ID detail lookup function');
-    assert.ok(tmSrc.includes('/discovery/v2/events/${encodeURIComponent(eventId)}.json'), 'must call the real per-event detail endpoint, not the list/search endpoint');
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('sourceProvider.getEventDetails'), 'verification must actually call the detail endpoint when available');
-    assert.ok(trendingSrc.includes('fallbackResults'), 'must still fall back to keyword search for providers without a detail-by-ID method (demo mode, future providers)');
-  });
-
-  await test('Trending verification is throttled in batches, not fired all at once (Ticketmaster\'s documented rate limit is 5 req/sec — real usage showed only 2 of 15 candidates returning results, and unthrottled parallel requests could silently trigger rate-limiting caught inside getEventDetails without ever surfacing as a visible error)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('async function runInBatches'), 'must batch verification requests instead of firing all of them simultaneously');
-    assert.ok(trendingSrc.includes('candidatesWithNoResult'), 'must track candidates that returned nothing distinctly from hard errors, to help distinguish "genuinely unpriced" from "silently rate-limited"');
-  });
-
-  await test('Trending checks more candidates than before (regression: real usage found only 2 of 15 candidates had pricing, even in a supported market)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('const CANDIDATES_TO_VERIFY = 25'), 'candidate pool must be raised from the original 15, which real usage showed was too few to reliably fill 6 card slots');
-  });
-
-  await test('Trending endpoint accepts a diagnostic country override (?country=XX) to test markets other than the visitor\'s detected one, without needing a VPN', async () => {
-    const res = await get('/api/trending?country=GB');
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.json.countryUsed, 'GB', 'override must actually take effect');
-  });
-
-  await test('Trending debug output includes raw discovered date samples, to catch date-parsing issues separately from pricing issues (regression: a real US query showed 40 discovered events but 0 upcoming, an unrelated bug this field is meant to help diagnose)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('discoveredDateSample'), 'must surface raw date/time values before filtering, to distinguish "no date" from "date parsed wrong" from "genuinely in the past"');
-  });
-
-  await test('Trending discovery explicitly requests events from at least MIN_LEAD_DAYS out, not just "now" (regression: checking pricing soonest-first conflicted with the minimum-lead-time requirement — the events most likely to have pricing were exactly the ones too soon to be eligible, wasting verification calls on events that would be rejected anyway)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('dateFrom: minLeadIso'), 'discovery must request events starting from the lead-time boundary, not just "now" — otherwise near-term-but-ineligible events waste verification calls');
-    assert.ok(trendingSrc.includes('Date.now() + MIN_LEAD_DAYS'), 'the discovery boundary must be computed from the same MIN_LEAD_DAYS constant used for eligibility, not a separately hardcoded value that could drift out of sync');
-  });
-
-  await test('Discovery fetches a wide pool (150), not just 40 (regression: real evidence showed all 6 selected cards landing on the exact same date — sorting date,asc from the lead-time boundary with too small a fetch clustered every discovered event on that single boundary day, leaving date-spacing with nothing else to choose from)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('limit: 150'), 'discovery must fetch a wide enough pool to span multiple days, not just the boundary day — this is one call, not multiplied per-candidate, so a larger fetch here is cheap');
-  });
-
-  await test('Trending results are cached server-side so repeat requests are fast (real usage confirmed the full pipeline takes ~10 seconds due to throttled verification calls — caching means only the first request per country per cache window pays that cost)', async () => {
-    // Using a country not queried by any earlier test in this suite —
-    // otherwise the cache would already be warm by the time this runs,
-    // since the whole suite shares one server process.
-    const first = await get('/api/trending?country=AU');
-    assert.strictEqual(first.status, 200);
-    assert.strictEqual(first.json.cacheHit, false, 'the first request for a given country should be a genuine cache miss');
-    const second = await get('/api/trending?country=AU');
-    assert.strictEqual(second.status, 200);
-    assert.strictEqual(second.json.cacheHit, true, 'a repeat request for the same country should be served from cache, not re-run the full pipeline');
-    assert.strictEqual(first.json.count, second.json.count, 'cached data must be identical to what was originally computed');
-  });
-
-  await test('Trending cache key includes demoMode, so a provider being added/removed while the server is running can\'t serve stale demo data as real, or vice versa', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes("${countryCode}:${demoMode ? 'demo' : 'real'}"), 'cache key must distinguish demo mode from real data for the same country');
-  });
-
-  await test('Homepage shows a loading skeleton while trending data loads, instead of leaving wrong demo content visible that then jarringly swaps (regression: a real ~10 second fetch made this transition genuinely jarring, not just slow)', async () => {
-    const res = await get('/');
-    assert.ok(res.body.includes('function showTrendingLoadingSkeleton'), 'must show a neutral loading state immediately, before the fetch starts');
-    assert.ok(res.body.includes('const originalHTML = showTrendingLoadingSkeleton()'), 'the skeleton must actually be shown as part of homepage initialization, not just defined and unused');
-    assert.ok(res.body.includes('function restoreOriginalCards'), 'must be able to restore the original static cards exactly if the fetch fails or comes back empty');
-    assert.ok(res.body.includes('restoreOriginalCards(originalHTML)'), 'restoration must actually be wired into every failure path (fetch error, demo mode, empty results)');
-  });
-
-  await test('Trending data is proactively refreshed in the background on a schedule, so real visitors never have to wait for the slow pipeline themselves', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('async function backgroundRefreshTrending'), 'must have a background refresh function');
-    // 3-hour interval, rotating ONE country per cycle — not the original
-    // 5-minute-refresh-all-5-countries design, which would have cost
-    // ~37,000 Ticketmaster calls/day and exhausted their ~5,000/day
-    // quota in under 2 hours, breaking real user searches too, not just
-    // trending. This budgets to ~208 calls/day, close to the requested
-    // ~200/day target.
-    assert.ok(trendingSrc.includes('const BACKGROUND_REFRESH_INTERVAL_MS = 3 * 60 * 60 * 1000'), 'must refresh on a 3-hour schedule, not the original budget-breaking 5-minute one');
-    assert.ok(trendingSrc.includes('backgroundRefreshRotationIndex'), 'must rotate through one country per cycle, not refresh all 5 every time');
-    assert.ok(trendingSrc.includes('function startBackgroundTrendingRefresh'), 'must have a startup entry point');
-    assert.ok(trendingSrc.includes('setInterval'), 'must actually run on a repeating schedule, not just once at startup');
-
-    const serverSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
-    assert.ok(serverSrc.includes('trendingRoutes.startBackgroundTrendingRefresh()'), 'must actually be started when the server boots, not just defined and unused');
-  });
-
-  await test('Cache TTL is long enough to survive a full rotation cycle (regression: a short TTL alongside a slow multi-hour rotation would let a country\'s cache entry expire between its own refreshes, silently defeating the whole point of pre-warming)', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('const CACHE_TTL_MS = 18 * 60 * 60 * 1000'), 'TTL must be set comfortably longer than a full 5-country rotation (5 countries × 3 hours = 15 hours) — 18 hours leaves real buffer');
-  });
-
-  await test('Background refresh pre-warms every country a provider declares pricing support for, covering every real visitor (they always resolve to one of these, directly or via fallback)', async () => {
-    const tm = require('../providers/tickets/ticketmaster.js');
-    const demo = require('../providers/tickets/demo.js');
-
-    function collectCountriesToWarm(providers, fallbackCountry) {
-      const countriesToWarm = new Set();
-      for (const p of providers) {
-        if (Array.isArray(p.pricingSupportedCountries)) {
-          p.pricingSupportedCountries.forEach((c) => countriesToWarm.add(c));
-        }
-      }
-      if (countriesToWarm.size === 0) countriesToWarm.add(fallbackCountry);
-      return countriesToWarm;
-    }
-
-    const withTicketmaster = collectCountriesToWarm([tm], 'US');
-    assert.deepStrictEqual([...withTicketmaster].sort(), ['AU', 'CA', 'MX', 'NZ', 'US'], 'must warm exactly the 5 countries Ticketmaster declares pricing support for');
-
-    const noRealProvider = collectCountriesToWarm([demo], 'US');
-    assert.deepStrictEqual([...noRealProvider], ['US'], 'must fall back to a sensible default if no provider declares specific support');
-  });
-
-  await test('Background refresh skips entirely in demo mode — nothing slow to pre-warm, no real API calls to make', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('if (demoMode) return'), 'must skip background refresh entirely when no real provider is configured');
-  });
-
-  await test('Background refresh re-reads env fresh on every cycle, not captured once at startup, so a Ticketmaster key added later via the admin panel is picked up without a restart', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('const env = registry.getMergedEnv();'), 'must fetch env fresh inside the background refresh function, not receive it as a stale parameter captured once');
-  });
-
-  await test('Ticketmaster declares which countries support pricing (US, CA, AU, NZ, MX per their own documentation) and a fallback country, using a real API interface rather than a hardcoded rule', async () => {
-    const tm = require('../providers/tickets/ticketmaster.js');
-    assert.deepStrictEqual(tm.pricingSupportedCountries, ['US', 'CA', 'AU', 'NZ', 'MX']);
-    assert.strictEqual(tm.isCountrySupportedForPricing('US'), true);
-    assert.strictEqual(tm.isCountrySupportedForPricing('DE'), false);
-    assert.strictEqual(tm.getFallbackPricingCountry(), 'US');
-  });
-
-  await test('Pricing-country fallback is genuinely generic — every country outside Ticketmaster\'s supported list falls back the same way, not a hardcoded "Germany means US" rule', async () => {
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('function resolvePricingCountry'), 'must have a general resolution function');
-    assert.ok(!trendingSrc.includes("'DE'") || trendingSrc.includes('isCountrySupportedForPricing'),
-      'must resolve fallback by checking provider capability, not by special-casing any specific country code');
-
-    const tm = require('../providers/tickets/ticketmaster.js');
-    function resolvePricingCountry(providers, requestedCountry) {
-      const anySupports = providers.some((p) => typeof p.isCountrySupportedForPricing !== 'function' || p.isCountrySupportedForPricing(requestedCountry));
-      if (anySupports) return { queryCountry: requestedCountry, usedPricingFallback: false };
-      for (const p of providers) {
-        if (typeof p.getFallbackPricingCountry === 'function') {
-          const fb = p.getFallbackPricingCountry();
-          if (fb) return { queryCountry: fb, usedPricingFallback: true };
-        }
-      }
-      return { queryCountry: requestedCountry, usedPricingFallback: false };
-    }
-    // Every one of these unsupported countries must fall back identically
-    // — proves this isn't special-cased to Germany.
-    for (const country of ['DE', 'IT', 'FR', 'ES', 'JP']) {
-      const result = resolvePricingCountry([tm], country);
-      assert.strictEqual(result.queryCountry, 'US', `${country} must fall back to US, same as every other unsupported country`);
-      assert.strictEqual(result.usedPricingFallback, true);
-    }
-    // Supported countries must NOT be overridden.
-    for (const country of ['US', 'CA', 'AU']) {
-      const result = resolvePricingCountry([tm], country);
-      assert.strictEqual(result.queryCountry, country, `${country} is genuinely supported and must not be overridden`);
-      assert.strictEqual(result.usedPricingFallback, false);
-    }
-  });
-
-  await test('Pricing-country fallback stops applying automatically once a provider actually supports that country — proves this isn\'t hardcoded, it reacts to real provider capability', async () => {
-    const tm = require('../providers/tickets/ticketmaster.js');
-    function resolvePricingCountry(providers, requestedCountry) {
-      const anySupports = providers.some((p) => typeof p.isCountrySupportedForPricing !== 'function' || p.isCountrySupportedForPricing(requestedCountry));
-      if (anySupports) return { queryCountry: requestedCountry, usedPricingFallback: false };
-      for (const p of providers) {
-        if (typeof p.getFallbackPricingCountry === 'function') {
-          const fb = p.getFallbackPricingCountry();
-          if (fb) return { queryCountry: fb, usedPricingFallback: true };
-        }
-      }
-      return { queryCountry: requestedCountry, usedPricingFallback: false };
-    }
-    // Simulating a hypothetical future second provider that covers Italy.
-    const futureProvider = { isCountrySupportedForPricing: (c) => c === 'IT' };
-    const result = resolvePricingCountry([tm, futureProvider], 'IT');
-    assert.strictEqual(result.queryCountry, 'IT', 'once ANY enabled provider covers a country, it must be used directly, not overridden to US');
-    assert.strictEqual(result.usedPricingFallback, false);
-  });
-
-  await test('Trending backend requires a real price — events with no pricing are excluded from the homepage entirely, not shown as "Price TBA" (explicit product decision, reversing an earlier attempt)', async () => {
-    const res = await get('/api/trending');
-    assert.strictEqual(res.status, 200);
-    assert.ok(res.json.results.every((r) => r.lowestPrice != null), 'no result reaching the frontend should have a missing price');
-    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
-    assert.ok(trendingSrc.includes('.filter(hasRealPrice)'), 'must hard-filter out unpriced events per the explicit requirement that they not appear as cards');
-  });
-
-  await test('Trending query sorts by soonest-upcoming date, not relevance (near-term events are more likely to have real pricing than distant announced tours)', async () => {
-    const tmSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'providers', 'tickets', 'ticketmaster.js'), 'utf8');
-    assert.ok(tmSrc.includes("sort=date,asc"), 'trending query must sort by date, not the old relevance sort that surfaced unpriced far-future tours');
-    assert.ok(!tmSrc.includes('sort=relevance,desc'), 'the old relevance sort must be fully removed, not left alongside the new one');
-  });
-
   await test('Trending dedup logic uses the real attractionId field, not a name-matching heuristic alone', async () => {
     const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
     assert.ok(trendingSrc.includes('attractionId'), 'dedup must use the real attraction ID field when available');
@@ -801,10 +508,50 @@ async function runTests() {
 
   await test('Trending cards fully replace EVENTS and reuse the existing selectEvent() system (not a separate simplified card)', async () => {
     const res = await get('/');
-    assert.ok(res.body.includes('EVENTS.length = 0'), 'must mutate the shared EVENTS array in place, not reassign it — fetchTickets/fetchHotels/selectEvent all close over this same array reference');
+    assert.ok(res.body.includes('EVENTS.length = 0'), 'must mutate the shared EVENTS array in place, not reassign it — fetchHotels/selectEvent all close over this same array reference');
     assert.ok(res.body.includes('renderTrendingEventCards'), 'must re-render real cards using the same interactive card system as the static fallback');
-    assert.ok(res.body.includes("selectEvent(${i},'ticket')") || res.body.includes('selectEvent(${i},\'ticket\')'),
-      'trending cards must wire into the same selectEvent() ticket-comparison flow the static cards use, not link out separately');
+    // Ticket price comparison was intentionally removed — trending cards
+    // now wire into the hotel panel (the only interactive panel left),
+    // not a ticket-comparison flow.
+    assert.ok(res.body.includes("selectEvent(${i},'hotel')"),
+      'trending cards must wire into the same selectEvent() hotel-panel flow the static cards use, not link out separately');
+  });
+
+  await test('Trending\'s full price-verification pipeline is restored and intact (kept for easy re-enabling later if other ticket providers grant permission — only the frontend display was hidden, not the backend capability)', async () => {
+    const trendingSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'routes', 'trending.js'), 'utf8');
+    assert.ok(trendingSrc.includes('hasRealPrice'), 'price filtering must still exist — trending cards still require a real verified price internally');
+    assert.ok(trendingSrc.includes('getEventDetails'), 'per-candidate price verification via the detail endpoint must still exist');
+    assert.ok(trendingSrc.includes('CANDIDATES_TO_VERIFY'), 'candidate verification must still exist');
+    assert.ok(trendingSrc.includes('resolvePricingCountry'), 'the pricing-country fallback must still exist — pricing is still US/CA/AU/NZ/MX-only underneath');
+    assert.ok(trendingSrc.includes('startBackgroundTrendingRefresh'), 'the background refresh scheduler must still exist');
+  });
+
+  await test('Server still starts the background trending-refresh job on boot', async () => {
+    const serverSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
+    assert.ok(serverSrc.includes('trendingRoutes.startBackgroundTrendingRefresh()'), 'must still be started when the server boots');
+  });
+
+  await test('Homepage cards say "Price", not "Compare" — capability is kept intact server-side, but nothing in the frontend claims a price comparison (explicit product decision, until other ticket providers grant permission)', async () => {
+    const res = await get('/');
+    assert.ok(!res.body.includes('>Compare'), 'no card or section anywhere on the homepage should say "Compare"');
+    const priceLabels = (res.body.match(/Price →/g) || []).length;
+    assert.ok(priceLabels >= 7, 'all 6 static cards, the dynamic trending template, and the sports card should all say "Price →"');
+  });
+
+  await test('The ticket panel shows a single price, not a multi-seller comparison table (renamed "Compare live prices" to "Price", and renderSellerCards filters to one source even if the API returns more)', async () => {
+    const res = await get('/');
+    assert.ok(!res.body.includes('Compare live prices'), 'the panel must not be titled as a comparison anymore');
+    assert.ok(res.body.includes('<h2>Price</h2>'), 'the panel must be titled simply "Price"');
+    assert.ok(!res.body.includes('BEST PRICE'), 'no "best price" ranking badge — that implies comparing against other sellers');
+    assert.ok(res.body.includes("allSellers.filter((s) => s.source === 'ticketmaster' || s.source === 'demo')"),
+      'must filter down to a single source even if /api/tickets returns others, so nothing displayed implies a multi-provider comparison');
+  });
+
+  await test('Card price display ("from $X") is restored — showing a single real price isn\'t a "comparison" claim, so this stayed while the multi-seller panel was simplified', async () => {
+    const res = await get('/');
+    const priceSpans = (res.body.match(/class="from">from <b>\$\d+<\/b>/g) || []).length;
+    assert.ok(priceSpans >= 6, 'all 6 static cards must show their price');
+    assert.ok(res.body.includes('<span class="from">from <b>${ev.ticket}</b></span>'), 'the dynamic trending template must also show price');
   });
 
   await test('Trending events missing venue coordinates are dropped, not shown with a broken hotel map', async () => {
@@ -829,11 +576,11 @@ async function runTests() {
     assert.ok(!res.body.includes("'TBA'"), 'the TBA fallback path should be removed now that unpriced events never reach the frontend');
   });
 
-  await test('Every event card (static and trending) is fully clickable, not just its small "Compare"/"Hotels" links (regression: cards looked selectable via the active border but only two tiny links actually worked)', async () => {
+  await test('Every event card (static and trending) is fully clickable, not just its small "Price"/"Hotels" links (regression: cards looked selectable via the active border but only two tiny links actually worked)', async () => {
     const res = await get('/');
-    const cardOnclicks = res.body.match(/class="card event-card[^"]*" data-id="\d+" style="cursor:pointer;" onclick="selectEvent\(\d+,'ticket'\)"/g) || [];
+    const cardOnclicks = res.body.match(/class="card event-card[^"]*" data-id="\d+" style="cursor:pointer;" onclick="selectEvent\(\d+,'hotel'\)"/g) || [];
     assert.ok(cardOnclicks.length >= 6, 'all 6 static fallback cards must have a whole-card click handler');
-    assert.ok(res.body.includes('style="cursor:pointer;" onclick="selectEvent(${i},\'ticket\')"'),
+    assert.ok(res.body.includes('style="cursor:pointer;" onclick="selectEvent(${i},\'hotel\')"'),
       'the dynamically-rendered trending card template must have the same whole-card click handler');
   });
 
