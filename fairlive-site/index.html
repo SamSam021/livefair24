@@ -582,12 +582,40 @@ function renderTrendingEventCards(events){
 // the static fictional fallback untouched (demo mode, too few usable
 // results, or a request failure) — the caller uses this to decide
 // whether the initial panel refresh below needs one.
-async function loadTrendingConcerts(){
+// Shows a neutral loading skeleton immediately (before any fetch starts)
+// instead of leaving the static demo cards visible while trending data
+// loads — confirmed in practice that a ~10 second real-data fetch made
+// the "shows demo, then silently swaps to real" transition genuinely
+// jarring, not just slow. Saves the current grid HTML so it can be
+// restored exactly as-is if the fetch fails or comes back empty.
+function showTrendingLoadingSkeleton(){
+  const grid = document.getElementById('eventCardGrid');
+  if(!grid) return null;
+  const originalHTML = grid.innerHTML;
+  grid.innerHTML = Array.from({length: 6}).map(() => `
+    <div class="card event-card trending-skeleton">
+      <div class="skeleton-line skeleton-genre"></div>
+      <div class="skeleton-line skeleton-title"></div>
+      <div class="skeleton-line skeleton-meta"></div>
+      <div class="skeleton-line skeleton-date"></div>
+      <div class="card-foot">
+        <span class="skeleton-line skeleton-price"></span>
+      </div>
+    </div>`).join('');
+  return originalHTML;
+}
+
+function restoreOriginalCards(originalHTML){
+  const grid = document.getElementById('eventCardGrid');
+  if(grid && originalHTML != null) grid.innerHTML = originalHTML;
+}
+
+async function loadTrendingConcerts(originalHTML){
   try{
     const res = await fetch('/api/trending');
-    if(!res.ok) return false;
+    if(!res.ok){ restoreOriginalCards(originalHTML); return false; }
     const data = await res.json();
-    if(data.demoMode || data.results.length === 0) return false;
+    if(data.demoMode || data.results.length === 0){ restoreOriginalCards(originalHTML); return false; }
 
     const mapped = data.results.map((r) => ({
       artist: r.name,
@@ -613,7 +641,7 @@ async function loadTrendingConcerts(){
       attractionId: r.attractionId,
     })).filter((ev) => ev.lat != null && ev.lng != null); // hotel search needs real coordinates — drop anything missing them rather than silently break the map
 
-    if(mapped.length === 0) return false;
+    if(mapped.length === 0){ restoreOriginalCards(originalHTML); return false; }
 
     EVENTS.length = 0;
     mapped.forEach((ev, i) => EVENTS.push({ ...ev, id: i }));
@@ -621,6 +649,7 @@ async function loadTrendingConcerts(){
     return true;
   } catch(err){
     console.error(err);
+    restoreOriginalCards(originalHTML);
     return false;
   }
 }
@@ -865,7 +894,8 @@ document.querySelectorAll('.rpill').forEach(btn=>{
 // synchronously the instant it's called, potentially before an in-flight
 // trending fetch has replaced its contents.
 async function initHomepageEvents(){
-  await loadTrendingConcerts();
+  const originalHTML = showTrendingLoadingSkeleton();
+  await loadTrendingConcerts(originalHTML);
   selectEvent(0);
 }
 window.addEventListener('load', initHomepageEvents);

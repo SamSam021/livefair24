@@ -416,3 +416,13 @@ img{max-width:100%;display:block;}
 .cal-cancel-btn{ background:none; border:1px solid var(--line); color:var(--ink-dim); padding:9px 18px; border-radius:9px; font-weight:700; font-size:13.5px; cursor:pointer; }
 .cal-apply-btn{ background:var(--blue); border:none; color:#fff; padding:9px 20px; border-radius:9px; font-weight:700; font-size:13.5px; cursor:pointer; }
 .cal-apply-btn:hover{ background:var(--blue-deep); }
+
+/* ---- Trending concerts loading skeleton — shown while /api/trending is in flight ---- */
+.trending-skeleton{ pointer-events:none; }
+.skeleton-line{ background:var(--surface-2); border-radius:6px; display:block; animation:skeletonPulse 1.4s ease-in-out infinite; }
+.skeleton-genre{ width:70px; height:11px; margin-bottom:10px; }
+.skeleton-title{ width:85%; height:20px; margin-bottom:10px; }
+.skeleton-meta{ width:65%; height:13px; margin-bottom:8px; }
+.skeleton-date{ width:50%; height:13px; }
+.skeleton-price{ width:60px; height:20px; }
+@keyframes skeletonPulse{ 0%,100%{ opacity:.6; } 50%{ opacity:1; } }
