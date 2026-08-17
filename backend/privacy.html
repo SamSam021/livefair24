@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy &amp; Cookie Policy | LiveFair24</title>
+<meta name="description" content="How LiveFair24 uses cookies and handles your data.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://livefair24.com/privacy.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="nav-links" id="navLinks">
+      <a href="/cities/">Browse cities</a>
+      <a href="/artists/">Artists</a>
+      <a href="/venues/">Venues</a>
+      <a href="/guides/how-it-works.html">How it works</a>
+    
+      <a href="sports/index.html">Sports</a>
+    </div>
+    <div class="nav-right">
+      <a href="/search/" class="nav-cta">Search concerts</a>
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">Concerts</a><span class="sep">›</span>
+    <span>Privacy &amp; Cookies</span>
+  </div>
+</div>
+
+<main>
+<div class="container">
+
+  <section style="padding:40px 0 24px;max-width:74ch;">
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,44px);">Privacy &amp; Cookie Policy</h1>
+    <p style="font-size:14px;color:var(--ink-faint);margin-top:10px;">Last updated: August 2026</p>
+  </section>
+
+  <section class="section" style="padding-top:0;max-width:74ch;">
+
+    <h2 style="font-size:19px;margin-bottom:10px;">What this page covers</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.7;margin-bottom:24px;">
+      This page explains what cookies LiveFair24 uses, why, and how you can control them. LiveFair24 is a ticket and hotel search service — we don't sell tickets or hotel rooms directly; when you click through to a seller, that seller's own privacy policy applies to your purchase.
+    </p>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">Cookies we use</h2>
+    <div style="display:grid;gap:12px;margin-bottom:24px;">
+      <div class="card">
+        <h3 style="font-size:15px;">Essential</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">
+          Required for the site to function — for example, keeping an admin login session active. These can't be disabled and don't track you across other sites.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;">Preference</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">
+          Remembers choices you've made on this site, like your cookie consent decision itself, so we don't ask again on every visit.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;">Third-party content</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">
+          Our venue maps are provided by OpenStreetMap via Leaflet, and fonts are served by Google Fonts. Loading these pages may involve requests to those third parties, subject to their own privacy policies.
+        </p>
+      </div>
+    </div>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">Your choices</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.7;margin-bottom:12px;">
+      You can accept or decline non-essential cookies from the banner shown on your first visit. You can also clear cookies at any time through your browser's settings, which will reset your choice and show the banner again on your next visit.
+    </p>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">Data we collect</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.7;margin-bottom:12px;">
+      If you sign up for a price-drop alert, we store the email address you provide and the event you're watching, solely to send you that alert. We don't sell or share this data with third parties. You can unsubscribe at any time using the link included in every alert email.
+    </p>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">Questions</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.7;">
+      Contact us via the details on our <a href="/about.html" style="color:var(--blue);">About page</a> with any privacy questions.
+    </p>
+
+  </section>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">● LiveFair24</div>
+      <p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Browse</h4>
+      <ul>
+        <li><a href="/cities/">All cities</a></li>
+        <li><a href="/artists/">Artists</a></li>
+        <li><a href="/venues/">Venues</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Guides</h4>
+      <ul>
+        <li><a href="/guides/how-it-works.html">How it works</a></li>
+        <li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/privacy.html">Privacy</a></li>
+      <li><a href="impressum.html">Impressum</a></li></ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span>
+  </div>
+</footer>
+
+<script src="js/cookie-banner.js" defer></script>
+</body>
+</html>

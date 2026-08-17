@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse Concerts by City | LiveFair24</title>
+<meta name="description" content="Browse upcoming concerts by city. See ticket prices and find the nearest hotel for every show.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://livefair24.com/cities/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"Concerts","item":"https://livefair24.com/"},
+    {"@type":"ListItem","position":2,"name":"Cities"}
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="nav-links" id="navLinks">
+      <a href="/cities/">Browse cities</a>
+      <a href="/artists/">Artists</a>
+      <a href="/venues/">Venues</a>
+      <a href="/guides/how-it-works.html">How it works</a>
+    
+      <a href="../sports/index.html">Sports</a>
+    </div>
+        <div class="nav-right">
+      <a href="/search/" class="nav-cta">Search concerts</a>
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">Concerts</a><span class="sep">›</span>
+    <span>Cities</span>
+  </div>
+</div>
+
+<main>
+<div class="container">
+
+  <section style="padding:40px 0 24px;">
+    <span class="badge badge-blue" id="cityCountryBadge" style="margin-bottom:16px;display:none;"></span>
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Browse concerts by city</h1>
+    <p style="font-size:16px;color:var(--ink-dim);margin-top:12px;max-width:60ch;line-height:1.6;" id="cityIntroText">
+      Pick a city to see every upcoming show, sorted by date, with live ticket and hotel prices.
+    </p>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="cityGrid">
+      <div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--ink-faint);">Loading cities…</div>
+    </div>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More cities are added as new tour dates are confirmed.</p>
+  </section>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">● LiveFair24</div><p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p></div>
+    <div class="footer-col"><h4>Browse</h4><ul><li><a href="/cities/">All cities</a></li><li><a href="/artists/">Artists</a></li><li><a href="/venues/">Venues</a></li></ul></div>
+    <div class="footer-col"><h4>Guides</h4><ul><li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li><li><a href="/guides/how-it-works.html">How it works</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/about.html">About</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li><li><a href="../impressum.html">Impressum</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
+</footer>
+<script src="../js/cookie-banner.js" defer></script>
+<script>
+// Every city routes through the same search flow — no dedicated city
+// page gets special-cased over the others, so the experience stays
+// consistent no matter which city a visitor lands on.
+function cityHref(countryCode, city) {
+  return `/search/?city=${encodeURIComponent(city.name)}`;
+}
+
+async function loadCities(){
+  const grid = document.getElementById('cityGrid');
+  try{
+    const res = await fetch('/api/cities');
+    if(!res.ok) throw new Error('Cities API error');
+    const data = await res.json();
+
+    const badge = document.getElementById('cityCountryBadge');
+    if(data.flag && data.countryName){
+      badge.textContent = `${data.flag} ${data.countryName}`;
+      badge.style.display = 'inline-flex';
+    }
+    document.getElementById('cityIntroText').textContent =
+      `Popular cities for concerts in ${data.countryName}. Pick one to see upcoming shows, sorted by date, with live ticket and hotel prices.`;
+
+    if(!data.cities || data.cities.length === 0){
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--ink-faint);">No cities to show yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = data.cities.map((city) => `
+      <a href="${cityHref(data.countryCode, city)}" class="card" style="padding:18px;">
+        <div style="font-weight:800;font-size:16px;">${city.name}</div>
+        <div style="font-size:12.5px;color:var(--ink-dim);margin-top:4px;">See upcoming concerts</div>
+      </a>`).join('');
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--red);">Could not load cities right now. Please try again.</div>';
+  }
+}
+
+loadCities();
+</script>
+</body>
+</html>

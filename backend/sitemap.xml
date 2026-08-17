@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- Homepage — highest priority -->
+  <url>
+    <loc>https://livefair24.com/</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Event pages — highest-value SEO pages -->
+  <url>
+    <loc>https://livefair24.com/events/nova-wren-berlin-2026-08-16.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Artist pages -->
+  <url>
+    <loc>https://livefair24.com/artists/</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/artists/nova-wren.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Venue pages -->
+  <url>
+    <loc>https://livefair24.com/venues/</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/venues/waldbuhne-berlin.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- City / country hubs -->
+  <url>
+    <loc>https://livefair24.com/cities/</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/cities/germany/</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/cities/germany/berlin.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Guide pages -->
+  <url>
+    <loc>https://livefair24.com/guides/how-it-works.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/guides/concert-ticket-fees.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <!--
+    NOT YET BUILT — do not add these back to the sitemap until the pages exist:
+    /guides/methodology.html, /guides/cheapest-concert-tickets.html,
+    /guides/hotels-near-venues.html, /about.html, /affiliate-disclosure.html,
+    /privacy.html, /contact.html, additional event pages (rosa-calder-bremen,
+    silvertone-dublin, delphine-london, kaito-reyes-paris, nocturne-milan,
+    the-quiet-static-new-york), additional city/country hubs (UK, US, Ireland,
+    Netherlands), additional German cities (Hamburg, Munich, Bremen, Cologne,
+    Frankfurt — currently "#" placeholder links on /cities/germany/).
+    A sitemap entry for a page that doesn't resolve is a negative crawl signal —
+    add each URL here in the same commit that ships the page.
+  -->
+
+</urlset>
