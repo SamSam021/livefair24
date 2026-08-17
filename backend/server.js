@@ -21,6 +21,7 @@ const searchRoutes = require('./routes/search');
 const trendingRoutes = require('./routes/trending');
 const citiesRoutes = require('./routes/cities');
 const eventPageRoutes = require('./routes/eventPage');
+const eventsSitemapRoutes = require('./routes/eventsSitemap');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -190,7 +191,18 @@ const server = http.createServer(async (req, res) => {
       // running with a single, instant request — separate from testing
       // any real feature — since "did the deploy actually go out" has
       // been genuinely hard to answer from the outside so far.
-      return sendJSON(res, 200, { ok: true, buildMarker: 'distance-filter-added-v4' });
+      return sendJSON(res, 200, { ok: true, buildMarker: 'events-sitemap-added-v5' });
+    }
+    if (pathname === '/sitemap-events.xml' && req.method === 'GET') {
+      try {
+        const xml = await eventsSitemapRoutes.generateEventsSitemapXml(registry.getMergedEnv());
+        res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+        return res.end(xml);
+      } catch (err) {
+        console.error('[events sitemap]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Could not generate events sitemap');
+      }
     }
     if (pathname === '/api/search' && req.method === 'GET') {
       try {
