@@ -31,6 +31,12 @@
 const https = require('https');
 const crypto = require('crypto');
 
+// Diagnostic aid, same pattern used for stayapi.js: captures the real
+// reason behind an empty/failed result so it can be surfaced through
+// /api/hotels' response (via getLastError()) without needing server log
+// access — which turned out to be genuinely hard to get to in practice.
+let lastError = null;
+
 // Converts the \n-escaped single-line env var format back into a real
 // multi-line PEM string.
 function unescapePem(value) {
@@ -70,6 +76,10 @@ module.exports = {
   isEnabled(env) {
     return !!(env.HOTELBEDS_API_KEY && env.HOTELBEDS_SECRET && env.HOTELBEDS_CLIENT_CERT && env.HOTELBEDS_CLIENT_KEY);
   },
+  // Diagnostic-only — see the lastError comment above.
+  getLastError() {
+    return lastError;
+  },
   async search(params, env) {
     try {
       const apiKey = env.HOTELBEDS_API_KEY;
@@ -100,7 +110,25 @@ module.exports = {
         },
         body
       );
-      const hotels = (data.hotels && data.hotels.hotels) || [];
+
+      // Defensive, same reasoning as the bug just found in stayapi.js:
+      // don't assume the documented shape is what actually comes back —
+      // check it, and if it's not there, capture exactly what was
+      // received instead of crashing or silently returning nothing
+      // unexplained.
+      if (!data || !data.hotels || !Array.isArray(data.hotels.hotels)) {
+        lastError = `search response didn't have the expected hotels.hotels[] shape — full response: ${JSON.stringify(data).slice(0, 400)}`;
+        console.warn(`[hotelbeds provider] ${lastError}`);
+        return [];
+      }
+      const hotels = data.hotels.hotels;
+
+      if (hotels.length === 0) {
+        lastError = `search succeeded but returned 0 hotels — full response: ${JSON.stringify(data).slice(0, 400)}`;
+      } else {
+        lastError = null;
+      }
+
       return hotels.map((h) => ({
         hotelId: h.code,
         name: h.name,
@@ -116,6 +144,7 @@ module.exports = {
       }));
     } catch (err) {
       console.warn('[hotelbeds provider]', err.message);
+      lastError = err.message;
       return [];
     }
   },
