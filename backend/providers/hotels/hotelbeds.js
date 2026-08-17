@@ -43,6 +43,25 @@ function unescapePem(value) {
   return value ? value.replace(/\\n/g, '\n') : value;
 }
 
+// Validates a PEM string has real BEGIN/END markers before it's ever
+// handed to OpenSSL — a malformed value (most likely from an incomplete
+// copy-paste into a single-line admin-panel field, exactly the failure
+// mode this project hit twice already while generating these) otherwise
+// produces an opaque "no start line" error that doesn't say which of
+// the two PEM values (cert vs key) is actually the broken one. This
+// catches that and names the specific field and the specific defect.
+function validatePem(value, fieldName, expectedBeginLine, expectedEndLine) {
+  if (!value) return `${fieldName} is empty`;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith(expectedBeginLine)) {
+    return `${fieldName} doesn't start with "${expectedBeginLine}" — it starts with "${trimmed.slice(0, 40)}..." instead. Likely an incomplete paste (missing the BEGIN line).`;
+  }
+  if (!trimmed.endsWith(expectedEndLine)) {
+    return `${fieldName} doesn't end with "${expectedEndLine}" — it ends with "...${trimmed.slice(-40)}" instead. Likely an incomplete paste (cut off before the END line).`;
+  }
+  return null;
+}
+
 function httpsRequest(options, body) {
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
@@ -82,6 +101,21 @@ module.exports = {
   },
   async search(params, env) {
     try {
+      const cert = unescapePem(env.HOTELBEDS_CLIENT_CERT);
+      const key = unescapePem(env.HOTELBEDS_CLIENT_KEY);
+
+      // Check both PEM values are actually well-formed BEFORE handing
+      // them to OpenSSL — a bad value here otherwise surfaces as an
+      // opaque "no start line" error with no indication of which field
+      // is the problem.
+      const certError = validatePem(cert, 'HOTELBEDS_CLIENT_CERT', '-----BEGIN CERTIFICATE-----', '-----END CERTIFICATE-----');
+      const keyError = validatePem(key, 'HOTELBEDS_CLIENT_KEY', '-----BEGIN PRIVATE KEY-----', '-----END PRIVATE KEY-----');
+      if (certError || keyError) {
+        lastError = [certError, keyError].filter(Boolean).join(' | ');
+        console.warn(`[hotelbeds provider] ${lastError}`);
+        return [];
+      }
+
       const apiKey = env.HOTELBEDS_API_KEY;
       const sig = signature(apiKey, env.HOTELBEDS_SECRET);
       const body = JSON.stringify({
@@ -91,15 +125,25 @@ module.exports = {
       });
       const data = await httpsRequest(
         {
-          hostname: 'api.test.hotelbeds.com', // switch to api.hotelbeds.com for production
+          // CONFIRMED from Hotelbeds' own "Mutual Authentication" docs
+          // page: their example curl command for an mTLS-authenticated
+          // request targets api-mtls.hotelbeds.com specifically — a
+          // different host from api.test.hotelbeds.com (which this file
+          // was using before, and which is almost certainly why every
+          // mTLS-authenticated request so far came back with a signature
+          // verification failure despite a valid certificate handshake).
+          // Their example still sends Api-key + X-Signature on top of
+          // the certificate, confirming both auth layers are meant to
+          // combine, not replace each other, as this file already does.
+          hostname: 'api-mtls.hotelbeds.com',
           path: '/hotel-api/1.0/hotels',
           method: 'POST',
           // Client certificate + private key for mutual TLS — presented
           // during the HTTPS handshake itself, before any headers are
           // even sent. This is what the original version of this file
           // was missing entirely.
-          cert: unescapePem(env.HOTELBEDS_CLIENT_CERT),
-          key: unescapePem(env.HOTELBEDS_CLIENT_KEY),
+          cert: cert,
+          key: key,
           headers: {
             'Api-key': apiKey,
             'X-Signature': sig,
