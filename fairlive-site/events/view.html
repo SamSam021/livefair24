@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Tickets &amp; Hotels | LiveFair24</title>
+<meta name="description" content="Ticket prices and nearby hotels for this event.">
+<meta name="robots" content="noindex, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+/* ---- Inline hotel panel styles — same block index.html and the match
+   page each carry locally; not part of the shared stylesheet. ---- */
+.event-panel{ background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:28px; margin-top:28px; }
+.event-panel-header{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--line); }
+.event-panel-header .ep-title{ font-family:'Sora',sans-serif; font-weight:700; font-size:20px; }
+.event-panel-header .ep-meta{ font-size:13px; color:var(--ink-dim); margin-top:4px; font-family:'JetBrains Mono',monospace; }
+.event-panel-header .ep-price{ text-align:right; }
+.event-panel-header .ep-price .lbl{ font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.07em; font-family:'JetBrains Mono',monospace; }
+.event-panel-header .ep-price .amt{ font-family:'Sora',sans-serif; font-weight:800; font-size:32px; color:var(--gold); line-height:1; }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="nav-links" id="navLinks">
+      <a href="/cities/">Browse cities</a>
+      <a href="/artists/">Artists</a>
+      <a href="/venues/">Venues</a>
+      <a href="/guides/how-it-works.html">How it works</a>
+      <a href="/sports/index.html">Sports</a>
+    </div>
+    <div class="nav-right">
+      <a href="/search/" class="nav-cta">Search concerts</a>
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">Concerts</a><span class="sep">›</span>
+    <a href="/search/">Search results</a><span class="sep">›</span>
+    <span id="breadcrumbName">Event</span>
+  </div>
+</div>
+
+<main>
+<div class="container">
+
+  <section style="padding:28px 0 8px;">
+    <h1 class="display" style="font-size:clamp(24px,4vw,38px);" id="pageTitle">Loading event…</h1>
+    <p style="font-size:14.5px;color:var(--ink-dim);margin-top:8px;" id="pageMeta"></p>
+  </section>
+
+  <section class="section" style="padding-top:12px;">
+
+    <!-- Ticket prices -->
+    <div class="event-panel" id="ticketPanel">
+      <div class="ticket-panel-intro">
+        <h2>Ticket prices</h2>
+        <p>Same seat category, sorted by total price including fees. <span id="ticketDemoBadge" class="badge badge-gold" style="display:none;">Demo mode — sample prices, not real</span></p>
+      </div>
+      <div class="event-panel-header" style="margin-bottom:0;padding-bottom:0;border-bottom:none;">
+        <div>
+          <div class="ep-title" id="ticketEpTitle">—</div>
+          <div class="ep-meta" id="ticketEpMeta">—</div>
+        </div>
+        <div class="ep-price">
+          <div class="lbl">Lowest total price</div>
+          <div class="amt" id="ticketEpPrice">—</div>
+        </div>
+      </div>
+      <div class="seller-cards" id="sellerCards">
+        <div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading prices…</div>
+      </div>
+    </div>
+
+    <!-- Hotels near the venue -->
+    <div class="event-panel" id="eventPanel">
+      <div class="event-panel-header">
+        <div>
+          <div class="ep-title" id="epTitle">Hotels near venue</div>
+          <div class="ep-meta"><span id="epMeta">—</span> <span id="hotelDemoBadge" class="badge badge-gold" style="display:none;">Demo mode</span></div>
+        </div>
+        <div class="ep-price">
+          <div class="lbl">Cheapest ticket</div>
+          <div class="amt" id="epTicket">—</div>
+        </div>
+      </div>
+
+      <div id="hotelUnavailable" style="display:none;padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">
+        Hotel search isn't available for this venue — we don't have its exact location yet.
+      </div>
+
+      <div class="panel-layout" id="hotelPanelLayout">
+        <div>
+          <div id="eventMap" class="hotel-map-el"></div>
+          <div class="hotel-filters">
+            <div>
+              <label class="hf-label">Max price / night</label>
+              <div class="range-row">
+                <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
+                <span class="range-val" id="hpVal">$500+</span>
+              </div>
+            </div>
+            <div>
+              <label class="hf-label">Min rating</label>
+              <div class="rating-pills">
+                <button class="rpill active" data-r="0">Any</button>
+                <button class="rpill" data-r="3.5">3.5+</button>
+                <button class="rpill" data-r="4">4.0+</button>
+                <button class="rpill" data-r="4.5">4.5+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hotel-right">
+          <div class="hotel-count-bar" id="hotelCountBar">Loading hotels…</div>
+          <div class="hotel-scroll" id="hotelScroll"></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">● LiveFair24</div><p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p></div>
+    <div class="footer-col"><h4>Browse</h4><ul><li><a href="/cities/">All cities</a></li><li><a href="/artists/">Artists</a></li><li><a href="/venues/">Venues</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/privacy.html">Privacy</a></li><li><a href="/impressum.html">Impressum</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
+</footer>
+<script src="../js/cookie-banner.js" defer></script>
+
+<script>
+function qp(name){ return new URLSearchParams(window.location.search).get(name); }
+function num(v){ const n = parseFloat(v); return Number.isNaN(n) ? null : n; }
+
+function formatDate(dateStr, timeStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if(Number.isNaN(d.getTime())) return dateStr;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayLabel = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return timeStr ? `${dayLabel} · ${timeStr.slice(0,5)}` : dayLabel;
+}
+
+// The event this page describes — built entirely from the query string a
+// search result link carries in, mirroring the shape the homepage's
+// EVENTS array already uses so the exact same fetch/render functions
+// below can stay unchanged from their homepage originals.
+const ev = {
+  artist: qp('name') || 'Event',
+  venue: qp('venue') || '',
+  city: qp('city') || '',
+  country: qp('country') || '',
+  isoDate: qp('date') || '',
+  time: qp('time') || '',
+  date: formatDate(qp('date'), qp('time')),
+  ticket: qp('basePrice') ? `$${Math.round(parseFloat(qp('basePrice')))}` : '$50',
+  lat: num(qp('lat')),
+  lng: num(qp('lng')),
+  eventId: qp('eventId') || null,
+};
+
+document.title = `${ev.artist} Tickets & Hotels | LiveFair24`;
+document.getElementById('breadcrumbName').textContent = ev.artist;
+document.getElementById('pageTitle').textContent = ev.artist;
+document.getElementById('pageMeta').textContent = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ') + (ev.date ? ' · ' + ev.date : '');
+document.getElementById('ticketEpTitle').textContent = ev.artist;
+document.getElementById('ticketEpMeta').textContent = `${[ev.venue, ev.city, ev.country].filter(Boolean).join(', ')}${ev.date ? ' · ' + ev.date.split(' · ')[0] : ''}`;
+document.getElementById('epTitle').textContent = `Hotels near ${ev.artist}${ev.venue ? ' — ' + ev.venue : ''}${ev.city ? ', ' + ev.city : ''}`;
+document.getElementById('epMeta').textContent = [ev.date, ev.country].filter(Boolean).join(' · ');
+document.getElementById('epTicket').textContent = ev.ticket;
+
+async function fetchTickets(){
+  const params = new URLSearchParams({
+    artist: ev.artist, city: ev.city, basePrice: ev.ticket.replace('$',''), eventId: ev.eventId || ''
+  });
+  const res = await fetch(`/api/tickets?${params}`);
+  if(!res.ok) throw new Error('Ticket API error');
+  return res.json();
+}
+
+async function fetchHotels(){
+  const checkIn = ev.isoDate || new Date().toISOString().slice(0,10);
+  const checkOutDate = new Date(checkIn);
+  checkOutDate.setDate(checkOutDate.getDate()+1);
+  const checkOut = checkOutDate.toISOString().slice(0,10);
+  const params = new URLSearchParams({
+    lat: ev.lat, lng: ev.lng, checkIn, checkOut, eventId: ev.eventId || ''
+  });
+  const res = await fetch(`/api/hotels?${params}`);
+  if(!res.ok) throw new Error('Hotel API error');
+  return res.json();
+}
+
+function renderSellerCards(data){
+  const sellers = data.results || [];
+  document.getElementById('ticketDemoBadge').style.display = data.demoMode ? 'inline-flex' : 'none';
+
+  if(sellers.length === 0){
+    document.getElementById('ticketEpPrice').textContent = '—';
+    document.getElementById('sellerCards').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.</div>';
+    return;
+  }
+
+  document.getElementById('ticketEpPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
+
+  document.getElementById('sellerCards').innerHTML = sellers.map((s)=>`
+    <div class="seller-card ${s.isBestPrice?'best':''}">
+      ${s.isBestPrice?'<div class="seller-badge-best">★ BEST PRICE</div>':''}
+      <div class="seller-left">
+        <div class="seller-badge-sq p-${s.badge.toLowerCase()}">${s.badge}</div>
+        <div>
+          <div class="seller-name">${s.sellerName}</div>
+          <div class="seller-meta">${s.section || 'See seller for details'}</div>
+          <div class="seller-rating">${s.rating!=null ? `Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}` : 'Rating not provided by this seller'}</div>
+        </div>
+      </div>
+      <div class="seller-divider"></div>
+      <div class="seller-right">
+        <div class="seller-total-lbl">Total incl. fees</div>
+        <div class="seller-total-amt">$${s.total.toFixed(2)}</div>
+        <div class="seller-total-breakdown">$${s.faceValue.toFixed(2)} + $${s.fees.toFixed(2)}</div>
+        <a href="${s.url}" class="seller-cta" target="_blank" rel="noopener">Get tickets →</a>
+      </div>
+    </div>`).join('');
+}
+
+let map=null, mapLayer=null, currentMarkers=[], currentHotels=[];
+let maxPrice=500, minRating=0;
+
+function filteredHotels(hotels){
+  return hotels.filter(h => h.pricePerNight <= (maxPrice>=500?99999:maxPrice) && (h.rating==null || h.rating >= minRating));
+}
+
+function renderHotelList(hotels){
+  const filtered = filteredHotels(hotels);
+  document.getElementById('hotelCountBar').textContent =
+    `${filtered.length} of ${hotels.length} hotels near venue`;
+
+  if(hotels.length===0){
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels available.</div>';
+    return;
+  }
+  if(filtered.length===0){
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels match these filters.<br>Try raising the price or lowering the rating.</div>';
+    return;
+  }
+
+  document.getElementById('hotelScroll').innerHTML = filtered.map((h,i)=>`
+    <div class="hcard" data-idx="${i}">
+      <div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div>
+      <div class="hrow">
+        <span class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km from venue':'Distance n/a'}</span>
+        <span class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span class="hrev">${h.reviews!=null?`(${h.reviews.toLocaleString()})`:''}</span>`:''}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'Price n/a'}</div>
+        <a href="${h.url||'#'}" class="hbook" target="_blank" rel="noopener" onclick="event.stopPropagation()">Book →</a>
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('#hotelScroll .hcard').forEach(card=>{
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('#hotelScroll .hcard').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      const idx = parseInt(card.dataset.idx);
+      if(currentMarkers[idx]&&map){
+        map.setView(currentMarkers[idx].getLatLng(),16);
+        currentMarkers[idx].openPopup();
+      }
+    });
+  });
+}
+
+function renderMap(hotels){
+  if(typeof L === 'undefined' || ev.lat==null || ev.lng==null) return;
+
+  if(!map){
+    map = L.map('eventMap',{scrollWheelZoom:false}).setView([ev.lat,ev.lng],14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19
+    }).addTo(map);
+    mapLayer = L.layerGroup().addTo(map);
+  } else {
+    map.setView([ev.lat,ev.lng],14);
+  }
+
+  mapLayer.clearLayers();
+  currentMarkers = [];
+
+  const venueIcon = L.divIcon({
+    className:'',
+    html:`<div style="background:var(--blue);width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.3)"><svg style="transform:rotate(45deg);" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20V8a1 1 0 0 1 .4-.8l7-5.25a1 1 0 0 1 1.2 0l7 5.25a1 1 0 0 1 .4.8v12"/><path d="M9 20v-4a3 3 0 0 1 6 0v4"/></svg></div>`,
+    iconSize:[36,36],iconAnchor:[18,36]
+  });
+  L.marker([ev.lat,ev.lng],{icon:venueIcon}).addTo(mapLayer)
+   .bindPopup(`<b>${ev.venue}</b><br>${ev.city}`);
+
+  const filtered = filteredHotels(hotels);
+  filtered.forEach(h=>{
+    if(h.lat==null || h.lng==null || h.pricePerNight==null) return;
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="price-pin">$${h.pricePerNight}</div>`,
+      iconSize:[48,26],iconAnchor:[24,26]
+    });
+    const m = L.marker([h.lat,h.lng],{icon}).addTo(mapLayer)
+      .bindPopup(`<b>${h.name}</b><br>$${h.pricePerNight}/night${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}${h.distanceKm!=null?` · ${h.distanceKm.toFixed(1)} km`:''}`);
+    currentMarkers.push(m);
+  });
+
+  setTimeout(()=>map.invalidateSize(),200);
+}
+
+document.getElementById('hpSlider').addEventListener('input', function(){
+  const v=parseInt(this.value);
+  maxPrice=v;
+  document.getElementById('hpVal').textContent = v>=500?'$500+':'$'+v;
+  renderHotelList(currentHotels);
+  renderMap(currentHotels);
+});
+
+document.querySelectorAll('.rpill').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.rpill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    minRating=parseFloat(btn.dataset.r);
+    renderHotelList(currentHotels);
+    renderMap(currentHotels);
+  });
+});
+
+async function init(){
+  // Ticket prices load regardless of whether we have coordinates.
+  fetchTickets().then(renderSellerCards).catch((err)=>{
+    console.error(err);
+    document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load prices right now.</div>';
+  });
+
+  // Hotel search needs real venue coordinates — same requirement the
+  // homepage and trending feed already enforce. Rather than showing a
+  // broken empty map when they're missing, this hides the map/filter
+  // layout entirely and says so.
+  if(ev.lat==null || ev.lng==null){
+    document.getElementById('hotelPanelLayout').style.display = 'none';
+    document.getElementById('hotelUnavailable').style.display = 'block';
+    return;
+  }
+
+  try{
+    const hotelData = await fetchHotels();
+    document.getElementById('hotelDemoBadge').style.display = hotelData.demoMode ? 'inline-flex' : 'none';
+    currentHotels = hotelData.results || [];
+    renderHotelList(currentHotels);
+    renderMap(currentHotels);
+  } catch(err){
+    console.error(err);
+    document.getElementById('hotelScroll').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load hotels right now.</div>';
+  }
+}
+init();
+</script>
+</body>
+</html>

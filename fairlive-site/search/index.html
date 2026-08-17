@@ -102,6 +102,21 @@ function getQueryParam(name){
   return new URLSearchParams(window.location.search).get(name);
 }
 
+function eventViewHref(r){
+  const params = new URLSearchParams();
+  if(r.name) params.set('name', r.name);
+  if(r.venue) params.set('venue', r.venue);
+  if(r.city) params.set('city', r.city);
+  if(r.country) params.set('country', r.country);
+  if(r.date) params.set('date', r.date);
+  if(r.time) params.set('time', r.time);
+  if(r.lat != null) params.set('lat', r.lat);
+  if(r.lng != null) params.set('lng', r.lng);
+  if(r.lowestPrice != null) params.set('basePrice', r.lowestPrice);
+  if(r.eventId) params.set('eventId', r.eventId);
+  return `/events/view.html?${params}`;
+}
+
 function renderResults(data){
   const container = document.getElementById('searchResults');
   const demoBadge = document.getElementById('searchDemoBadge');
@@ -124,7 +139,7 @@ function renderResults(data){
         ${r.lowestPrice != null
           ? `<div class="amt">$${Number(r.lowestPrice).toFixed(0)}</div><div class="lbl">from</div>`
           : `<div style="color:var(--ink-faint);font-size:13px;">Price n/a</div>`}
-        <a href="${r.url || '#'}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--blue);">View →</a>
+        <a href="${eventViewHref(r)}" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--blue);">View →</a>
       </div>
     </div>`).join('');
 }
