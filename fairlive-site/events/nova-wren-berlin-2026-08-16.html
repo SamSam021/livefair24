@@ -730,7 +730,7 @@ async function fetchEventHotels(){
   checkOutDate.setDate(checkOutDate.getDate()+1);
   const checkOut = checkOutDate.toISOString().slice(0,10);
   const params = new URLSearchParams({
-    lat: EVENT_VENUE.lat, lng: EVENT_VENUE.lng, checkIn: EVENT_ISO_DATE, checkOut, eventId: 1
+    lat: EVENT_VENUE.lat, lng: EVENT_VENUE.lng, checkIn: EVENT_ISO_DATE, checkOut, eventId: 1, city: EVENT_VENUE.city
   });
   const res = await fetch(`/api/hotels?${params}`);
   if(!res.ok) throw new Error('Hotel API error');

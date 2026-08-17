@@ -434,7 +434,7 @@ async function fetchMatchHotels(){
   checkOutDate.setDate(checkOutDate.getDate()+1);
   const checkOut = checkOutDate.toISOString().slice(0,10);
   const params = new URLSearchParams({
-    lat: MATCH_VENUE.lat, lng: MATCH_VENUE.lng, checkIn: MATCH_ISO_DATE, checkOut, eventId: 101
+    lat: MATCH_VENUE.lat, lng: MATCH_VENUE.lng, checkIn: MATCH_ISO_DATE, checkOut, eventId: 101, city: MATCH_VENUE.city
   });
   const res = await fetch(`/api/hotels?${params}`);
   if(!res.ok) throw new Error('Hotel API error');
