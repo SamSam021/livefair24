@@ -80,17 +80,40 @@
     <priority>0.65</priority>
   </url>
 
+  <!-- Legal / trust pages -->
+  <url>
+    <loc>https://livefair24.com/privacy.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.30</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/impressum.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.30</priority>
+  </url>
+
   <!--
     NOT YET BUILT — do not add these back to the sitemap until the pages exist:
     /guides/methodology.html, /guides/cheapest-concert-tickets.html,
     /guides/hotels-near-venues.html, /about.html, /affiliate-disclosure.html,
-    /privacy.html, /contact.html, additional event pages (rosa-calder-bremen,
+    /contact.html, additional event pages (rosa-calder-bremen,
     silvertone-dublin, delphine-london, kaito-reyes-paris, nocturne-milan,
     the-quiet-static-new-york), additional city/country hubs (UK, US, Ireland,
     Netherlands), additional German cities (Hamburg, Munich, Bremen, Cologne,
     Frankfurt — currently "#" placeholder links on /cities/germany/).
     A sitemap entry for a page that doesn't resolve is a negative crawl signal —
     add each URL here in the same commit that ships the page.
+
+    Also not yet added: individual /events/{eventId}/{slug} real event pages
+    (backend/routes/eventPage.js) — the route exists and is server-rendered
+    with real Ticketmaster data, but nothing on the site links to it yet and
+    it hasn't been confirmed working against a live account. Add specific
+    event URLs here only once real events are confirmed rendering correctly
+    and are reachable through real internal links — not as a placeholder
+    pattern, since individual event URLs change constantly as events sell
+    out or pass.
   -->
 
 </urlset>
