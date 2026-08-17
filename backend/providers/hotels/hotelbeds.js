@@ -100,6 +100,7 @@ module.exports = {
     return lastError;
   },
   async search(params, env) {
+    let credentialDiagnostic = '';
     try {
       const cert = unescapePem(env.HOTELBEDS_CLIENT_CERT);
       const key = unescapePem(env.HOTELBEDS_CLIENT_KEY);
@@ -117,7 +118,16 @@ module.exports = {
       }
 
       const apiKey = env.HOTELBEDS_API_KEY;
-      const sig = signature(apiKey, env.HOTELBEDS_SECRET);
+      const secret = env.HOTELBEDS_SECRET;
+      const sig = signature(apiKey, secret);
+      // Diagnostic breadcrumb for a 401 below: character lengths and
+      // whether either value has leading/trailing whitespace — visible
+      // without ever exposing the actual key/secret values themselves.
+      // Given how many of today's real bugs turned out to be an
+      // incomplete copy-paste, this is worth checking directly rather
+      // than assuming a "refreshed" credential is actually intact.
+      const credentialDiagnostic_local = `apiKey: ${apiKey ? apiKey.length : 0} chars${apiKey !== apiKey.trim() ? ' (has whitespace!)' : ''}, secret: ${secret ? secret.length : 0} chars${secret !== secret.trim() ? ' (has whitespace!)' : ''}`;
+      credentialDiagnostic = credentialDiagnostic_local;
       const body = JSON.stringify({
         stay: { checkIn: params.checkIn, checkOut: params.checkOut },
         occupancies: [{ rooms: 1, adults: 2, children: 0 }],
@@ -187,8 +197,9 @@ module.exports = {
         demo: false,
       }));
     } catch (err) {
-      console.warn('[hotelbeds provider]', err.message);
-      lastError = err.message;
+      const fullMessage = `${err.message} — credentials: ${credentialDiagnostic || 'not reached'}`;
+      console.warn('[hotelbeds provider]', fullMessage);
+      lastError = fullMessage;
       return [];
     }
   },
