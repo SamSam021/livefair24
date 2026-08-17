@@ -56,7 +56,7 @@ function httpsPostJson(hostname, path, headers, bodyObj) {
           try {
             const parsed = JSON.parse(data);
             if (res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
-            else reject(new Error(`Google Places API ${res.statusCode}: ${data.slice(0, 300)}`));
+            else reject(new Error(`Google Places API ${res.statusCode}: ${data.slice(0, 800)}`));
           } catch (e) {
             reject(new Error('Google Places API: could not parse response JSON'));
           }
