@@ -320,11 +320,12 @@ function formatFullDate(dateStr){
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// The event this page describes — built entirely from the query string a
-// search result link carries in, mirroring the shape the homepage's
-// EVENTS array already uses so the exact same fetch/render functions
-// below can stay unchanged from their homepage originals.
-const ev = {
+// The event this page describes. Prefers window.__EVENT__ — real data
+// fetched server-side by the new /events/:eventId/:slug SSR route,
+// injected before this script runs — and falls back to the query
+// string exactly as before when it's absent, so every existing link
+// built around ?name=&venue=&... keeps working unchanged.
+const ev = window.__EVENT__ || {
   artist: qp('name') || 'Event',
   venue: qp('venue') || '',
   city: qp('city') || '',
