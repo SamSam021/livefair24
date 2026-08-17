@@ -76,18 +76,10 @@
   <!-- Event header -->
   <section style="padding:40px 0 24px;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;">
-      <div>
-        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-          <span class="badge badge-live">● Prices live</span>
-          <span class="badge badge-green" id="ticketsAvailableBadge" style="display:none;">✓ Tickets available</span>
-        </div>
-        <h1 class="display" style="font-size:clamp(28px,5vw,50px);line-height:1.08;margin-bottom:12px;" id="pageTitle">Loading event…</h1>
-        <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:14px;">
-          <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink-dim);" id="pageMetaRow"></div>
-        </div>
-      </div>
-      <!-- Quick summary card -->
-      <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 26px;min-width:220px;">
+      <!-- Quick summary card — placed first so it appears before/above the
+           title block both in the DOM and visually, never below it, even
+           when a long event title forces a wrap on narrower screens. -->
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 26px;min-width:220px;flex-shrink:0;order:1;">
         <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Ticket price</div>
         <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:36px;color:var(--gold);" id="summaryTicketPrice">—</div>
         <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;" id="summaryTicketSeller">Loading…</div>
@@ -95,6 +87,17 @@
           <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Complete trip from</div>
           <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:24px;color:var(--blue);" id="tripTotalAmount2">—</div>
           <div style="font-size:11px;color:var(--ink-faint);">ticket + hotel + transport</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:280px;order:2;">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <span class="badge badge-blue" id="genreBadge" style="display:none;"></span>
+          <span class="badge badge-live">● Prices live — updated 2 min ago</span>
+          <span class="badge badge-green" id="ticketsAvailableBadge" style="display:none;">✓ Tickets available</span>
+        </div>
+        <h1 class="display" style="font-size:clamp(28px,5vw,50px);line-height:1.08;margin-bottom:12px;" id="pageTitle">Loading event…</h1>
+        <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:14px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink-dim);" id="pageMetaRow"></div>
         </div>
       </div>
     </div>
@@ -288,7 +291,27 @@ const ev = {
   lng: num(qp('lng')),
   eventId: qp('eventId') || null,
   sourceUrl: qp('url') || null,
+  genre: qp('genre') || '',
 };
+
+// Dedicated venue/artist pages that actually exist on the site today,
+// keyed by lowercased name — anything not in here falls back to the
+// relevant browse-all page (a real, working page) rather than a dead
+// link, same principle as the city-browse cards elsewhere on the site.
+const KNOWN_VENUE_PAGES = {
+  'waldbühne': '/venues/waldbuhne-berlin.html',
+};
+const KNOWN_ARTIST_PAGES = {
+  'nova wren': '/artists/nova-wren.html',
+};
+function venueHref(name){ return KNOWN_VENUE_PAGES[(name || '').toLowerCase()] || '/venues/'; }
+function artistHref(name){ return KNOWN_ARTIST_PAGES[(name || '').toLowerCase()] || '/artists/'; }
+
+if(ev.genre){
+  const genreBadge = document.getElementById('genreBadge');
+  genreBadge.textContent = ev.genre;
+  genreBadge.style.display = 'inline-flex';
+}
 
 // Matches the hardcoded event pages' title format exactly:
 // "{Artist} {City} Tickets & Hotels — {full date} | LiveFair24" — falls
@@ -299,19 +322,25 @@ document.title = `${[ev.artist, ev.city].filter(Boolean).join(' ')} Tickets & Ho
 document.getElementById('breadcrumbName').textContent = ev.artist;
 document.getElementById('pageTitle').textContent = ev.artist;
 
-// Builds the icon+text meta row (date, venue/city/country) the same way
-// the hardcoded event pages do — only rendering the pieces this event
-// actually has data for, since a generic query-param-driven page can't
-// assume every field is present.
+// Builds the icon+text meta row (date, venue/city/country link, artist
+// link) the same way the hardcoded event pages do — venue and artist
+// link out to their own info pages when we have one, and only renders
+// the pieces this event actually has data for, since a generic
+// query-param-driven page can't assume every field is present.
 (function renderMetaRow(){
   const row = document.getElementById('pageMetaRow');
   const parts = [];
   if(ev.date){
     parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span><strong style="color:var(--ink);">${ev.date}</strong></span></div>`);
   }
-  const place = [ev.venue, ev.city, ev.country].filter(Boolean).join(', ');
-  if(place){
-    parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${place}</span></div>`);
+  if(ev.venue || ev.city || ev.country){
+    const venueLink = ev.venue
+      ? `<a href="${venueHref(ev.venue)}" style="color:var(--blue);font-weight:700;">${ev.venue}</a>` : '';
+    const rest = [ev.city, ev.country].filter(Boolean).join(', ');
+    parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${venueLink}${venueLink && rest ? ', ' : ''}${rest}</span></div>`);
+  }
+  if(ev.artist && ev.artist !== 'Event'){
+    parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><a href="${artistHref(ev.artist)}" style="color:var(--blue);font-weight:700;">${ev.artist}</a></div>`);
   }
   row.innerHTML = parts.join('');
 })();

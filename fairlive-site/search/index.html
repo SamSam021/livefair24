@@ -116,6 +116,7 @@ function eventViewHref(r){
   if(r.lng != null) params.set('lng', r.lng);
   if(r.lowestPrice != null) params.set('basePrice', r.lowestPrice);
   if(r.eventId) params.set('eventId', r.eventId);
+  if(r.genre) params.set('genre', r.genre);
   // Fallback link for when our own live-price lookup comes back empty —
   // without this, a visitor hitting that case has no way to reach the
   // listing at all. Only ever shown as a fallback on the event page
