@@ -67,6 +67,14 @@ function httpGet(url, headers) {
 // destination-lookup call (and quota) on the same city more than once
 // per server run. Not persisted across restarts; that's fine, it's just
 // a call-saving cache, not a source of truth.
+//
+// Only successful lookups are cached. A failed/empty lookup is NOT
+// cached — a transient error (rate limit, momentary upstream issue) for
+// a city would otherwise permanently return "no destination found" for
+// that city for the rest of the server's uptime, even though a retry
+// moments later might succeed. Worth the occasional repeated call for a
+// city Booking.com genuinely can't resolve, rather than a silent
+// permanent outage for a city it can.
 const destCache = new Map();
 
 async function resolveDestination(city, apiKey) {
@@ -79,7 +87,17 @@ async function resolveDestination(city, apiKey) {
   const result = data && data.success && data.dest_id != null
     ? { destId: data.dest_id, destType: data.dest_type || 'CITY' }
     : null;
-  destCache.set(key, result);
+  if (!result) {
+    // Surface Booking.com's own explanation (their "message" field) so a
+    // failed lookup is diagnosable from the server log alone next time,
+    // without needing to reproduce the request separately to find out
+    // why. E.g. distinguishes "genuinely unresolvable name" from
+    // "ambiguous — used first suggestion" from an unexpected shape.
+    console.warn(`[stayapi provider] destination lookup for "${city}" returned no dest_id — response: ${JSON.stringify(data).slice(0, 300)}`);
+  }
+  // Only cache a real hit — see the comment on destCache above for why
+  // a miss is deliberately not cached.
+  if (result) destCache.set(key, result);
   return result;
 }
 
