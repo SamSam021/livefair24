@@ -235,6 +235,51 @@
 
   </section>
 
+  <!-- Venue info — only rendered for venues we actually have real detail
+       data for (never fabricated capacity/address/transit info for a
+       venue we don't have real facts about). Hidden by default; shown by
+       JS only when ev.venue matches a known entry. -->
+  <section class="section" id="venueSection" style="display:none;">
+    <div class="section-header">
+      <div><h2 id="venueSectionHeading">About this venue</h2></div>
+      <a href="#" id="venueSectionLink">Full venue page →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="card">
+        <h3 style="font-size:16px;">Venue details</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;font-size:13.5px;" id="venueDetailsList"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px;">Getting there</h3>
+        <div style="font-size:13.5px;color:var(--ink-dim);margin-top:12px;" id="venueGettingThere"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ — generic, templated from this event's own artist/venue/city;
+       no fabricated facts, every answer points back to the live data
+       shown elsewhere on this same page. -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2>Frequently asked questions</h2></div>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </section>
+
+  <!-- Other concerts you might like — real events only, pulled from the
+       same search API the rest of the site uses. A category is simply
+       omitted rather than shown with a fabricated count when we don't
+       have real data for it (e.g. no dedicated venue page). -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2>Other concerts you might like</h2></div>
+      <a href="#" id="relatedHeaderLink">See more →</a>
+    </div>
+    <div class="related-grid" id="relatedGrid">
+      <div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading…</div>
+    </div>
+  </section>
+
 </div>
 </main>
 
@@ -307,6 +352,26 @@ const KNOWN_ARTIST_PAGES = {
 };
 function venueHref(name){ return KNOWN_VENUE_PAGES[(name || '').toLowerCase()] || '/venues/'; }
 function artistHref(name){ return KNOWN_ARTIST_PAGES[(name || '').toLowerCase()] || '/artists/'; }
+
+// Real venue facts (capacity, address, transit) only exist for venues
+// we've actually researched — never fabricated for an arbitrary venue
+// name that happens to come through in a search result's query params.
+// The "About this venue" section below stays hidden for anything not
+// listed here.
+const KNOWN_VENUE_DETAILS = {
+  'waldbühne': {
+    capacity: '22,000',
+    address: 'Am Glockenturm, 14053 Berlin',
+    nearestTransit: 'Pichelsberg (U5)',
+    parking: 'Available on-site',
+    gettingThere: [
+      { label: 'U-Bahn', text: 'Pichelsberg, 8 min walk' },
+      { label: 'Bus', text: 'Lines 218 and X34 stop nearby' },
+      { label: 'Car', text: 'On-site parking, book in advance' },
+      { label: 'Bike', text: 'Berlin has dedicated cycle lanes' },
+    ],
+  },
+};
 
 if(ev.genre){
   const genreBadge = document.getElementById('genreBadge');
@@ -568,10 +633,191 @@ function updateTripOverview(tickets, hotels){
   // than a partial/misleading number.
 }
 
+const TRANSPORT_ICONS = {
+  'U-Bahn': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16"/><path d="M8 19l-2 3"/><path d="M16 19l2 3"/><circle cx="8.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/></svg>',
+  'Bus': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M6 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M14 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M4 17V6a1 1 0 0 1 1-1h11l4 5v7"/><path d="M4 12h16"/></svg>',
+  'Car': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M5 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M15 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M5 17h-2v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/><path d="M9 17h6"/></svg>',
+  'Bike': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 2 0 1 1 0 1 0-2 0"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>',
+};
+
+// "About this venue" — stays hidden unless ev.venue matches a venue we
+// have real researched facts for (KNOWN_VENUE_DETAILS above). Never
+// fabricates capacity/address/transit info for an arbitrary venue name.
+function renderVenueSection(){
+  const details = KNOWN_VENUE_DETAILS[(ev.venue || '').toLowerCase()];
+  if(!details) return;
+
+  document.getElementById('venueSection').style.display = '';
+  document.getElementById('venueSectionHeading').textContent = `About ${ev.venue}${ev.city ? ', ' + ev.city : ''}`;
+  document.getElementById('venueSectionLink').href = venueHref(ev.venue);
+
+  const rows = [
+    ['Capacity', details.capacity],
+    ['Address', details.address],
+    ['Nearest transit', details.nearestTransit],
+    ['Parking', details.parking],
+  ].filter(([, v]) => v);
+  document.getElementById('venueDetailsList').innerHTML = rows.map(([label, value]) =>
+    `<div style="display:flex;justify-content:space-between;"><span style="color:var(--ink-dim);">${label}</span><span style="font-weight:700;text-align:right;max-width:60%;">${value}</span></div>`
+  ).join('');
+
+  document.getElementById('venueGettingThere').innerHTML = (details.gettingThere || []).map((g) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">${TRANSPORT_ICONS[g.label] || ''}<span><strong>${g.label}:</strong> ${g.text}</span></div>`
+  ).join('');
+}
+
+// FAQ — fully generic, templated from this event's own artist/venue/city.
+// No fabricated facts: every answer points back to the live data shown
+// elsewhere on this same page, matching the wording already established
+// on the hardcoded event pages (no "cheapest" framing).
+function buildFaq(){
+  const who = [ev.artist, ev.city].filter(Boolean).join(' ');
+  const faqs = [];
+
+  faqs.push([`What is the ${who} ticket price right now?`,
+    `Ticket prices change frequently. See the live ticket price table above for the current price.`]);
+
+  if(ev.lat != null && ev.lng != null){
+    faqs.push([`Which hotels are closest to ${ev.venue || ev.city}?`,
+      `The closest hotels are shown in the live hotel list above, sorted by distance and price.`]);
+  }
+
+  faqs.push(
+    [`What is the total cost of a ${who} trip?`,
+     `Your total trip cost depends on the current ticket price, the current nearby hotel price, and local transport. See the trip cost overview above for an up-to-date estimate — actual costs depend on your travel dates and preferences.`],
+    [`Should I buy ${who} tickets now or wait?`,
+     `Ticket prices for events like this can rise or fall as the date approaches, depending on demand and remaining inventory. Check the live ticket price table above for the current price before deciding.`],
+    [`Are ${who} tickets still available?`,
+     `See the live ticket price table above for current availability. Availability can change rapidly.`],
+    [`Does LiveFair24 charge any booking fees?`,
+     `No. LiveFair24 shows ticket prices and lets you search for an event. When you click "Buy ticket" or "Book hotel", you go directly to the seller's website and pay their price. We earn a small affiliate commission on purchases at no extra cost to you. We never add our own markup.`]
+  );
+
+  document.getElementById('faqList').innerHTML = faqs.map(([q, a]) => `
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        ${q}
+        <span class="chevron">▾</span>
+      </button>
+      <div class="faq-a">${a}</div>
+    </div>`).join('');
+}
+
+function toggleFaq(btn){
+  const ans = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  document.querySelectorAll('.faq-q').forEach(b=>{b.classList.remove('open');b.nextElementSibling.classList.remove('open');});
+  if(!isOpen){ btn.classList.add('open'); ans.classList.add('open'); }
+}
+
+// Same query-param shape eventViewHref() builds in search/index.html —
+// duplicated here since these are separate static pages with no shared
+// JS module between them (matches the rest of this codebase's pattern).
+function eventViewHrefFromResult(r){
+  const params = new URLSearchParams();
+  if(r.name) params.set('name', r.name);
+  if(r.venue) params.set('venue', r.venue);
+  if(r.city) params.set('city', r.city);
+  if(r.country) params.set('country', r.country);
+  if(r.date) params.set('date', r.date);
+  if(r.time) params.set('time', r.time);
+  if(r.lat != null) params.set('lat', r.lat);
+  if(r.lng != null) params.set('lng', r.lng);
+  if(r.lowestPrice != null) params.set('basePrice', r.lowestPrice);
+  if(r.eventId) params.set('eventId', r.eventId);
+  if(r.genre) params.set('genre', r.genre);
+  if(r.url && r.url !== '#') params.set('url', r.url);
+  return `/events/view.html?${params}`;
+}
+
+// Other concerts you might like — real events and real counts only,
+// pulled from the same /api/search endpoint the search page itself
+// uses. A category (e.g. "all X venue concerts") is simply left out
+// rather than shown with a fabricated count when we don't have a real
+// dedicated page/data source for it.
+async function loadRelatedConcerts(){
+  const grid = document.getElementById('relatedGrid');
+  const headerLink = document.getElementById('relatedHeaderLink');
+  if(ev.city){
+    headerLink.href = `/search/?city=${encodeURIComponent(ev.city)}`;
+    headerLink.textContent = `All ${ev.city} concerts →`;
+  } else {
+    headerLink.style.display = 'none';
+  }
+
+  const cards = [];
+
+  if(ev.city){
+    try{
+      const res = await fetch(`/api/search?city=${encodeURIComponent(ev.city)}`);
+      if(res.ok){
+        const data = await res.json();
+        const others = (data.results || [])
+          .filter(r => (r.name || '').toLowerCase() !== ev.artist.toLowerCase())
+          .slice(0, 2);
+        others.forEach((r) => {
+          cards.push({
+            href: eventViewHrefFromResult(r),
+            genre: r.genre || 'Music',
+            title: r.name || 'Untitled event',
+            meta: [r.venue, r.date].filter(Boolean).join(' · '),
+            price: r.lowestPrice != null ? `From $${Math.round(r.lowestPrice)}` : 'Price n/a',
+          });
+        });
+
+        cards.push({
+          href: `/search/?city=${encodeURIComponent(ev.city)}`,
+          genre: 'City',
+          title: `All ${ev.city} concerts`,
+          meta: ev.country || '',
+          price: `${data.count} upcoming event${data.count === 1 ? '' : 's'}`,
+        });
+      }
+    } catch(err){ console.error(err); }
+  }
+
+  if(ev.artist && ev.artist !== 'Event'){
+    cards.push({
+      href: KNOWN_ARTIST_PAGES[ev.artist.toLowerCase()] || `/search/?q=${encodeURIComponent(ev.artist)}`,
+      genre: ev.genre || 'Artist',
+      title: `${ev.artist} — All tour dates`,
+      meta: '',
+      price: '',
+    });
+  }
+
+  if(ev.venue && KNOWN_VENUE_PAGES[ev.venue.toLowerCase()]){
+    cards.push({
+      href: KNOWN_VENUE_PAGES[ev.venue.toLowerCase()],
+      genre: 'Venue',
+      title: `All ${ev.venue} concerts`,
+      meta: [ev.city, ev.country].filter(Boolean).join(', '),
+      price: '',
+    });
+  }
+
+  if(cards.length === 0){
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No related concerts to show yet.</div>';
+    return;
+  }
+
+  grid.innerHTML = cards.map((c) => `
+    <a href="${c.href}" class="related-card">
+      <div class="r-genre">${c.genre}</div>
+      <h4>${c.title}</h4>
+      ${c.meta ? `<div class="r-meta">${c.meta}</div>` : ''}
+      ${c.price ? `<div class="r-price">${c.price}</div>` : ''}
+    </a>`).join('');
+}
+
 async function init(){
   let tickets = [];
   let hotels = [];
   const hasCoords = ev.lat!=null && ev.lng!=null;
+
+  renderVenueSection();
+  buildFaq();
+  loadRelatedConcerts();
 
   if(!hasCoords){
     document.getElementById('hotelPanelLayout').style.display = 'none';
