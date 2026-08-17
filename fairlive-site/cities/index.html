@@ -100,16 +100,10 @@
 </footer>
 <script src="../js/cookie-banner.js" defer></script>
 <script>
-// Known dedicated city pages — anything else falls back to a pre-filtered
-// search, so a click never lands on a dead link even for cities that
-// don't have a full static page built out yet.
-const CITY_PAGES = {
-  DE: { countrySlug: 'germany', cities: { berlin: '/cities/germany/berlin.html' } }
-};
-
+// Every city routes through the same search flow — no dedicated city
+// page gets special-cased over the others, so the experience stays
+// consistent no matter which city a visitor lands on.
 function cityHref(countryCode, city) {
-  const country = CITY_PAGES[countryCode];
-  if (country && city.slug && country.cities[city.slug]) return country.cities[city.slug];
   return `/search/?city=${encodeURIComponent(city.name)}`;
 }
 
