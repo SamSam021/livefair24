@@ -63,7 +63,43 @@ module.exports = {
 
   // Used by /api/tickets — price comparison for ONE already-known event
   // (every result here is treated as a competing seller for that event).
+  //
+  // Prefers a direct get-by-ID lookup (params.eventId) over the keyword
+  // search below, for the exact same reason getEventDetails exists:
+  // confirmed via real evidence (this event page's own screenshot vs. a
+  // "No live prices available" result) that a keyword search on a full
+  // event title — e.g. "Lady A: This Winter's Night Tour 2026" — can
+  // fail to match or return a different, unpriced listing even when
+  // Ticketmaster's own site has real live pricing for that exact event.
+  // A known event ID sidesteps keyword matching entirely. Falls back to
+  // the keyword search when no eventId is available (demo mode, or any
+  // caller that only has an artist name to go on).
   async search(params, env) {
+    if (params.eventId) {
+      const detail = await this.getEventDetails(params.eventId, env);
+      if (detail && detail.lowestPrice != null) {
+        const total = Math.round(detail.lowestPrice * 100) / 100;
+        const fees = Math.round(total * 0.15 * 100) / 100; // TM doesn't break out fees in this endpoint — estimate; refine if you get access to a fees-inclusive field
+        return [{
+          sellerId: 'ticketmaster',
+          sellerName: 'Ticketmaster',
+          badge: 'TM',
+          faceValue: Math.round((total - fees) * 100) / 100,
+          fees,
+          total,
+          currency: detail.currency || 'USD',
+          rating: null,
+          reviews: null,
+          url: detail.url || '#',
+          section: 'See seller for section/row',
+          demo: false,
+        }];
+      }
+      // Detail lookup found the event but genuinely has no price yet (or
+      // the lookup itself failed) — fall through to the keyword search
+      // below rather than giving up, in case that surfaces something.
+    }
+
     const key = env.TICKETMASTER_API_KEY;
     const keyword = encodeURIComponent(params.artist || params.query || '');
     const city = params.city ? `&city=${encodeURIComponent(params.city)}` : '';
