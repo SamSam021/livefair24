@@ -20,6 +20,7 @@ const sportsRoutes = require('./routes/sports');
 const searchRoutes = require('./routes/search');
 const trendingRoutes = require('./routes/trending');
 const citiesRoutes = require('./routes/cities');
+const eventPageRoutes = require('./routes/eventPage');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -319,6 +320,39 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin' || pathname === '/admin/') {
       return serveFile(res, ADMIN_ROOT, 'admin.html');
+    }
+    // Real, indexable event pages — /events/{eventId}/{slug}. Two path
+    // segments after /events/ specifically, so this never collides with
+    // existing single-segment static files like /events/view.html or
+    // /events/nova-wren-berlin-2026-08-16.html.
+    const eventPageMatch = pathname.match(/^\/events\/([^/]+)\/([^/]+)\/?$/);
+    if (eventPageMatch && req.method === 'GET') {
+      const [, eventId, requestedSlug] = eventPageMatch;
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await eventPageRoutes.renderEventPage(
+          decodeURIComponent(eventId),
+          decodeURIComponent(requestedSlug),
+          registry.getMergedEnv(),
+          siteOrigin
+        );
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('Event not found');
+        }
+        // Redirect to the canonical slug rather than serving duplicate
+        // content under two URLs for the same real event.
+        if (result.canonicalSlug !== requestedSlug) {
+          res.writeHead(301, { Location: `/events/${encodeURIComponent(eventId)}/${result.canonicalSlug}` });
+          return res.end();
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[event page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
     }
     return serveStatic(req, res, pathname);
   } catch (err) {
