@@ -19,6 +19,7 @@ const eventRoutes = require('./routes/events');
 const sportsRoutes = require('./routes/sports');
 const searchRoutes = require('./routes/search');
 const trendingRoutes = require('./routes/trending');
+const citiesRoutes = require('./routes/cities');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -197,6 +198,14 @@ const server = http.createServer(async (req, res) => {
       try {
         const clientIp = getClientIp(req);
         return sendJSON(res, 200, await trendingRoutes.getTrendingEvents(clientIp, registry.getMergedEnv(), query.country));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/cities' && req.method === 'GET') {
+      try {
+        const clientIp = getClientIp(req);
+        return sendJSON(res, 200, await citiesRoutes.getCitiesForVisitor(clientIp, query.country));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
