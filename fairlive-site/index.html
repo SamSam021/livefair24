@@ -807,7 +807,7 @@ function renderHotelList(hotels){
         <span class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span class="hrev">${h.reviews!=null?`(${h.reviews.toLocaleString()})`:''}</span>`:''}</span>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:'Price n/a'}</div>
+        <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:''}</div>
         <a href="${h.url||'#'}" class="hbook" target="_blank" rel="noopener" onclick="event.stopPropagation()">Book →</a>
       </div>
     </div>`).join('');
@@ -864,7 +864,7 @@ function renderMap(ev, hotels){
       iconSize:[48,26],iconAnchor:[24,26]
     });
     const m = L.marker([h.lat,h.lng],{icon}).addTo(mapLayer)
-      .bindPopup(`<b>${h.name}</b><br>${h.pricePerNight != null ? `$${h.pricePerNight}/night` : 'Price n/a'}${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}${h.distanceKm!=null?` · ${h.distanceKm.toFixed(1)} km`:''}`);
+      .bindPopup(`<b>${h.name}</b><br>${[h.pricePerNight!=null?`$${h.pricePerNight}/night`:null, h.rating!=null?`★${h.rating.toFixed(1)}`:null, h.distanceKm!=null?`${h.distanceKm.toFixed(1)} km`:null].filter(Boolean).join(' · ')}`);
     currentMarkers.push(m);
   });
 
