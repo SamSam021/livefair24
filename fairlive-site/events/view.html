@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -298,7 +298,7 @@
   </div>
   <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
 </footer>
-<script src="../js/cookie-banner.js" defer></script>
+<script src="/js/cookie-banner.js" defer></script>
 
 <script>
 function qp(name){ return new URLSearchParams(window.location.search).get(name); }
@@ -423,11 +423,11 @@ document.getElementById('ticketEpTitle').textContent = ev.artist;
 document.getElementById('ticketEpMeta').textContent = `${[ev.venue, ev.city, ev.country].filter(Boolean).join(', ')}${ev.date ? ' · ' + ev.date.split(' · ')[0] : ''}`;
 document.getElementById('epTitle').textContent = `Hotels near ${ev.artist}${ev.venue ? ' — ' + ev.venue : ''}${ev.city ? ', ' + ev.city : ''}`;
 document.getElementById('epMeta').textContent = [ev.date, ev.country].filter(Boolean).join(' · ');
-document.getElementById('epTicket').textContent = ev.ticket;
+document.getElementById('epTicket').textContent = ev.ticket || 'Price n/a';
 
 async function fetchTickets(){
   const params = new URLSearchParams({
-    artist: ev.artist, city: ev.city, basePrice: ev.ticket.replace('$',''), eventId: ev.eventId || ''
+    artist: ev.artist, city: ev.city, basePrice: ev.ticket ? ev.ticket.replace('$','') : '', eventId: ev.eventId || ''
   });
   const res = await fetch(`/api/tickets?${params}`);
   if(!res.ok) throw new Error('Ticket API error');
