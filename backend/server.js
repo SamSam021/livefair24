@@ -185,7 +185,11 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, data);
     }
     if (pathname === '/api/health') {
-      return sendJSON(res, 200, { ok: true });
+      // buildMarker lets you confirm exactly which deploy is actually
+      // running with a single, instant request — separate from testing
+      // any real feature — since "did the deploy actually go out" has
+      // been genuinely hard to answer from the outside so far.
+      return sendJSON(res, 200, { ok: true, buildMarker: 'hotelbeds-mtls-host-fix-2026-08-17' });
     }
     if (pathname === '/api/search' && req.method === 'GET') {
       try {
