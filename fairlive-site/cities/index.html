@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Browse Concerts by Country &amp; City | LiveFair24</title>
-<meta name="description" content="Browse upcoming concerts by country and city. See ticket prices and find the nearest hotel for every show.">
+<title>Browse Concerts by City | LiveFair24</title>
+<meta name="description" content="Browse upcoming concerts by city. See ticket prices and find the nearest hotel for every show.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://livefair24.com/cities/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,7 +64,7 @@
 <div class="breadcrumb">
   <div class="breadcrumb-inner">
     <a href="/">Concerts</a><span class="sep">›</span>
-    <span>Countries</span>
+    <span>Cities</span>
   </div>
 </div>
 
@@ -72,21 +72,18 @@
 <div class="container">
 
   <section style="padding:40px 0 24px;">
-    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Browse concerts by country</h1>
-    <p style="font-size:16px;color:var(--ink-dim);margin-top:12px;max-width:60ch;line-height:1.6;">
-      Pick a country to see every upcoming show, sorted by date, with live ticket and hotel prices.
+    <span class="badge badge-blue" id="cityCountryBadge" style="margin-bottom:16px;display:none;"></span>
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Browse concerts by city</h1>
+    <p style="font-size:16px;color:var(--ink-dim);margin-top:12px;max-width:60ch;line-height:1.6;" id="cityIntroText">
+      Pick a city to see every upcoming show, sorted by date, with live ticket and hotel prices.
     </p>
   </section>
 
   <section class="section" style="padding-top:0;">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
-      <a href="/cities/germany/" class="card" style="padding:18px;">
-        <div style="font-weight:800;font-size:16px;">🇩🇪 Germany</div>
-        <div style="font-size:12.5px;color:var(--ink-dim);margin-top:4px;">12 upcoming events</div>
-        <div style="font-size:13px;color:var(--gold);font-weight:700;margin-top:10px;">From $38</div>
-      </a>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="cityGrid">
+      <div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--ink-faint);">Loading cities…</div>
     </div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More countries are added as new tour dates are confirmed.</p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More cities are added as new tour dates are confirmed.</p>
   </section>
 
 </div>
@@ -102,5 +99,52 @@
   <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
 </footer>
 <script src="../js/cookie-banner.js" defer></script>
+<script>
+// Known dedicated city pages — anything else falls back to a pre-filtered
+// search, so a click never lands on a dead link even for cities that
+// don't have a full static page built out yet.
+const CITY_PAGES = {
+  DE: { countrySlug: 'germany', cities: { berlin: '/cities/germany/berlin.html' } }
+};
+
+function cityHref(countryCode, city) {
+  const country = CITY_PAGES[countryCode];
+  if (country && city.slug && country.cities[city.slug]) return country.cities[city.slug];
+  return `/search/?city=${encodeURIComponent(city.name)}`;
+}
+
+async function loadCities(){
+  const grid = document.getElementById('cityGrid');
+  try{
+    const res = await fetch('/api/cities');
+    if(!res.ok) throw new Error('Cities API error');
+    const data = await res.json();
+
+    const badge = document.getElementById('cityCountryBadge');
+    if(data.flag && data.countryName){
+      badge.textContent = `${data.flag} ${data.countryName}`;
+      badge.style.display = 'inline-flex';
+    }
+    document.getElementById('cityIntroText').textContent =
+      `Popular cities for concerts in ${data.countryName}. Pick one to see upcoming shows, sorted by date, with live ticket and hotel prices.`;
+
+    if(!data.cities || data.cities.length === 0){
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--ink-faint);">No cities to show yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = data.cities.map((city) => `
+      <a href="${cityHref(data.countryCode, city)}" class="card" style="padding:18px;">
+        <div style="font-weight:800;font-size:16px;">${city.name}</div>
+        <div style="font-size:12.5px;color:var(--ink-dim);margin-top:4px;">See upcoming concerts</div>
+      </a>`).join('');
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--red);">Could not load cities right now. Please try again.</div>';
+  }
+}
+
+loadCities();
+</script>
 </body>
 </html>
