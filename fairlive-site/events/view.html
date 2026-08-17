@@ -101,12 +101,59 @@
       </div>
     </div>
 
+    <!-- Hotels near the venue -->
+    <div class="event-panel" id="eventPanel">
+      <div class="event-panel-header">
+        <div>
+          <div class="ep-title" id="epTitle">Hotels near venue</div>
+          <div class="ep-meta"><span id="epMeta">—</span> <span id="hotelDemoBadge" class="badge badge-gold" style="display:none;">Demo mode</span></div>
+        </div>
+        <div class="ep-price">
+          <div class="lbl">Ticket price</div>
+          <div class="amt" id="epTicket">—</div>
+        </div>
+      </div>
+
+      <div id="hotelUnavailable" style="display:none;padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">
+        Hotel search isn't available for this venue — we don't have its exact location yet.
+      </div>
+
+      <div class="panel-layout" id="hotelPanelLayout">
+        <div>
+          <div id="eventMap" class="hotel-map-el"></div>
+          <div class="hotel-filters">
+            <div>
+              <label class="hf-label">Max price / night</label>
+              <div class="range-row">
+                <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
+                <span class="range-val" id="hpVal">$500+</span>
+              </div>
+            </div>
+            <div>
+              <label class="hf-label">Min rating</label>
+              <div class="rating-pills">
+                <button class="rpill active" data-r="0">Any</button>
+                <button class="rpill" data-r="3.5">3.5+</button>
+                <button class="rpill" data-r="4">4.0+</button>
+                <button class="rpill" data-r="4.5">4.5+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hotel-right">
+          <div class="hotel-count-bar" id="hotelCountBar">Loading hotels…</div>
+          <div class="hotel-scroll" id="hotelScroll"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Trip cost overview — ticket + matched hotel + a rough local-transport
          estimate, added together. Deliberately NOT framed as "cheapest" or
          a comparison across sellers/hotels: this is a single seller's
          current ticket price plus the map's top-listed hotel, added up so
          a visitor can see roughly what the trip costs — not a claim that
-         either was chosen by comparing options. -->
+         either was chosen by comparing options. Placed after the ticket
+         panel AND the hotel map/list, since it's the sum of both. -->
     <div class="section" style="padding:0;margin-top:28px;">
       <div class="section-header">
         <div>
@@ -156,52 +203,6 @@
             <a href="#eventPanel" class="cta-btn cta-btn-outline">See hotels</a>
           </div>
           <p class="disclaimer">Links open each provider's checkout. Prices shown are estimates and may change before purchase.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hotels near the venue -->
-    <div class="event-panel" id="eventPanel">
-      <div class="event-panel-header">
-        <div>
-          <div class="ep-title" id="epTitle">Hotels near venue</div>
-          <div class="ep-meta"><span id="epMeta">—</span> <span id="hotelDemoBadge" class="badge badge-gold" style="display:none;">Demo mode</span></div>
-        </div>
-        <div class="ep-price">
-          <div class="lbl">Ticket price</div>
-          <div class="amt" id="epTicket">—</div>
-        </div>
-      </div>
-
-      <div id="hotelUnavailable" style="display:none;padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">
-        Hotel search isn't available for this venue — we don't have its exact location yet.
-      </div>
-
-      <div class="panel-layout" id="hotelPanelLayout">
-        <div>
-          <div id="eventMap" class="hotel-map-el"></div>
-          <div class="hotel-filters">
-            <div>
-              <label class="hf-label">Max price / night</label>
-              <div class="range-row">
-                <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
-                <span class="range-val" id="hpVal">$500+</span>
-              </div>
-            </div>
-            <div>
-              <label class="hf-label">Min rating</label>
-              <div class="rating-pills">
-                <button class="rpill active" data-r="0">Any</button>
-                <button class="rpill" data-r="3.5">3.5+</button>
-                <button class="rpill" data-r="4">4.0+</button>
-                <button class="rpill" data-r="4.5">4.5+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="hotel-right">
-          <div class="hotel-count-bar" id="hotelCountBar">Loading hotels…</div>
-          <div class="hotel-scroll" id="hotelScroll"></div>
         </div>
       </div>
     </div>
