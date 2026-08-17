@@ -17,6 +17,7 @@ async function getUpcomingEvents(limit = 20) {
      LEFT JOIN venues v ON v.id = le.venue_id
      LEFT JOIN artists a ON a.id = le.artist_id
      WHERE le.start_datetime >= now()
+       AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
      ORDER BY le.start_datetime ASC
      LIMIT $1`,
     [limit]
@@ -32,7 +33,8 @@ async function getEventBySlug(slug) {
      FROM live_events le
      LEFT JOIN venues v ON v.id = le.venue_id
      LEFT JOIN artists a ON a.id = le.artist_id
-     WHERE le.slug = $1`,
+     WHERE le.slug = $1
+       AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL`,
     [slug]
   );
   return result.rows[0] || null;
@@ -47,6 +49,7 @@ async function getEventsByType(eventType, limit = 20) {
      LEFT JOIN venues v ON v.id = le.venue_id
      LEFT JOIN artists a ON a.id = le.artist_id
      WHERE le.event_type = $1 AND le.start_datetime >= now()
+       AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
      ORDER BY le.start_datetime ASC
      LIMIT $2`,
     [eventType, limit]
@@ -62,6 +65,7 @@ async function getEventsByArtist(artistSlug, limit = 20) {
      JOIN artists a ON a.id = le.artist_id
      LEFT JOIN venues v ON v.id = le.venue_id
      WHERE a.slug = $1 AND le.start_datetime >= now()
+       AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
      ORDER BY le.start_datetime ASC
      LIMIT $2`,
     [artistSlug, limit]
@@ -77,6 +81,7 @@ async function getEventsByVenue(venueSlug, limit = 20) {
      JOIN venues v ON v.id = le.venue_id
      LEFT JOIN artists a ON a.id = le.artist_id
      WHERE v.slug = $1 AND le.start_datetime >= now()
+       AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
      ORDER BY le.start_datetime ASC
      LIMIT $2`,
     [venueSlug, limit]

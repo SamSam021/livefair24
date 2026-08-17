@@ -139,6 +139,18 @@ function hasRealPrice(ev) {
   return ev.lowestPrice != null;
 }
 
+// Some venues come back from the provider with no geocoded location at
+// all (Ticketmaster doesn't always have lat/lng for every venue). Without
+// real coordinates the hotel map on the event/match page has nothing to
+// center on — it renders as an empty gray tile grid with a hotel pin
+// floating on it, per the actual bug this was written to fix. Dropping
+// these here (server-side, once) means every page that shows a card is
+// protected, instead of relying on each frontend page remembering to
+// filter client-side.
+function hasCoordinates(ev) {
+  return ev.lat != null && ev.lng != null && !Number.isNaN(ev.lat) && !Number.isNaN(ev.lng);
+}
+
 // A concert happening in a few hours (or even a few days) isn't
 // realistic for someone to plan around — explicit requirement that
 // shown cards need at least MIN_LEAD_DAYS of notice. Applied to the
@@ -500,7 +512,9 @@ async function runTrendingPipeline(countryCode, demoMode, usedPricingFallback, r
   debug.verifiedUpcomingCount = eligible.length; // split from eligibleCount below — isolates whether the date filter or the price filter is the actual bottleneck, if this still doesn't fully solve it
   const priced = eligible.filter(hasRealPrice);
   debug.pricedBeforeLeadTimeFilter = priced.length;
-  const withLeadTime = priced.filter(hasMinimumLeadTime);
+  const withCoordinates = priced.filter(hasCoordinates);
+  debug.withCoordinatesCount = withCoordinates.length; // isolates missing-geocoding as a distinct drop reason from missing price, same pattern as the other debug counters here
+  const withLeadTime = withCoordinates.filter(hasMinimumLeadTime);
   debug.eligibleCount = withLeadTime.length;
   // Diversity ordering happens first (establishing preference — a
   // different artist per card, whenever the pool allows it), THEN date
