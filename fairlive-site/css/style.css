@@ -280,6 +280,7 @@ img{max-width:100%;display:block;}
 @media(max-width:860px){ .panel-layout{ grid-template-columns:1fr; } }
 .hotel-map-el{ height:380px; border-radius:14px; overflow:hidden; border:1px solid var(--line); }
 .price-pin{ background:#fff; border:1.5px solid var(--gold); color:var(--ink); font-family:'Sora',sans-serif; font-weight:800; font-size:12px; padding:3px 8px; border-radius:999px; white-space:nowrap; box-shadow:0 3px 8px rgba(16,24,40,.25); }
+.hotel-pin{ background:#fff; border:1.5px solid var(--blue); color:var(--blue); font-family:'Sora',sans-serif; font-weight:800; font-size:11px; padding:3px 7px; border-radius:999px; white-space:nowrap; box-shadow:0 3px 8px rgba(16,24,40,.25); display:flex; align-items:center; gap:4px; }
 
 /* ---- Shared hotel filters — used by homepage and event detail pages ---- */
 .hotel-filters{ background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:18px; margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }

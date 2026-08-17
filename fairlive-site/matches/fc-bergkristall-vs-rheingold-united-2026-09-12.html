@@ -416,13 +416,15 @@ function renderMatchHotelMap(){
     .bindPopup(`<b>${MATCH_VENUE.name}</b><br>${MATCH_VENUE.city}`);
 
   filtered.forEach(h => {
-    if(h.lat==null || h.lng==null || h.pricePerNight==null) { matchHotelMarkers.push(null); return; }
+    if(h.lat==null || h.lng==null) { matchHotelMarkers.push(null); return; }
     const icon = L.divIcon({
-      className:'', html:`<div class="price-pin">$${h.pricePerNight}</div>`,
+      className:'', html: h.pricePerNight != null
+        ? `<div class="price-pin">$${h.pricePerNight}</div>`
+        : `<div class="hotel-pin">🏨</div>`,
       iconSize:[48,26], iconAnchor:[24,26]
     });
     const m = L.marker([h.lat, h.lng], { icon }).addTo(matchMapLayer)
-      .bindPopup(`<b>${h.name}</b><br>$${h.pricePerNight}/night${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}`);
+      .bindPopup(`<b>${h.name}</b><br>${h.pricePerNight != null ? `$${h.pricePerNight}/night` : 'Price n/a'}${h.rating!=null?` · ★${h.rating.toFixed(1)}`:''}`);
     matchHotelMarkers.push(m);
   });
 
