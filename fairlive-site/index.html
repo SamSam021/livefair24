@@ -527,6 +527,20 @@ function formatTrendingDate(dateStr, timeStr){
   return timeStr ? `${dayLabel} · ${timeStr.slice(0,5)}` : dayLabel;
 }
 
+// Mirrors buildCanonicalSlug() in backend/routes/eventPage.js — doesn't
+// need to be byte-perfect, the server 301-redirects to the real
+// canonical slug if this guess is off. Only real events (a genuine
+// ticketmasterEventId) get this link at all — nothing for the SSR route
+// to look up otherwise.
+function slugifyForHref(str){
+  return (str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+}
+function eventViewHref(ev){
+  if(!ev.ticketmasterEventId) return null;
+  const slug = slugifyForHref([ev.artist, ev.city, ev.isoDate].filter(Boolean).join('-')) || 'event';
+  return `/events/${encodeURIComponent(ev.ticketmasterEventId)}/${slug}`;
+}
+
 // Renders real trending cards using the EXACT same markup/classes/onclick
 // pattern as the static fallback cards below, so they're fully
 // interactive through the existing selectEvent() system — clicking
@@ -536,7 +550,9 @@ function renderTrendingEventCards(events){
   const grid = document.getElementById('eventCardGrid');
   if(!grid) return;
 
-  grid.innerHTML = events.map((ev, i) => `
+  grid.innerHTML = events.map((ev, i) => {
+    const fullPageHref = eventViewHref(ev);
+    return `
     <div class="card event-card${i===0?' active':''}" data-id="${i}" style="cursor:pointer;" onclick="selectEvent(${i},'ticket')">
       <div class="genre">${ev.genre || 'Live'}</div>
       <h3>${ev.artist}</h3>
@@ -548,8 +564,10 @@ function renderTrendingEventCards(events){
           <a href="${ev.sourceUrl || '#'}" target="_blank" rel="noopener" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">View tickets →</a>
           <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(${i},'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
         </div>
+        ${fullPageHref ? `<a href="${fullPageHref}" class="full-event-link" onclick="event.stopPropagation();" style="display:block;margin-top:8px;font-size:12.5px;">View full event page →</a>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // Fetches real trending events and, if a full set of genuinely usable

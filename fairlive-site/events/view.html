@@ -732,10 +732,22 @@ function toggleFaq(btn){
   if(!isOpen){ btn.classList.add('open'); ans.classList.add('open'); }
 }
 
-// Same query-param shape eventViewHref() builds in search/index.html —
-// duplicated here since these are separate static pages with no shared
-// JS module between them (matches the rest of this codebase's pattern).
+// Mirrors buildCanonicalSlug() in backend/routes/eventPage.js — same
+// reasoning as eventViewHref() in search/index.html: doesn't need to be
+// byte-perfect, the server 301-redirects to the real canonical slug if
+// this guess is off.
+function slugifyForHref(str){
+  return (str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+}
+
+// Same logic as eventViewHref() in search/index.html — duplicated here
+// since these are separate static pages with no shared JS module
+// between them (matches the rest of this codebase's pattern).
 function eventViewHrefFromResult(r){
+  if(r.eventId){
+    const slug = slugifyForHref([r.name, r.city, r.date].filter(Boolean).join('-')) || 'event';
+    return `/events/${encodeURIComponent(r.eventId)}/${slug}`;
+  }
   const params = new URLSearchParams();
   if(r.name) params.set('name', r.name);
   if(r.venue) params.set('venue', r.venue);
@@ -746,7 +758,6 @@ function eventViewHrefFromResult(r){
   if(r.lat != null) params.set('lat', r.lat);
   if(r.lng != null) params.set('lng', r.lng);
   if(r.lowestPrice != null) params.set('basePrice', r.lowestPrice);
-  if(r.eventId) params.set('eventId', r.eventId);
   if(r.genre) params.set('genre', r.genre);
   if(r.url && r.url !== '#') params.set('url', r.url);
   return `/events/view.html?${params}`;
