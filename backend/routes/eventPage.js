@@ -115,6 +115,43 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
     `<meta name="robots" content="index, follow">\n<link rel="canonical" href="${canonicalUrl}">`
   );
 
+  // The H1 and the date/venue/artist row beneath it previously only ever
+  // got filled in by client-side JS reading window.__EVENT__ — meaning
+  // the raw HTML (what a plain fetch, or Google's first crawl pass
+  // before it renders JS, actually sees) showed nothing but "Loading
+  // event…" and an empty div. Filling these in here means the core
+  // visible identity is present immediately, matching the same
+  // "don't require JS to discover the core event identity" principle
+  // already applied to the <head> tags above. The client-side JS still
+  // runs afterward and overwrites these with the exact same real
+  // values — harmless, and it also upgrades the venue/artist links to
+  // their dedicated pages when one exists (KNOWN_VENUE_PAGES /
+  // KNOWN_ARTIST_PAGES — a lookup table that only exists client-side),
+  // which is why the server-rendered links below deliberately point to
+  // the generic /venues/ and /artists/ browse pages rather than
+  // guessing at a specific page that may not exist.
+  html = html.replace(
+    /id="pageTitle">Loading event…</,
+    `id="pageTitle">${escapeHtml(realEvent.artist)}<`
+  );
+  const metaRowParts = [];
+  if (realEvent.date) {
+    metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span><strong style="color:var(--ink);">${escapeHtml(realEvent.date)}</strong></span></div>`);
+  }
+  if (realEvent.venue || realEvent.city || realEvent.country) {
+    const venueLink = realEvent.venue
+      ? `<a href="/venues/" style="color:var(--blue);font-weight:700;">${escapeHtml(realEvent.venue)}</a>` : '';
+    const rest = [realEvent.city, realEvent.country].filter(Boolean).map(escapeHtml).join(', ');
+    metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${venueLink}${venueLink && rest ? ', ' : ''}${rest}</span></div>`);
+  }
+  if (realEvent.artist) {
+    metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><a href="/artists/" style="color:var(--blue);font-weight:700;">${escapeHtml(realEvent.artist)}</a></div>`);
+  }
+  html = html.replace(
+    'id="pageMetaRow"></div>',
+    `id="pageMetaRow">${metaRowParts.join('')}</div>`
+  );
+
   // JSON-LD — only fields we actually have real values for. No invented
   // start time, no invented price, no invented availability.
   const jsonLd = {
