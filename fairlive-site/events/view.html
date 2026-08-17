@@ -76,10 +76,11 @@
   <!-- Event header -->
   <section style="padding:40px 0 24px;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;">
-      <!-- Quick summary card — placed first so it appears before/above the
-           title block both in the DOM and visually, never below it, even
-           when a long event title forces a wrap on narrower screens. -->
-      <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 26px;min-width:220px;flex-shrink:0;order:1;">
+      <!-- Quick summary card — order:2 keeps it on the right, matching the
+           original layout; the title block's flex:1/min-width:0-friendly
+           sizing plus this card's flex-shrink:0 stop a long event title
+           from pushing the card below rather than beside it. -->
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 26px;min-width:220px;flex-shrink:0;order:2;">
         <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Ticket price</div>
         <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:36px;color:var(--gold);" id="summaryTicketPrice">—</div>
         <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;" id="summaryTicketSeller">Loading…</div>
@@ -89,7 +90,7 @@
           <div style="font-size:11px;color:var(--ink-faint);">ticket + hotel + transport</div>
         </div>
       </div>
-      <div style="flex:1;min-width:280px;order:2;">
+      <div style="flex:1;min-width:280px;order:1;">
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
           <span class="badge badge-blue" id="genreBadge" style="display:none;"></span>
           <span class="badge badge-live">● Prices live — updated 2 min ago</span>
