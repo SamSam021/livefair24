@@ -99,6 +99,15 @@ module.exports = {
     if (params.countryCode) parts.push(`venue.country=${encodeURIComponent(params.countryCode)}`);
     if (params.dateFrom) parts.push(`datetime_local.gte=${encodeURIComponent(params.dateFrom)}`);
     if (params.dateTo) parts.push(`datetime_local.lte=${encodeURIComponent(params.dateTo)}`);
+    // Same reasoning as ticketmaster.js's classificationName=music: this
+    // site is concerts only — sports has its own separate DB-backed
+    // system — so an unfiltered city/keyword search here could surface a
+    // sports match or theater show alongside real concerts. SeatGeek's
+    // documented taxonomy field for this is taxonomies.name, "concert"
+    // being their concert category — UNVERIFIED against a live SeatGeek
+    // key/response like the rest of this file; confirm before relying on
+    // it, and adjust the value here if it doesn't match their real API.
+    parts.push('taxonomies.name=concert');
     const url = `https://api.seatgeek.com/2/events?${parts.join('&')}`;
 
     try {

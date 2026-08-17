@@ -113,13 +113,19 @@ module.exports = {
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
     if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
-    // Confirmed via a real discovery response: without this, the bare
+    // Confirmed via a real discovery response: without this, a bare
     // country browse returns comedy shows, museum exhibits, and generic
     // club nights alongside actual concerts ("die Comedy Show",
     // "EXPLORADO - Abenteuermuseum" were both real results). This site is
-    // about concerts specifically, and non-music events are also less
-    // likely to have traditional ticket priceRanges populated at all.
-    if (params.countryCode && !params.query) parts.push('classificationName=music');
+    // about concerts specifically — sports has its own entirely separate
+    // DB-backed system (routes/sports.js, /matches/ pages), so this
+    // ticket-provider search is never legitimately used for anything but
+    // concerts. Previously only applied when there was no keyword/city
+    // (country-only browse), which is exactly why a plain city search —
+    // used by /api/search and the "Other concerts" widget on event pages
+    // — could surface a hockey game or theater show alongside real
+    // concerts. Applied unconditionally now, city/keyword search included.
+    parts.push('classificationName=music');
     // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against
