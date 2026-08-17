@@ -101,6 +101,65 @@
       </div>
     </div>
 
+    <!-- Trip cost overview — ticket + matched hotel + a rough local-transport
+         estimate, added together. Deliberately NOT framed as "cheapest" or
+         a comparison across sellers/hotels: this is a single seller's
+         current ticket price plus the map's top-listed hotel, added up so
+         a visitor can see roughly what the trip costs — not a claim that
+         either was chosen by comparing options. -->
+    <div class="section" style="padding:0;margin-top:28px;">
+      <div class="section-header">
+        <div>
+          <h2 id="tripHeading">Trip cost overview</h2>
+          <p>Ticket + hotel + estimated local transport, added up</p>
+        </div>
+      </div>
+
+      <div class="trip-panel">
+        <div class="trip-breakdown">
+          <div class="trip-row">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6z"/><path d="M13 5v14" stroke-dasharray="1 3"/></svg></div>
+            <div><div class="tlabel">Ticket</div><div class="tname" id="tripTicketName">Loading…</div></div>
+            <div class="tprice" id="tripTicketPrice">—</div>
+            <a class="tlink" id="tripTicketLink" href="#" target="_blank" rel="noopener">Buy →</a>
+          </div>
+          <div class="trip-divider"></div>
+          <div class="trip-row">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+            <div><div class="tlabel" id="tripHotelLabel">Hotel</div><div class="tname" id="tripHotelName">Loading…</div></div>
+            <div class="tprice" id="tripHotelPrice">—</div>
+            <a class="tlink" id="tripHotelLink" href="#" target="_blank" rel="noopener">Book →</a>
+          </div>
+          <div class="trip-divider"></div>
+          <div class="trip-row">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16"/><path d="M8 19l-2 3"/><path d="M16 19l2 3"/><circle cx="8.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r=".6" fill="currentColor" stroke="none"/></svg></div>
+            <div><div class="tlabel">Estimated local transport</div><div class="tname">Rough local-transport estimate</div></div>
+            <div class="tprice" style="color:var(--ink-dim);font-size:18px;">~$8</div>
+            <span></span>
+          </div>
+          <div class="trip-total">
+            <span class="label">Estimated total</span>
+            <span class="amount" id="tripTotalAmount">—</span>
+          </div>
+        </div>
+
+        <div class="trip-cta">
+          <div class="eyebrow">Estimated total</div>
+          <div class="big-price" id="tripCtaTotal">—</div>
+          <div class="breakdown">
+            Ticket: <span id="tripCtaTicket">loading…</span><br>
+            Hotel: <span id="tripCtaHotel">loading…</span><br>
+            Transport: ~$8
+          </div>
+          <div class="cta-btns">
+            <a href="#ticketPanel" class="cta-btn cta-btn-solid">See ticket prices</a>
+            <a href="#eventPanel" class="cta-btn cta-btn-outline">See hotels</a>
+          </div>
+          <p class="disclaimer">Links open each provider's checkout. Prices shown are estimates and may change before purchase.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Hotels near the venue -->
     <div class="event-panel" id="eventPanel">
       <div class="event-panel-header">
@@ -109,7 +168,7 @@
           <div class="ep-meta"><span id="epMeta">—</span> <span id="hotelDemoBadge" class="badge badge-gold" style="display:none;">Demo mode</span></div>
         </div>
         <div class="ep-price">
-          <div class="lbl">Cheapest ticket</div>
+          <div class="lbl">Ticket price</div>
           <div class="amt" id="epTicket">—</div>
         </div>
       </div>
@@ -371,33 +430,83 @@ document.querySelectorAll('.rpill').forEach(btn=>{
   });
 });
 
+// Adds up the ticket price already shown above with the top-listed
+// (closest) hotel's price plus a rough flat local-transport estimate —
+// a total cost overview, not a claim that either price was chosen by
+// comparing sellers or hotels against each other.
+const LOCAL_TRANSPORT_ESTIMATE = 8;
+
+function updateTripOverview(tickets, hotels){
+  const ticket = tickets && tickets[0];
+  const hotel = (hotels || []).find(h => h.pricePerNight != null);
+
+  if(ticket){
+    document.getElementById('tripTicketName').textContent = ticket.section
+      ? `${ticket.sellerName} · ${ticket.section}` : ticket.sellerName;
+    document.getElementById('tripTicketPrice').textContent = `$${ticket.total.toFixed(2)}`;
+    document.getElementById('tripTicketLink').href = ticket.url || '#';
+    document.getElementById('tripCtaTicket').textContent = `$${ticket.total.toFixed(2)} via ${ticket.sellerName}`;
+  } else {
+    document.getElementById('tripTicketName').textContent = 'No prices available';
+    document.getElementById('tripCtaTicket').textContent = 'not available';
+  }
+
+  if(hotel){
+    document.getElementById('tripHotelLabel').textContent = hotel.distanceKm != null
+      ? `Hotel · ${hotel.distanceKm.toFixed(1)} km from venue` : 'Hotel';
+    document.getElementById('tripHotelName').textContent = hotel.rating != null
+      ? `${hotel.name} · ★ ${hotel.rating.toFixed(1)}` : hotel.name;
+    document.getElementById('tripHotelPrice').textContent = `$${hotel.pricePerNight}/night`;
+    document.getElementById('tripHotelLink').href = hotel.url || '#';
+    document.getElementById('tripCtaHotel').textContent = `$${hotel.pricePerNight}/night · ${hotel.name}`;
+  } else {
+    document.getElementById('tripHotelName').textContent = 'No hotels found';
+    document.getElementById('tripCtaHotel').textContent = 'not available';
+  }
+
+  if(ticket && hotel){
+    const total = Math.round((ticket.total + hotel.pricePerNight + LOCAL_TRANSPORT_ESTIMATE) * 100) / 100;
+    document.getElementById('tripTotalAmount').textContent = `$${total}`;
+    document.getElementById('tripCtaTotal').textContent = `$${total}`;
+  }
+  // If either is missing, both total fields are left showing '—' rather
+  // than a partial/misleading number.
+}
+
 async function init(){
-  // Ticket prices load regardless of whether we have coordinates.
-  fetchTickets().then(renderSellerCards).catch((err)=>{
+  let tickets = [];
+  let hotels = [];
+  const hasCoords = ev.lat!=null && ev.lng!=null;
+
+  if(!hasCoords){
+    document.getElementById('hotelPanelLayout').style.display = 'none';
+    document.getElementById('hotelUnavailable').style.display = 'block';
+  }
+
+  // Fire both requests together (same as before) so hotels don't wait
+  // on tickets or vice versa — just capture each result this time so
+  // both are available afterward for the trip overview below.
+  const ticketPromise = fetchTickets().then((ticketData)=>{
+    tickets = ticketData.results || [];
+    renderSellerCards(ticketData);
+  }).catch((err)=>{
     console.error(err);
     document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load prices right now.</div>';
   });
 
-  // Hotel search needs real venue coordinates — same requirement the
-  // homepage and trending feed already enforce. Rather than showing a
-  // broken empty map when they're missing, this hides the map/filter
-  // layout entirely and says so.
-  if(ev.lat==null || ev.lng==null){
-    document.getElementById('hotelPanelLayout').style.display = 'none';
-    document.getElementById('hotelUnavailable').style.display = 'block';
-    return;
-  }
-
-  try{
-    const hotelData = await fetchHotels();
+  const hotelPromise = !hasCoords ? Promise.resolve() : fetchHotels().then((hotelData)=>{
     document.getElementById('hotelDemoBadge').style.display = hotelData.demoMode ? 'inline-flex' : 'none';
-    currentHotels = hotelData.results || [];
+    hotels = hotelData.results || [];
+    currentHotels = hotels;
     renderHotelList(currentHotels);
     renderMap(currentHotels);
-  } catch(err){
+  }).catch((err)=>{
     console.error(err);
     document.getElementById('hotelScroll').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load hotels right now.</div>';
-  }
+  });
+
+  await Promise.all([ticketPromise, hotelPromise]);
+  updateTripOverview(tickets, hotels);
 }
 init();
 </script>
