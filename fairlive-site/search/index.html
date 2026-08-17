@@ -23,6 +23,8 @@
 .result-price{ text-align:right; flex-shrink:0; }
 .result-price .amt{ font-family:'Sora',sans-serif; font-weight:800; font-size:22px; color:var(--gold); }
 .result-price .lbl{ font-size:10.5px; color:var(--ink-faint); font-family:'JetBrains Mono',monospace; text-transform:uppercase; }
+.result-cta{ display:inline-flex; align-items:center; justify-content:center; gap:6px; margin-top:8px; padding:10px 18px; border-radius:10px; background:var(--blue); color:#fff; font-weight:700; font-size:13px; }
+.result-cta:hover{ background:var(--blue-deep); }
 </style>
 </head>
 <body>
@@ -114,6 +116,11 @@ function eventViewHref(r){
   if(r.lng != null) params.set('lng', r.lng);
   if(r.lowestPrice != null) params.set('basePrice', r.lowestPrice);
   if(r.eventId) params.set('eventId', r.eventId);
+  // Fallback link for when our own live-price lookup comes back empty —
+  // without this, a visitor hitting that case has no way to reach the
+  // listing at all. Only ever shown as a fallback on the event page
+  // itself, not the default path.
+  if(r.url && r.url !== '#') params.set('url', r.url);
   return `/events/view.html?${params}`;
 }
 
@@ -139,7 +146,7 @@ function renderResults(data){
         ${r.lowestPrice != null
           ? `<div class="amt">$${Number(r.lowestPrice).toFixed(0)}</div><div class="lbl">from</div>`
           : `<div style="color:var(--ink-faint);font-size:13px;">Price n/a</div>`}
-        <a href="${eventViewHref(r)}" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--blue);">View →</a>
+        <a href="${eventViewHref(r)}" class="result-cta">Get tickets →</a>
       </div>
     </div>`).join('');
 }

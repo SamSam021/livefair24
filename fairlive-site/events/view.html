@@ -192,6 +192,7 @@ const ev = {
   lat: num(qp('lat')),
   lng: num(qp('lng')),
   eventId: qp('eventId') || null,
+  sourceUrl: qp('url') || null,
 };
 
 document.title = `${ev.artist} Tickets & Hotels | LiveFair24`;
@@ -232,8 +233,11 @@ function renderSellerCards(data){
 
   if(sellers.length === 0){
     document.getElementById('ticketEpPrice').textContent = '—';
+    const fallbackLink = ev.sourceUrl
+      ? `<div style="margin-top:12px;"><a href="${ev.sourceUrl}" target="_blank" rel="noopener" class="seller-cta" style="display:inline-block;">View on original site →</a></div>`
+      : '';
     document.getElementById('sellerCards').innerHTML =
-      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.</div>';
+      `<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.${fallbackLink}</div>`;
     return;
   }
 
