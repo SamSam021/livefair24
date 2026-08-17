@@ -258,6 +258,19 @@ function formatDate(dateStr, timeStr){
   return timeStr ? `${dayLabel} · ${timeStr.slice(0,5)}` : dayLabel;
 }
 
+// Same "16 August 2026" shape used in the page <title> on the hardcoded
+// event pages (e.g. "Nova Wren Berlin Tickets & Hotels — 16 August 2026
+// | LiveFair24") — full month name, no weekday, since a browser tab
+// title reads better without the day-of-week abbreviation formatDate()
+// above includes.
+function formatFullDate(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if(Number.isNaN(d.getTime())) return '';
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 // The event this page describes — built entirely from the query string a
 // search result link carries in, mirroring the shape the homepage's
 // EVENTS array already uses so the exact same fetch/render functions
@@ -277,7 +290,12 @@ const ev = {
   sourceUrl: qp('url') || null,
 };
 
-document.title = `${ev.artist} Tickets & Hotels | LiveFair24`;
+// Matches the hardcoded event pages' title format exactly:
+// "{Artist} {City} Tickets & Hotels — {full date} | LiveFair24" — falls
+// back gracefully to whichever pieces this event's query params actually
+// have, since a generic page can't assume city/date are always present.
+const fullDate = formatFullDate(ev.isoDate);
+document.title = `${[ev.artist, ev.city].filter(Boolean).join(' ')} Tickets & Hotels${fullDate ? ' — ' + fullDate : ''} | LiveFair24`;
 document.getElementById('breadcrumbName').textContent = ev.artist;
 document.getElementById('pageTitle').textContent = ev.artist;
 
