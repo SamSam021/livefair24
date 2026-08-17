@@ -190,7 +190,7 @@ const server = http.createServer(async (req, res) => {
       // running with a single, instant request — separate from testing
       // any real feature — since "did the deploy actually go out" has
       // been genuinely hard to answer from the outside so far.
-      return sendJSON(res, 200, { ok: true, buildMarker: 'google-places-added-v3' });
+      return sendJSON(res, 200, { ok: true, buildMarker: 'distance-filter-added-v4' });
     }
     if (pathname === '/api/search' && req.method === 'GET') {
       try {
