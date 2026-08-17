@@ -45,6 +45,14 @@ const https = require('https');
 // elsewhere on this site for data we don't have.
 const MAP_PIN_LIMIT = 10;
 
+// Diagnostic aid: server logs turned out to be hard to reach in
+// practice, so the real reason behind an empty result is captured here
+// and surfaced through getLastError() — routes/hotels.js includes it in
+// the /api/hotels JSON response itself, so it's visible just by hitting
+// the endpoint in a browser, no log access needed. Not a source of
+// truth for anything functional, purely diagnostic.
+let lastError = null;
+
 function httpGet(url, headers) {
   return new Promise((resolve, reject) => {
     https.get(url, { headers }, (res) => {
@@ -93,7 +101,9 @@ async function resolveDestination(city, apiKey) {
     // without needing to reproduce the request separately to find out
     // why. E.g. distinguishes "genuinely unresolvable name" from
     // "ambiguous — used first suggestion" from an unexpected shape.
-    console.warn(`[stayapi provider] destination lookup for "${city}" returned no dest_id — response: ${JSON.stringify(data).slice(0, 300)}`);
+    const msg = `destination lookup for "${city}" returned no dest_id — response: ${JSON.stringify(data).slice(0, 300)}`;
+    console.warn(`[stayapi provider] ${msg}`);
+    lastError = msg;
   }
   // Only cache a real hit — see the comment on destCache above for why
   // a miss is deliberately not cached.
@@ -124,10 +134,16 @@ module.exports = {
   isEnabled(env) {
     return !!env.STAYAPI_API_KEY;
   },
+  // Diagnostic-only — see the lastError comment above.
+  getLastError() {
+    return lastError;
+  },
 
   async search(params, env) {
     if (!params.city) {
-      console.warn('[stayapi provider] no city provided — this adapter searches by destination, not coordinates alone');
+      const msg = 'no city provided — this adapter searches by destination, not coordinates alone';
+      console.warn(`[stayapi provider] ${msg}`);
+      lastError = msg;
       return [];
     }
 
@@ -135,7 +151,8 @@ module.exports = {
       const apiKey = env.STAYAPI_API_KEY;
       const dest = await resolveDestination(params.city, apiKey);
       if (!dest) {
-        console.warn(`[stayapi provider] no destination found for city "${params.city}"`);
+        // lastError already set inside resolveDestination with the
+        // specific reason — don't overwrite it with a vaguer message.
         return [];
       }
 
@@ -150,6 +167,12 @@ module.exports = {
       const url = `https://api.stayapi.com/v1/booking/search?${searchParams}`;
       const data = await httpGet(url, { 'x-api-key': apiKey });
       const hotels = (data && data.data) || [];
+
+      if (hotels.length === 0) {
+        lastError = `search succeeded (dest_id=${dest.destId}, dest_type=${dest.destType}) but returned 0 hotels — raw response: ${JSON.stringify(data).slice(0, 300)}`;
+      } else {
+        lastError = null;
+      }
 
       // Fetch coordinates for the top MAP_PIN_LIMIT hotels only, all in
       // parallel (one round trip's worth of latency, not ten sequential
@@ -187,6 +210,7 @@ module.exports = {
       });
     } catch (err) {
       console.warn('[stayapi provider]', err.message);
+      lastError = err.message;
       return [];
     }
   },

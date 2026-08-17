@@ -5,15 +5,37 @@
 // no OAuth token flow needed.
 // Activates once HOTELBEDS_API_KEY and HOTELBEDS_SECRET are both set.
 //
-// IMPORTANT: written from documented API conventions, not tested against a
-// live account in this sandbox (no outbound network access here). Verify
-// against https://developer.hotelbeds.com/ before relying on it in
-// production — Hotelbeds' search flow (availability -> checkrates -> book)
-// is multi-step; this adapter only covers the initial availability/price
-// lookup shown in the comparison table.
+// Also requires mutual TLS — confirmed as a real, current requirement from
+// Hotelbeds' own documentation (developer.hotelbeds.com, "Mutual
+// Authentication"), not something the original version of this file
+// implemented at all. Every request now presents a client certificate
+// (HOTELBEDS_CLIENT_CERT) signed by Hotelbeds' own CA and its matching
+// private key (HOTELBEDS_CLIENT_KEY), on top of the existing Api-key +
+// X-Signature headers — both auth layers together, not one replacing the
+// other. isEnabled() requires all four env vars for that reason.
+//
+// Env var format: both HOTELBEDS_CLIENT_CERT and HOTELBEDS_CLIENT_KEY are
+// full PEM text (multi-line, starting with "-----BEGIN..."). Since most
+// places you'd set an env var (this admin panel included) expect a single
+// line, store them with literal \n in place of real line breaks — the
+// code below converts \n back into real newlines before use.
+//
+// IMPORTANT: the request/response shape below (search endpoint, body
+// fields, response parsing) is still written from documented API
+// conventions, not verified against a live account in this sandbox (no
+// outbound network access here) — only the certificate/key pairing
+// itself was verified (matched against each other cryptographically).
+// Confirm the actual search call against a real account before relying
+// on it in production.
 
 const https = require('https');
 const crypto = require('crypto');
+
+// Converts the \n-escaped single-line env var format back into a real
+// multi-line PEM string.
+function unescapePem(value) {
+  return value ? value.replace(/\\n/g, '\n') : value;
+}
 
 function httpsRequest(options, body) {
   return new Promise((resolve, reject) => {
@@ -44,9 +66,9 @@ function signature(apiKey, secret) {
 module.exports = {
   id: 'hotelbeds',
   name: 'Hotelbeds',
-  requiredEnv: ['HOTELBEDS_API_KEY', 'HOTELBEDS_SECRET'],
+  requiredEnv: ['HOTELBEDS_API_KEY', 'HOTELBEDS_SECRET', 'HOTELBEDS_CLIENT_CERT', 'HOTELBEDS_CLIENT_KEY'],
   isEnabled(env) {
-    return !!(env.HOTELBEDS_API_KEY && env.HOTELBEDS_SECRET);
+    return !!(env.HOTELBEDS_API_KEY && env.HOTELBEDS_SECRET && env.HOTELBEDS_CLIENT_CERT && env.HOTELBEDS_CLIENT_KEY);
   },
   async search(params, env) {
     try {
@@ -62,6 +84,12 @@ module.exports = {
           hostname: 'api.test.hotelbeds.com', // switch to api.hotelbeds.com for production
           path: '/hotel-api/1.0/hotels',
           method: 'POST',
+          // Client certificate + private key for mutual TLS — presented
+          // during the HTTPS handshake itself, before any headers are
+          // even sent. This is what the original version of this file
+          // was missing entirely.
+          cert: unescapePem(env.HOTELBEDS_CLIENT_CERT),
+          key: unescapePem(env.HOTELBEDS_CLIENT_KEY),
           headers: {
             'Api-key': apiKey,
             'X-Signature': sig,
