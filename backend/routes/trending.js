@@ -216,6 +216,21 @@ function isOnSaleOrUnknown(ev) {
 // than firing them all at once.
 const CANDIDATES_TO_VERIFY = 25;
 
+// Hard ceiling on how many candidates the top-up loop below will ever
+// verify in total for one request, across the initial batch plus any
+// retries — bounds worst-case latency/API usage when a market simply
+// doesn't have TARGET_COUNT candidates that pass every filter, instead
+// of retrying forever.
+const MAX_CANDIDATES_TO_VERIFY = CANDIDATES_TO_VERIFY * 3;
+
+// Identifies a discovery-stage candidate for "already tried this one"
+// tracking in the top-up loop — prefers the real event ID (unique per
+// occurrence), falls back to name+date+venue for providers/candidates
+// without one.
+function candidateKey(ev) {
+  return ev.eventId || `${ev.name || ''}|${ev.date || ''}|${ev.venue || ''}`;
+}
+
 // Ticketmaster's documented rate limit is 5 requests/second. Firing all
 // CANDIDATES_TO_VERIFY requests simultaneously (the previous behavior)
 // risked silently exceeding that — a 429 gets caught inside
@@ -472,60 +487,88 @@ async function runTrendingPipeline(countryCode, demoMode, usedPricingFallback, r
   // search endpoint, a common REST API pattern. Falls back to the old
   // keyword re-search for any provider without a detail-by-ID method
   // (demo mode, and any future provider that doesn't offer one).
-  const verifySettled = await runInBatches(candidates, VERIFY_BATCH_SIZE, VERIFY_BATCH_DELAY_MS, async (cand) => {
-    const sourceProvider = providers.find((p) => p.id === cand.source);
-    if (sourceProvider && typeof sourceProvider.getEventDetails === 'function' && cand.eventId) {
-      const detail = await sourceProvider.getEventDetails(cand.eventId, env);
-      return detail ? [detail] : [];
-    }
-    const fallbackResults = await Promise.all(
-      providers.map((p) =>
-        typeof p.searchEvents === 'function'
-          ? p.searchEvents({ query: cand.name, city: cand.city, countryCode }, env)
-          : Promise.resolve([])
-      )
-    );
-    return fallbackResults.flat();
-  });
+  async function verifyCandidates(candList) {
+    const settled = await runInBatches(candList, VERIFY_BATCH_SIZE, VERIFY_BATCH_DELAY_MS, async (cand) => {
+      const sourceProvider = providers.find((p) => p.id === cand.source);
+      if (sourceProvider && typeof sourceProvider.getEventDetails === 'function' && cand.eventId) {
+        const detail = await sourceProvider.getEventDetails(cand.eventId, env);
+        return detail ? [detail] : [];
+      }
+      const fallbackResults = await Promise.all(
+        providers.map((p) =>
+          typeof p.searchEvents === 'function'
+            ? p.searchEvents({ query: cand.name, city: cand.city, countryCode }, env)
+            : Promise.resolve([])
+        )
+      );
+      return fallbackResults.flat();
+    });
+    let out = [];
+    let noResult = 0;
+    settled.forEach((outcome) => {
+      // Each candidate's promise now resolves to an already-flat array of
+      // events directly (from either getEventDetails or the flattened
+      // fallback search), unlike the old nested-array-of-per-provider-
+      // results shape — concat the whole thing at once, not per-item.
+      if (outcome.status === 'fulfilled') {
+        if (outcome.value.length === 0) noResult += 1;
+        out = out.concat(outcome.value);
+      } else {
+        debug.verifyErrors += 1;
+      }
+    });
+    return { verifiedBatch: out, noResult };
+  }
+
+  // Verifies candidates and re-applies the exact same filters (price,
+  // coordinates, lead time — none of them loosened) in a loop, pulling
+  // in a fresh, not-yet-tried batch of real candidates each time the
+  // strict filters leave fewer than TARGET_COUNT, instead of just
+  // accepting whatever the first batch happened to yield. Stops once
+  // TARGET_COUNT is reached, the discovery pool runs out, or the
+  // MAX_CANDIDATES_TO_VERIFY safety cap is hit — whichever comes first.
+  const checkedKeys = new Set();
   let verified = [];
   let candidatesWithNoResult = 0;
-  verifySettled.forEach((outcome) => {
-    // Each candidate's promise now resolves to an already-flat array of
-    // events directly (from either getEventDetails or the flattened
-    // fallback search), unlike the old nested-array-of-per-provider-
-    // results shape — concat the whole thing at once, not per-item.
-    if (outcome.status === 'fulfilled') {
-      if (outcome.value.length === 0) candidatesWithNoResult += 1;
-      verified = verified.concat(outcome.value);
-    } else {
-      debug.verifyErrors += 1;
-    }
-  });
+  let totalCandidatesChecked = 0;
+  let selected = [];
+  let withLeadTime = [];
+  let nextBatch = candidates;
+
+  while (nextBatch.length > 0 && totalCandidatesChecked < MAX_CANDIDATES_TO_VERIFY) {
+    nextBatch.forEach((c) => checkedKeys.add(candidateKey(c)));
+    totalCandidatesChecked += nextBatch.length;
+
+    const { verifiedBatch, noResult } = await verifyCandidates(nextBatch);
+    verified = verified.concat(verifiedBatch);
+    candidatesWithNoResult += noResult;
+
+    const eligible = verified.filter(isUpcoming);
+    const priced = eligible.filter(hasRealPrice);
+    const withCoordinates = priced.filter(hasCoordinates);
+    withLeadTime = withCoordinates.filter(hasMinimumLeadTime);
+
+    const diverseOrdered = selectDiverseRandom(withLeadTime, withLeadTime.length);
+    selected = applyDateSpacing(diverseOrdered, TARGET_COUNT, MIN_DAYS_BETWEEN_CARDS);
+
+    if (selected.length >= TARGET_COUNT) break;
+
+    // Still short — pull the next not-yet-verified slice from the same
+    // discovery pool (same soonest-first, diverse-artist preference as
+    // the very first batch) and try again.
+    const remainingPool = discoveryPool.filter((ev) => !checkedKeys.has(candidateKey(ev)));
+    nextBatch = selectDiverseSoonest(remainingPool, CANDIDATES_TO_VERIFY);
+  }
+
+  debug.candidatesChecked = totalCandidatesChecked;
   debug.verifiedRawCount = verified.length;
   // Distinguishes "candidate lookup succeeded but had nothing" from a
   // hard error — a high number here alongside verifyErrors: 0 would
   // suggest rate-limiting or similar silently swallowed inside
   // getEventDetails's own try/catch, not a genuine lack of pricing.
   debug.candidatesWithNoResult = candidatesWithNoResult;
-
-  const eligible = verified.filter(isUpcoming);
-  debug.verifiedUpcomingCount = eligible.length; // split from eligibleCount below — isolates whether the date filter or the price filter is the actual bottleneck, if this still doesn't fully solve it
-  const priced = eligible.filter(hasRealPrice);
-  debug.pricedBeforeLeadTimeFilter = priced.length;
-  const withCoordinates = priced.filter(hasCoordinates);
-  debug.withCoordinatesCount = withCoordinates.length; // isolates missing-geocoding as a distinct drop reason from missing price, same pattern as the other debug counters here
-  const withLeadTime = withCoordinates.filter(hasMinimumLeadTime);
   debug.eligibleCount = withLeadTime.length;
-  // Diversity ordering happens first (establishing preference — a
-  // different artist per card, whenever the pool allows it), THEN date
-  // spacing greedily picks from that preference-ordered list — so the
-  // final 6 respect both constraints, not just whichever was applied
-  // last. Passing withLeadTime.length (not TARGET_COUNT) to the first
-  // call means it reorders the WHOLE pool by diversity preference
-  // instead of cutting it down to 6 before spacing gets a chance to work
-  // with it.
-  const diverseOrdered = selectDiverseRandom(withLeadTime, withLeadTime.length);
-  const selected = applyDateSpacing(diverseOrdered, TARGET_COUNT, MIN_DAYS_BETWEEN_CARDS);
+  debug.topUpRoundsUsed = Math.ceil(totalCandidatesChecked / CANDIDATES_TO_VERIFY);
 
   return {
     countryUsed: countryCode,
