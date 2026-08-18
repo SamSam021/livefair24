@@ -185,6 +185,10 @@
   <section class="section" id="suggestedSection" style="display:none;padding-bottom:0;">
     <div class="section-header">
       <div><h2>Suggested</h2></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="suggestedPrev" aria-label="Scroll left" onclick="scrollSuggested(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="suggestedNext" aria-label="Scroll right" onclick="scrollSuggested(1)">›</button>
+      </div>
     </div>
     <div class="suggested-scroll" id="suggestedScroll"></div>
   </section>
@@ -997,7 +1001,28 @@ async function loadSuggested(){
 
   document.getElementById('suggestedScroll').innerHTML = combined.map(suggestedCardHtml).join('');
   document.getElementById('suggestedSection').style.display = '';
+  updateSuggestedArrowState();
 }
+
+// Arrow-based navigation (not raw scrollbar dragging) — scrolls by
+// roughly two card-widths per click, and disables each arrow once
+// there's nothing further to scroll to in that direction.
+function scrollSuggested(direction){
+  const el = document.getElementById('suggestedScroll');
+  el.scrollBy({ left: direction * 528, behavior: 'smooth' });
+}
+function updateSuggestedArrowState(){
+  const el = document.getElementById('suggestedScroll');
+  const prevBtn = document.getElementById('suggestedPrev');
+  const nextBtn = document.getElementById('suggestedNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+// Keeps the disabled state accurate even if someone scrolls manually
+// (trackpad, mobile swipe) instead of using the arrow buttons.
+document.getElementById('suggestedScroll').addEventListener('scroll', updateSuggestedArrowState);
+window.addEventListener('resize', updateSuggestedArrowState);
 
 /* ---- Auto-init first event ---- */
 // Sequenced deliberately: wait for the trending swap to fully finish

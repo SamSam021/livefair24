@@ -454,7 +454,17 @@ img{max-width:100%;display:block;}
 }
 
 /* ---- Suggested carousel (Recent + Near you) — homepage ---- */
-.suggested-scroll{ display:flex; gap:14px; overflow-x:auto; padding:4px 2px 12px; scrollbar-width:thin; }
+.suggested-scroll{ display:flex; gap:14px; overflow-x:auto; padding:4px 2px 12px; scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none; }
+.suggested-scroll::-webkit-scrollbar{ display:none; }
+.suggested-arrows{ display:flex; gap:8px; }
+.suggested-arrow-btn{
+  width:36px; height:36px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
+  color:var(--ink-dim); font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .15s, border-color .15s, color .15s;
+}
+.suggested-arrow-btn:hover{ background:var(--surface-2); border-color:var(--blue); color:var(--blue); }
+.suggested-arrow-btn:disabled{ opacity:.35; cursor:not-allowed; }
+.suggested-arrow-btn:disabled:hover{ background:var(--surface); border-color:var(--line); color:var(--ink-dim); }
 .suggested-card{
   flex:0 0 auto; width:250px; display:flex; align-items:center; gap:12px;
   background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px;
