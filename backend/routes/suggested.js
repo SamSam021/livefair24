@@ -100,7 +100,7 @@ async function getSuggested(clientIp, env, overrideCountry) {
       // a suggested venue, then 404'd when visited.
       const venueGenre = ev.genre || 'Other';
       if (venueGenre === 'Sports' || venueGenre === 'Music') {
-        if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0, city: ev.city || null });
+        if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0, city: ev.city || null, state: ev.state || null });
         venueGroups.get(ev.venue).count += 1;
       }
     }
@@ -145,7 +145,7 @@ async function getSuggested(clientIp, env, overrideCountry) {
   const venues = [...venueGroups.values()]
     .sort((a, b) => b.count - a.count)
     .slice(0, MAX_SUGGESTIONS_PER_TYPE)
-    .map((g) => ({ name: g.name, count: g.count, slug: slugify(g.name), city: g.city }));
+    .map((g) => ({ name: g.name, count: g.count, slug: slugify(g.name), city: g.city, state: g.state }));
 
   // Ticketmaster's venue objects never carry a photo of their own (see
   // providers/geo/cityImage.js's header comment for the confirmed
@@ -156,7 +156,7 @@ async function getSuggested(clientIp, env, overrideCountry) {
   // icon, same as before this existed.
   await Promise.all(
     venues.map(async (v) => {
-      v.imageUrl = await cityImage.getCityImageUrl(v.city);
+      v.imageUrl = await cityImage.getCityImageUrl(v.city, v.state);
     })
   );
 

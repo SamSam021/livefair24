@@ -271,6 +271,15 @@ function mapEventToResult(ev) {
     genre: genre ? genre.name : null,
     venue: venue ? venue.name : null,
     city: venue && venue.city ? venue.city.name : null,
+    // Confirmed real field on Ticketmaster's venue object (e.g.
+    // {"name": "Florida", "stateCode": "FL"}), same shape as
+    // city/country — was never extracted before, which meant a
+    // Wikipedia city-photo lookup for an ambiguous name like
+    // "Lafayette" (a real city in Louisiana, Indiana, California,
+    // Colorado, and also the name of a historical figure) had no way
+    // to disambiguate and could resolve to the wrong article or a
+    // disambiguation page with no photo. See providers/geo/cityImage.js.
+    state: venue && venue.state ? venue.state.name : null,
     country: venue && venue.country ? venue.country.name : null,
     // Confirmed field names/shape (venue.location.latitude/longitude,
     // as strings) against the real response captured earlier in this

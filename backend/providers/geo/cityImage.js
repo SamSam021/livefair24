@@ -60,25 +60,48 @@ function httpGet(url) {
 // which is fine for this.
 const cache = new Map();
 
-async function getCityImageUrl(cityName) {
+async function fetchThumbnail(title) {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=thumbnail&pithumbsize=400&redirects=1&titles=${encodeURIComponent(title)}`;
+  const data = await httpGet(url);
+  const pages = data && data.query && data.query.pages;
+  if (!pages) return null;
+  const page = Object.values(pages)[0];
+  return page && page.thumbnail && page.thumbnail.source ? page.thumbnail.source : null;
+}
+
+// city alone is frequently ambiguous — confirmed with a real case:
+// "Lafayette" (Ticketmaster's bare venue.city.name for Blue Moon
+// Saloon) matches at least four real US cities (Louisiana, Indiana,
+// California, Colorado) plus the historical Marquis de Lafayette,
+// so the plain title on Wikipedia resolves to a disambiguation page
+// or the wrong article — either way, no usable city photo, even
+// though "Lafayette, Louisiana" specifically has one. state (now
+// threaded through from Ticketmaster's venue.state.name — see
+// providers/tickets/ticketmaster.js) disambiguates the same way
+// Wikipedia's own city article titles are conventionally formatted
+// ("City, State"), so that's tried first; the bare city name is
+// still tried as a fallback for places where state is unavailable
+// (most countries outside the US) or where "City, State" isn't
+// actually the article's title.
+async function getCityImageUrl(cityName, state) {
   if (!cityName) return null;
-  const key = cityName.trim().toLowerCase();
+  const normalizedState = state && state.trim().toLowerCase() !== cityName.trim().toLowerCase() ? state.trim() : null;
+  const key = `${cityName.trim().toLowerCase()}|${(normalizedState || '').toLowerCase()}`;
   if (cache.has(key)) return cache.get(key);
 
-  const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=thumbnail&pithumbsize=400&redirects=1&titles=${encodeURIComponent(cityName)}`;
+  const candidates = [];
+  if (normalizedState) candidates.push(`${cityName}, ${normalizedState}`);
+  candidates.push(cityName);
+
   let result = null;
-  try {
-    const data = await httpGet(url);
-    const pages = data && data.query && data.query.pages;
-    if (pages) {
-      const page = Object.values(pages)[0];
-      if (page && page.thumbnail && page.thumbnail.source) {
-        result = page.thumbnail.source;
-      }
+  for (const title of candidates) {
+    try {
+      result = await fetchThumbnail(title);
+    } catch (err) {
+      console.warn('[cityImage]', err.message);
+      result = null;
     }
-  } catch (err) {
-    console.warn('[cityImage]', err.message);
-    result = null;
+    if (result) break;
   }
   cache.set(key, result);
   return result;

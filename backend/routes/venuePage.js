@@ -86,6 +86,7 @@ async function renderVenuePage(slug, env, siteOrigin) {
 
   const realVenueName = events[0].venue;
   const city = events[0].city;
+  const state = events[0].state;
   const country = events[0].country;
   const canonicalSlug = slugify(realVenueName);
   const canonicalUrl = `${siteOrigin}/venues/${canonicalSlug}/`;
@@ -94,8 +95,12 @@ async function renderVenuePage(slug, env, siteOrigin) {
   // providers/geo/cityImage.js's header comment), so this is the
   // Suggested carousel's approved stand-in, carried into the
   // "Recently viewed" localStorage entry below the same way
-  // artistPage.js carries a real event photo for artists.
-  const venueImageUrl = await cityImage.getCityImageUrl(city);
+  // artistPage.js carries a real event photo for artists. state
+  // disambiguates cities that share a name with other real places
+  // (e.g. "Lafayette" matches cities in Louisiana, Indiana,
+  // California, and Colorado, plus the Marquis de Lafayette) — see
+  // cityImage.js for the confirmed case that motivated this.
+  const venueImageUrl = await cityImage.getCityImageUrl(city, state);
 
   const eventRows = events
     .map((ev) => {
