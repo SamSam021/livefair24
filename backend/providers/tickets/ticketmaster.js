@@ -227,6 +227,20 @@ module.exports = {
 // get-by-ID detail endpoint (getEventDetails, where the whole response
 // IS one such event object). Kept as one function so both code paths
 // stay in sync rather than risking the two silently drifting apart.
+// Ticketmaster returns multiple images per event (different ratios and
+// sizes — 16:9, 3:2, 1:1, various widths) since they serve everything
+// from hero banners to thumbnails. For a small card image, this prefers
+// something roughly square-ish or landscape at a moderate width (not
+// the largest available, no reason to load a full hero-banner image for
+// a 44px card icon) and falls back to whatever's first if nothing
+// matches that preference, or null if the event genuinely has no
+// images at all — never fabricated, never a placeholder stock photo.
+function pickBestImage(images) {
+  if (!Array.isArray(images) || images.length === 0) return null;
+  const preferred = images.find((img) => img.width && img.width >= 200 && img.width <= 400);
+  return (preferred || images[0]).url || null;
+}
+
 function mapEventToResult(ev) {
   const range = (ev.priceRanges && ev.priceRanges[0]) || null;
   const venue = (ev._embedded && ev._embedded.venues && ev._embedded.venues[0]) || null;
@@ -269,5 +283,9 @@ function mapEventToResult(ev) {
     lowestPrice: range ? range.min : null,
     currency: range ? range.currency : null,
     url: ev.url || '#',
+    // Ticketmaster's own real promotional image for this event, when
+    // they have one — never a placeholder or stock photo substituted
+    // in when they don't.
+    imageUrl: pickBestImage(ev.images),
   };
 }

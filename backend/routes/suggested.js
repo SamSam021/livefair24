@@ -75,11 +75,15 @@ async function getSuggested(clientIp, env, overrideCountry) {
   for (const ev of results) {
     if (ev.name && ev.eventId) {
       const key = ev.attractionId || ev.name;
-      if (!actGroups.has(key)) actGroups.set(key, { name: ev.name, count: 0, genreCounts: new Map() });
+      if (!actGroups.has(key)) actGroups.set(key, { name: ev.name, count: 0, genreCounts: new Map(), imageUrl: null });
       const g = actGroups.get(key);
       g.count += 1;
       const genre = ev.genre || 'Other';
       g.genreCounts.set(genre, (g.genreCounts.get(genre) || 0) + 1);
+      // First real image found for this act, kept for the rest of the
+      // group — not re-checked per event, since one representative
+      // photo per act is all a small suggestion card needs.
+      if (!g.imageUrl && ev.imageUrl) g.imageUrl = ev.imageUrl;
     }
     if (ev.venue) {
       if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0 });
@@ -103,7 +107,7 @@ async function getSuggested(clientIp, env, overrideCountry) {
       if (c > topGenreCount) { topGenre = genre; topGenreCount = c; }
     }
     if (topGenre !== 'Sports' && topGenre !== 'Music') continue;
-    const entry = { name: g.name, count: g.count, slug: slugify(g.name), category: topGenre };
+    const entry = { name: g.name, count: g.count, slug: slugify(g.name), category: topGenre, imageUrl: g.imageUrl };
     (topGenre === 'Sports' ? sportsActs : musicActs).push(entry);
   }
   sportsActs.sort((a, b) => b.count - a.count);
