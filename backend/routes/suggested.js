@@ -74,8 +74,20 @@ async function getSuggested(clientIp, env, overrideCountry) {
   const actGroups = new Map();
   const venueGroups = new Map();
   for (const ev of results) {
-    if (ev.name && ev.eventId) {
-      const key = ev.attractionId || ev.name;
+    // Requires a genuine attractionId, not just ev.name && ev.eventId —
+    // confirmed real case: individual tournament ticket products (e.g.
+    // "Grandstand Session 13-Day: Cincinnati Open", one of ~20+
+    // separately-named single-session tickets for that tournament) have
+    // no shared attractionId tying them to one real, recurring
+    // performer/team entity. Without this check, each such one-off
+    // session became its own standalone "act" — grouped by literal
+    // event title — and got suggested just like a real artist, then
+    // 404'd on its own /artists/{slug}/ page because there's no
+    // coherent "artist" there to find on a re-search. attractionId is
+    // Ticketmaster's own signal that something is a tracked, genuine
+    // attraction rather than an ad hoc ticket product.
+    if (ev.name && ev.eventId && ev.attractionId) {
+      const key = ev.attractionId;
       if (!actGroups.has(key)) actGroups.set(key, { name: ev.name, count: 0, genreCounts: new Map(), imageUrl: null });
       const g = actGroups.get(key);
       g.count += 1;
