@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120">
+<defs>
+<linearGradient id="lf24badge" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#0b5fff"/>
+<stop offset="1" stop-color="#0842b0"/>
+</linearGradient>
+</defs>
+<rect x="4" y="4" width="112" height="112" rx="26" fill="url(#lf24badge)"/>
+<path d="M42 32 L42 88 L84 60 Z" fill="#ffffff"/>
+<circle cx="88" cy="86" r="22" fill="#f5a623"/>
+<path d="M77 86 L85 94 L100 74" fill="none" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="136" y="76" font-family="Sora, sans-serif" font-weight="800" font-size="44" fill="#101828">LiveFair<tspan fill="#f5a623">24</tspan></text>
+</svg>
