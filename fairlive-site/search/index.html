@@ -237,5 +237,44 @@ window.addEventListener('load', function(){
   });
 });
 </script>
+<!-- Floating category rail — Tickpick-style icon sidebar. Concerts and
+     Sports link to real, working sections. The four sports LiveFair24
+     doesn't have inventory for yet (baseball, basketball, hockey,
+     American football) show the same icon style but don't navigate
+     anywhere — hovering shows "Coming soon" rather than linking to a
+     page with nothing real behind it. -->
+<div class="category-rail" aria-label="Browse by category">
+  <a href="/" class="category-rail-item" aria-label="Concerts">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span class="category-rail-tooltip">Concerts</span>
+  </a>
+  <a href="/sports/" class="category-rail-item" aria-label="Football / Soccer">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.4h-4.8l-1.4-4.4z"/><path d="M12 7.5V4M15.8 10.3l3-2M8.2 10.3l-3-2M9.6 14.7l-1.5 3.4M14.4 14.7l1.5 3.4"/></svg>
+    <span class="category-rail-tooltip">Football / Soccer</span>
+  </a>
+  <div class="category-rail-divider"></div>
+  <button type="button" class="category-rail-item disabled" aria-label="Baseball (coming soon)">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5 8c2.5 1.5 2.5 6.5 0 8M19 8c-2.5 1.5-2.5 6.5 0 8"/></svg>
+    <span class="category-rail-tooltip">Baseball — coming soon</span>
+  </button>
+  <button type="button" class="category-rail-item disabled" aria-label="Basketball (coming soon)">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.5 5.5c2.5 2.5 2.5 10.5 0 13M18.5 5.5c-2.5 2.5-2.5 10.5 0 13"/></svg>
+    <span class="category-rail-tooltip">Basketball — coming soon</span>
+  </button>
+  <button type="button" class="category-rail-item disabled" aria-label="Hockey (coming soon)">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="6" rx="3"/><path d="M14 4l6 6M17 4h3v3"/></svg>
+    <span class="category-rail-tooltip">Hockey — coming soon</span>
+  </button>
+  <button type="button" class="category-rail-item disabled" aria-label="American Football (coming soon)">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12c0-3 3-7.5 7.5-7.5S19.5 9 19.5 12 16.5 19.5 12 19.5 4.5 15 4.5 12Z"/><path d="M7.5 12h9M10 9.5v1M10 13.5v1M14 9.5v1M14 13.5v1"/></svg>
+    <span class="category-rail-tooltip">American Football — coming soon</span>
+  </button>
+  <div class="category-rail-divider"></div>
+  <a href="/cities/" class="category-rail-item" aria-label="Browse all">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+    <span class="category-rail-tooltip">Browse all</span>
+  </a>
+</div>
+
 </body>
 </html>
