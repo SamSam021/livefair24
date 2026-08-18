@@ -1013,7 +1013,12 @@ function suggestedCardHtml(item){
 }
 
 async function loadSuggested(){
-  const recent = getRecentlyViewed().slice(0, 4).map(e => ({ type: e.type, slug: e.slug, name: e.name, tag: 'recent', count: null }));
+  // imageUrl is only ever present on recently-viewed artist entries
+  // (venuePage.js never writes one — Ticketmaster has no venue photo,
+  // only act photos, and using an act's photo on a venue card would
+  // be misleading) so venue "Recent" cards correctly still fall back
+  // to the generic icon, same as venue "Near you" cards.
+  const recent = getRecentlyViewed().slice(0, 4).map(e => ({ type: e.type, slug: e.slug, name: e.name, tag: 'recent', count: null, imageUrl: e.imageUrl || null }));
   const seen = new Set(recent.map(r => r.type + ':' + r.slug));
   let nearYou = [];
   try {
