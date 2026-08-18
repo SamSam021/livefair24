@@ -109,7 +109,7 @@ function getQueryParam(name){
 // canonical slug if this guess is off), just close enough that most
 // visitors land directly on the right URL without an extra hop.
 function slugify(str){
-  return (str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
 }
 
 function eventViewHref(r){

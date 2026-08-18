@@ -533,7 +533,7 @@ function formatTrendingDate(dateStr, timeStr){
 // ticketmasterEventId) get this link at all — nothing for the SSR route
 // to look up otherwise.
 function slugifyForHref(str){
-  return (str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
 }
 function eventViewHref(ev){
   if(!ev.ticketmasterEventId) return null;

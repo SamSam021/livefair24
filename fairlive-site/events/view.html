@@ -737,7 +737,7 @@ function toggleFaq(btn){
 // byte-perfect, the server 301-redirects to the real canonical slug if
 // this guess is off.
 function slugifyForHref(str){
-  return (str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
 }
 
 // Same logic as eventViewHref() in search/index.html — duplicated here
