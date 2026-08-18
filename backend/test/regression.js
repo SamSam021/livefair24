@@ -203,7 +203,15 @@ async function runTests() {
   await test('Impressum page loads with real content', async () => {
     const res = await get('/impressum.html');
     assert.strictEqual(res.status, 200);
-    assert.ok(res.body.includes('TMG'), 'legally required TMG reference must be present');
+    // The TMG (Telemediengesetz) was repealed on 14 May 2024 and
+    // replaced by the DDG (Digitale-Dienste-Gesetz) — § 5 DDG now
+    // covers what § 5 TMG used to. A site still citing "TMG" is
+    // citing a defunct law, which several German IHKs/law firms flag
+    // as a real Abmahnrisiko under § 5 UWG (irreführende Angabe), not
+    // just a stale citation. This assertion checks for the correct,
+    // current reference instead.
+    assert.ok(res.body.includes('DDG'), 'legally required DDG reference must be present');
+    assert.ok(!res.body.includes('TMG'), 'page must not cite the repealed TMG');
   });
 
   await test('Privacy page loads', async () => {
