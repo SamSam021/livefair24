@@ -174,11 +174,15 @@ function buildHeading(q, city){
   return 'Search results';
 }
 
-// params: { q, city, dateFrom, dateTo } — a location-only or date-only
-// search (no keyword at all) is valid and must actually run, matching
-// what /api/search itself already supports.
+// params: { q, city, dateFrom, dateTo, scope } — a location-only or
+// date-only search (no keyword at all) is valid and must actually run,
+// matching what /api/search itself already supports. scope='all' (only
+// ever present when arriving from the homepage's search bar, never the
+// dedicated /concerts/ page) removes the concerts-only restriction, so
+// results can include any category Ticketmaster actually has — sports,
+// theater, comedy, whatever is real — not just music.
 async function runSearch(params){
-  const { q, city, dateFrom, dateTo } = params;
+  const { q, city, dateFrom, dateTo, scope } = params;
   document.getElementById('searchHeading').textContent = buildHeading(q, city);
   document.getElementById('searchInput').value = q || '';
 
@@ -197,6 +201,7 @@ async function runSearch(params){
     if(city) apiParams.set('city', city);
     if(dateFrom) apiParams.set('dateFrom', dateFrom);
     if(dateTo) apiParams.set('dateTo', dateTo);
+    if(scope) apiParams.set('scope', scope);
 
     const res = await fetch(`/api/search?${apiParams}`);
     if(!res.ok) throw new Error('Search failed');
@@ -224,6 +229,7 @@ document.getElementById('searchForm').addEventListener('submit', function(e){
     city: getQueryParam('city'),
     dateFrom: getQueryParam('dateFrom'),
     dateTo: getQueryParam('dateTo'),
+    scope: getQueryParam('scope'),
   });
   return false;
 });
@@ -234,6 +240,7 @@ window.addEventListener('load', function(){
     city: getQueryParam('city'),
     dateFrom: getQueryParam('dateFrom'),
     dateTo: getQueryParam('dateTo'),
+    scope: getQueryParam('scope'),
   });
 });
 </script>
