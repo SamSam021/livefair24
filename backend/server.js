@@ -194,7 +194,7 @@ const server = http.createServer(async (req, res) => {
       // running with a single, instant request — separate from testing
       // any real feature — since "did the deploy actually go out" has
       // been genuinely hard to answer from the outside so far.
-      return sendJSON(res, 200, { ok: true, buildMarker: 'events-sitemap-added-v5' });
+      return sendJSON(res, 200, { ok: true, buildMarker: 'favicon-only-v8' });
     }
     if (pathname === '/sitemap-events.xml' && req.method === 'GET') {
       try {

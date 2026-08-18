@@ -89,21 +89,25 @@ async function getSuggested(clientIp, env, overrideCountry) {
 
   // Resolve each act's most common genre within its own group (a
   // keyword/attraction match is occasionally impure, same reasoning as
-  // the attractionKey grouping elsewhere) and bucket into "Sports" vs
-  // everything else.
+  // the attractionKey grouping elsewhere) and bucket strictly into
+  // "Sports" or "Music" — anything else Ticketmaster's real inventory
+  // might include (Arts & Theatre, Film, Miscellaneous...) is dropped
+  // entirely here, not lumped in as a third bucket. The homepage is
+  // specifically meant to suggest concerts and sports, nothing broader.
   const sportsActs = [];
-  const otherActs = [];
+  const musicActs = [];
   for (const g of actGroups.values()) {
     let topGenre = 'Other';
     let topGenreCount = 0;
     for (const [genre, c] of g.genreCounts) {
       if (c > topGenreCount) { topGenre = genre; topGenreCount = c; }
     }
+    if (topGenre !== 'Sports' && topGenre !== 'Music') continue;
     const entry = { name: g.name, count: g.count, slug: slugify(g.name), category: topGenre };
-    (topGenre === 'Sports' ? sportsActs : otherActs).push(entry);
+    (topGenre === 'Sports' ? sportsActs : musicActs).push(entry);
   }
   sportsActs.sort((a, b) => b.count - a.count);
-  otherActs.sort((a, b) => b.count - a.count);
+  musicActs.sort((a, b) => b.count - a.count);
 
   // Genuine mix, with an honest fallback: if one category has zero real
   // results in this market right now, fill entirely from the other
@@ -112,11 +116,11 @@ async function getSuggested(clientIp, env, overrideCountry) {
   // handled today.
   let artists;
   if (sportsActs.length === 0) {
-    artists = otherActs.slice(0, MAX_SUGGESTIONS_PER_TYPE);
-  } else if (otherActs.length === 0) {
+    artists = musicActs.slice(0, MAX_SUGGESTIONS_PER_TYPE);
+  } else if (musicActs.length === 0) {
     artists = sportsActs.slice(0, MAX_SUGGESTIONS_PER_TYPE);
   } else {
-    artists = sportsActs.slice(0, MAX_PER_CATEGORY).concat(otherActs.slice(0, MAX_PER_CATEGORY));
+    artists = sportsActs.slice(0, MAX_PER_CATEGORY).concat(musicActs.slice(0, MAX_PER_CATEGORY));
   }
 
   const venues = [...venueGroups.values()]
