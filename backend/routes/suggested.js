@@ -86,8 +86,22 @@ async function getSuggested(clientIp, env, overrideCountry) {
       if (!g.imageUrl && ev.imageUrl) g.imageUrl = ev.imageUrl;
     }
     if (ev.venue) {
-      if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0 });
-      venueGroups.get(ev.venue).count += 1;
+      // Restricted to Sports/Music for the same reason the act loop
+      // below buckets strictly into those two genres: the underlying
+      // search above passes allCategories: true (needed to surface
+      // real sports results), so `results` also contains comedy shows,
+      // museum exhibits, theatre, film, etc. Counting every event's
+      // venue unconditionally meant a museum could get suggested as a
+      // "venue" here with a real event count, while its own
+      // /venues/{slug}/ page (venuePage.js) does a music-only search —
+      // finding zero matching events there and 404ing. Confirmed
+      // exactly this with "Explorado Abenteuermuseum": it showed up as
+      // a suggested venue, then 404'd when visited.
+      const venueGenre = ev.genre || 'Other';
+      if (venueGenre === 'Sports' || venueGenre === 'Music') {
+        if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0 });
+        venueGroups.get(ev.venue).count += 1;
+      }
     }
   }
 
