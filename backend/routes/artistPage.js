@@ -110,6 +110,12 @@ async function renderArtistPage(slug, env, siteOrigin) {
   const realArtistName = events[0].name;
   const canonicalSlug = slugify(realArtistName);
   const canonicalUrl = `${siteOrigin}/artists/${canonicalSlug}/`;
+  // First real event image for this act, if any — carried into the
+  // "Recently viewed" localStorage entry below so homepage Suggested
+  // cards for recent artists can show the same real photo that
+  // /api/suggested's "Near you" cards already do, instead of always
+  // falling back to the generic icon.
+  const artistImageUrl = (events.find((ev) => ev.imageUrl) || {}).imageUrl || null;
 
   const eventRows = events
     .map((ev) => {
@@ -191,7 +197,7 @@ async function renderArtistPage(slug, env, siteOrigin) {
 (function(){
   try {
     var KEY = 'lf24_recently_viewed';
-    var entry = { type: 'artist', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realArtistName)}, viewedAt: Date.now() };
+    var entry = { type: 'artist', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realArtistName)}, imageUrl: ${JSON.stringify(artistImageUrl)}, viewedAt: Date.now() };
     var existing = JSON.parse(localStorage.getItem(KEY) || '[]');
     existing = existing.filter(function(e){ return !(e.type === entry.type && e.slug === entry.slug); });
     existing.unshift(entry);
