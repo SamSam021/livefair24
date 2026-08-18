@@ -11,6 +11,7 @@
 // the event's own venue field genuinely matches what was searched for.
 
 const registry = require('./../providers/registry');
+const cityImage = require('./../providers/geo/cityImage');
 const { buildCanonicalSlug } = require('./eventPage');
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -88,6 +89,13 @@ async function renderVenuePage(slug, env, siteOrigin) {
   const country = events[0].country;
   const canonicalSlug = slugify(realVenueName);
   const canonicalUrl = `${siteOrigin}/venues/${canonicalSlug}/`;
+  // Real photo of this venue's own host city — Ticketmaster's venue
+  // objects carry no image of their own (see
+  // providers/geo/cityImage.js's header comment), so this is the
+  // Suggested carousel's approved stand-in, carried into the
+  // "Recently viewed" localStorage entry below the same way
+  // artistPage.js carries a real event photo for artists.
+  const venueImageUrl = await cityImage.getCityImageUrl(city);
 
   const eventRows = events
     .map((ev) => {
@@ -164,7 +172,7 @@ async function renderVenuePage(slug, env, siteOrigin) {
 (function(){
   try {
     var KEY = 'lf24_recently_viewed';
-    var entry = { type: 'venue', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realVenueName)}, viewedAt: Date.now() };
+    var entry = { type: 'venue', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realVenueName)}, imageUrl: ${JSON.stringify(venueImageUrl)}, viewedAt: Date.now() };
     var existing = JSON.parse(localStorage.getItem(KEY) || '[]');
     existing = existing.filter(function(e){ return !(e.type === entry.type && e.slug === entry.slug); });
     existing.unshift(entry);

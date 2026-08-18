@@ -30,6 +30,7 @@
 // same live source.
 
 const ipapi = require('../providers/geo/ipapi');
+const cityImage = require('../providers/geo/cityImage');
 const registry = require('../providers/registry');
 
 const FALLBACK_COUNTRY = 'US';
@@ -99,7 +100,7 @@ async function getSuggested(clientIp, env, overrideCountry) {
       // a suggested venue, then 404'd when visited.
       const venueGenre = ev.genre || 'Other';
       if (venueGenre === 'Sports' || venueGenre === 'Music') {
-        if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0 });
+        if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0, city: ev.city || null });
         venueGroups.get(ev.venue).count += 1;
       }
     }
@@ -144,7 +145,20 @@ async function getSuggested(clientIp, env, overrideCountry) {
   const venues = [...venueGroups.values()]
     .sort((a, b) => b.count - a.count)
     .slice(0, MAX_SUGGESTIONS_PER_TYPE)
-    .map((g) => ({ name: g.name, count: g.count, slug: slugify(g.name) }));
+    .map((g) => ({ name: g.name, count: g.count, slug: slugify(g.name), city: g.city }));
+
+  // Ticketmaster's venue objects never carry a photo of their own (see
+  // providers/geo/cityImage.js's header comment for the confirmed
+  // schema reasoning) — a real photo of the venue's own host city,
+  // fetched here rather than left for the client to fetch. Run in
+  // parallel since each is an independent lookup; a city with no real
+  // Wikipedia photo just resolves to null and that card keeps the pin
+  // icon, same as before this existed.
+  await Promise.all(
+    venues.map(async (v) => {
+      v.imageUrl = await cityImage.getCityImageUrl(v.city);
+    })
+  );
 
   return {
     countryUsed: countryCode,
