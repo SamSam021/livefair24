@@ -19,6 +19,12 @@ async function searchEvents(params, env) {
   const city = (params.city || '').trim();
   const dateFrom = params.dateFrom || null;
   const dateTo = params.dateTo || null;
+  // Only ever 'all' when the request originated from the homepage's
+  // search bar (never the dedicated /concerts/ page) — removes the
+  // concerts-only restriction downstream in the ticket provider, so
+  // results can include any real category Ticketmaster has, not just
+  // music.
+  const allCategories = params.scope === 'all';
 
   if (!query && !city && !dateFrom) {
     return { query, city, dateFrom, dateTo, demoMode: true, count: 0, results: [] };
@@ -27,7 +33,7 @@ async function searchEvents(params, env) {
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
 
-  const searchParams = { query, city, dateFrom, dateTo };
+  const searchParams = { query, city, dateFrom, dateTo, allCategories };
   const settled = await Promise.allSettled(
     providers.map((p) => (typeof p.searchEvents === 'function' ? p.searchEvents(searchParams, env) : Promise.resolve([])))
   );

@@ -161,7 +161,14 @@ module.exports = {
     // used by /api/search and the "Other concerts" widget on event pages
     // — could surface a hockey game or theater show alongside real
     // concerts. Applied unconditionally now, city/keyword search included.
-    parts.push('classificationName=music');
+    //
+    // EXCEPTION: params.allCategories — set only by the homepage's search
+    // bar (never the dedicated /concerts/ page, which keeps the
+    // restriction exactly as before) — deliberately skips this filter, so
+    // a homepage search can surface anything real Ticketmaster actually
+    // has, not just music. This is the one legitimate, intentional use of
+    // this ticket-provider search for non-concert results.
+    if (!params.allCategories) parts.push('classificationName=music');
     // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against
