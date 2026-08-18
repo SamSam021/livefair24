@@ -456,6 +456,7 @@ img{max-width:100%;display:block;}
 /* ---- Suggested carousel (Recent + Near you) — homepage ---- */
 .suggested-scroll{ display:flex; gap:14px; overflow-x:auto; padding:4px 2px 12px; scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none; }
 .suggested-scroll::-webkit-scrollbar{ display:none; }
+#suggestedSection .section-header{ border-bottom:none; padding-bottom:0; margin-bottom:16px; }
 .suggested-arrows{ display:flex; gap:8px; }
 .suggested-arrow-btn{
   width:36px; height:36px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
