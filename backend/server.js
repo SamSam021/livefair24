@@ -24,6 +24,7 @@ const eventPageRoutes = require('./routes/eventPage');
 const eventsSitemapRoutes = require('./routes/eventsSitemap');
 const artistPageRoutes = require('./routes/artistPage');
 const venuePageRoutes = require('./routes/venuePage');
+const suggestedRoutes = require('./routes/suggested');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -217,6 +218,14 @@ const server = http.createServer(async (req, res) => {
       try {
         const clientIp = getClientIp(req);
         return sendJSON(res, 200, await trendingRoutes.getTrendingEvents(clientIp, registry.getMergedEnv(), query.country));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/suggested' && req.method === 'GET') {
+      try {
+        const clientIp = getClientIp(req);
+        return sendJSON(res, 200, await suggestedRoutes.getSuggested(clientIp, registry.getMergedEnv(), query.country));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }

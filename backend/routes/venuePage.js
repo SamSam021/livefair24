@@ -158,6 +158,20 @@ async function renderVenuePage(slug, env, siteOrigin) {
     ${eventRows}
   </div>
 </div>
+<script>
+// Same "Recent" tracking as routes/artistPage.js — see that file's
+// comment for the reasoning.
+(function(){
+  try {
+    var KEY = 'lf24_recently_viewed';
+    var entry = { type: 'venue', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realVenueName)}, viewedAt: Date.now() };
+    var existing = JSON.parse(localStorage.getItem(KEY) || '[]');
+    existing = existing.filter(function(e){ return !(e.type === entry.type && e.slug === entry.slug); });
+    existing.unshift(entry);
+    localStorage.setItem(KEY, JSON.stringify(existing.slice(0, 12)));
+  } catch(e) { /* localStorage unavailable (private browsing etc.) — not worth failing the page over */ }
+})();
+</script>
 </body>
 </html>`;
 

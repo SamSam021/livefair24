@@ -181,6 +181,24 @@ async function renderArtistPage(slug, env, siteOrigin) {
     ${eventRows}
   </div>
 </div>
+<script>
+// Records this real artist page view for the homepage's "Suggested"
+// carousel — the "Recent" half of the same two-source pattern TickPick
+// uses (their own homepage shows cards tagged either "Recent" or "Local
+// Team"). Capped at 12, most recent first, deduped by slug so revisiting
+// the same artist just moves it back to the front rather than creating
+// a duplicate entry.
+(function(){
+  try {
+    var KEY = 'lf24_recently_viewed';
+    var entry = { type: 'artist', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realArtistName)}, viewedAt: Date.now() };
+    var existing = JSON.parse(localStorage.getItem(KEY) || '[]');
+    existing = existing.filter(function(e){ return !(e.type === entry.type && e.slug === entry.slug); });
+    existing.unshift(entry);
+    localStorage.setItem(KEY, JSON.stringify(existing.slice(0, 12)));
+  } catch(e) { /* localStorage unavailable (private browsing etc.) — not worth failing the page over */ }
+})();
+</script>
 </body>
 </html>`;
 
