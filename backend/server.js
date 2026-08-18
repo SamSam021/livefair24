@@ -22,6 +22,8 @@ const trendingRoutes = require('./routes/trending');
 const citiesRoutes = require('./routes/cities');
 const eventPageRoutes = require('./routes/eventPage');
 const eventsSitemapRoutes = require('./routes/eventsSitemap');
+const artistPageRoutes = require('./routes/artistPage');
+const venuePageRoutes = require('./routes/venuePage');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -362,6 +364,57 @@ const server = http.createServer(async (req, res) => {
         return res.end(result.html);
       } catch (err) {
         console.error('[event page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    // Real, indexable artist and venue hub pages — /artists/{slug}/ and
+    // /venues/{slug}/. The [^/.]+ (no dots allowed) is deliberate: it
+    // excludes existing static files like /artists/nova-wren.html and
+    // /venues/waldbuhne-berlin.html, and the bare hub pages
+    // (/artists/, /venues/) don't match either since the slug group
+    // requires at least one character — both fall through to
+    // serveStatic below, completely unaffected by these new routes.
+    const artistPageMatch = pathname.match(/^\/artists\/([^/.]+)\/?$/);
+    if (artistPageMatch && req.method === 'GET') {
+      const [, slug] = artistPageMatch;
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await artistPageRoutes.renderArtistPage(decodeURIComponent(slug), registry.getMergedEnv(), siteOrigin);
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('No upcoming events found for this artist');
+        }
+        if (result.canonicalSlug !== slug) {
+          res.writeHead(301, { Location: `/artists/${encodeURIComponent(result.canonicalSlug)}/` });
+          return res.end();
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[artist page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    const venuePageMatch = pathname.match(/^\/venues\/([^/.]+)\/?$/);
+    if (venuePageMatch && req.method === 'GET') {
+      const [, slug] = venuePageMatch;
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await venuePageRoutes.renderVenuePage(decodeURIComponent(slug), registry.getMergedEnv(), siteOrigin);
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('No upcoming events found for this venue');
+        }
+        if (result.canonicalSlug !== slug) {
+          res.writeHead(301, { Location: `/venues/${encodeURIComponent(result.canonicalSlug)}/` });
+          return res.end();
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[venue page]', err.message);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         return res.end('Server error');
       }

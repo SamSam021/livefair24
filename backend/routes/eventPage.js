@@ -37,7 +37,15 @@ function formatDate(dateStr, timeStr) {
 }
 
 function slugify(str) {
+  // NFD-decompose first ("ü" -> "u" + combining diaeresis) then strip the
+  // combining marks — turns "Waldbühne" into "waldbuhne", not the broken
+  // "waldb-hne" a naive [^a-z0-9] strip produces. Confirmed as a real bug
+  // via direct testing (the diaeresis was silently deleted, not
+  // transliterated) — significant given how much of this site's actual
+  // inventory is German.
   return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
