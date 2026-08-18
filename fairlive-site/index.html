@@ -64,6 +64,11 @@
 <nav class="site-nav">
   <div class="nav-inner">
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="search-mode-toggle" role="group" aria-label="What to search for">
+      <button type="button" class="smt-btn active" data-mode="both" onclick="setSearchMode('both')">Event+Hotel</button>
+      <button type="button" class="smt-btn" data-mode="event" onclick="setSearchMode('event')">Event</button>
+      <button type="button" class="smt-btn" data-mode="hotel" onclick="setSearchMode('hotel')">Hotel</button>
+    </div>
   </div>
 </nav>
 <script>
@@ -90,12 +95,6 @@
     <span class="badge badge-live" style="margin-bottom:20px;">● Live prices — updated every 2 minutes</span>
     <h1>Live happens once.<br>Don't miss it.</h1>
     <p>Search for events — concerts and sports — compare real ticket prices, find a hotel near the venue, and see your complete trip cost, all in one search.</p>
-
-    <div class="search-mode-toggle" role="group" aria-label="What to search for">
-      <button type="button" class="smt-btn active" data-mode="both" onclick="setSearchMode('both')">Event+Hotel</button>
-      <button type="button" class="smt-btn" data-mode="event" onclick="setSearchMode('event')">Event</button>
-      <button type="button" class="smt-btn" data-mode="hotel" onclick="setSearchMode('hotel')">Hotel</button>
-    </div>
 
     <form class="search-form search-form-segmented" action="/search/" method="get" role="search" aria-label="Search concerts">
       <input type="hidden" name="scope" value="all">

@@ -483,8 +483,12 @@ img{max-width:100%;display:block;}
 .suggested-tag.recent{ background:var(--blue-soft); color:var(--blue-deep); }
 .suggested-card-arrow{ color:var(--ink-faint); flex-shrink:0; }
 
-/* ---- Search mode toggle (Event+Hotel / Event / Hotel) — homepage hero ---- */
-.search-mode-toggle{ display:inline-flex; gap:2px; background:rgba(255,255,255,.14); border-radius:999px; padding:4px; margin-bottom:20px; }
-.smt-btn{ border:none; background:none; color:rgba(255,255,255,.85); font-family:'Sora',sans-serif; font-weight:700; font-size:13.5px; padding:9px 20px; border-radius:999px; cursor:pointer; transition:background .15s, color .15s; }
-.smt-btn:hover{ color:#fff; }
+/* ---- Search mode toggle (Event+Hotel / Event / Hotel) — nav bar, same
+   position TickPick uses for its Buy/Sell/Create toggle ---- */
+.search-mode-toggle{ display:inline-flex; gap:2px; background:var(--surface-2); border-radius:999px; padding:4px; }
+.smt-btn{ border:none; background:none; color:var(--ink-dim); font-family:'Sora',sans-serif; font-weight:700; font-size:13.5px; padding:9px 20px; border-radius:999px; cursor:pointer; transition:background .15s, color .15s; }
+.smt-btn:hover{ color:var(--ink); }
 .smt-btn.active{ background:var(--ink); color:#fff; }
+@media (max-width:640px){
+  .search-mode-toggle{ display:none; } /* avoids crowding the nav bar on small screens */
+}
