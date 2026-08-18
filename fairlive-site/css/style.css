@@ -500,9 +500,20 @@ img{max-width:100%;display:block;}
 /* ---- Search mode toggle (Event+Hotel / Event / Hotel) — nav bar, same
    position TickPick uses for its Buy/Sell/Create toggle ---- */
 .search-mode-toggle{ display:inline-flex; gap:2px; background:var(--surface-2); border-radius:999px; padding:4px; }
-.smt-btn{ border:none; background:none; color:var(--ink-dim); font-family:'Sora',sans-serif; font-weight:700; font-size:13.5px; padding:9px 20px; border-radius:999px; cursor:pointer; transition:background .15s, color .15s; }
+.smt-btn{ border:none; background:none; color:var(--ink-dim); font-family:'Sora',sans-serif; font-weight:700; font-size:13.5px; padding:9px 20px; border-radius:999px; cursor:pointer; transition:background .15s, color .15s; white-space:nowrap; }
 .smt-btn:hover{ color:var(--ink); }
 .smt-btn.active{ background:var(--ink); color:#fff; }
+.smt-short{ display:none; }
 @media (max-width:640px){
-  .search-mode-toggle{ display:none; } /* avoids crowding the nav bar on small screens */
+  /* Stays visible and usable on mobile rather than disappearing behind
+     a hamburger menu — TickPick's own mobile nav doesn't hide controls
+     behind a 3-line icon either, it keeps them directly reachable
+     (their persistent icon rail is the same idea we already built).
+     Lets the nav wrap to a second line if the logo + toggle don't fit
+     side by side on a narrow phone, and swaps "Event+Hotel" for the
+     shorter "Both" so the pill doesn't force that wrap unnecessarily. */
+  .nav-inner{ flex-wrap:wrap; row-gap:10px; }
+  .smt-btn{ padding:7px 14px; font-size:12.5px; }
+  .smt-full{ display:none; }
+  .smt-short{ display:inline; }
 }
