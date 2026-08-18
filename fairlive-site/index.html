@@ -970,7 +970,8 @@ function suggestedCardHtml(item){
   const icon = item.type === 'artist'
     ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
     : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
-  const tags = [item.tag === 'recent' ? '<span class="suggested-tag recent">Recent</span>' : '<span class="suggested-tag">Near you</span>'];
+  const tagLabels = { recent: 'Recent', near: 'Near you', trending: 'Trending' };
+  const tags = [`<span class="suggested-tag${item.tag === 'recent' ? ' recent' : ''}">${tagLabels[item.tag] || 'Near you'}</span>`];
   if(item.count != null) tags.push(`<span class="suggested-tag">${item.count} upcoming</span>`);
   const safeName = (item.name||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   return `<a href="${href}" class="suggested-card">
@@ -991,7 +992,13 @@ async function loadSuggested(){
     const res = await fetch('/api/suggested');
     if(res.ok){
       const data = await res.json();
-      const artists = (data.artists||[]).map(a => ({ type:'artist', slug:a.slug, name:a.name, tag:'near', count:a.count }));
+      // Sports acts are tagged "Near you" (geographic proximity is what
+      // makes a local team relevant) — music acts are tagged "Trending"
+      // instead, since a touring artist's relevance isn't really about
+      // literal distance the same way. Matches the pattern actually
+      // observed on TickPick's own homepage: sports cards say "Local
+      // Team," music cards say "Trending."
+      const artists = (data.artists||[]).map(a => ({ type:'artist', slug:a.slug, name:a.name, tag: a.category === 'Sports' ? 'near' : 'trending', count:a.count }));
       const venues = (data.venues||[]).map(v => ({ type:'venue', slug:v.slug, name:v.name, tag:'near', count:v.count }));
       nearYou = artists.concat(venues).filter(item => !seen.has(item.type+':'+item.slug));
     }
