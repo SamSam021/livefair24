@@ -149,7 +149,7 @@ img{max-width:100%;display:block;}
    colors flip to light since they now sit on a photo instead of white. */
 .card-photo{background-size:cover;background-position:center;border-color:transparent;}
 .card-photo:hover{border-color:transparent;}
-.card-photo .genre{color:#cfe0ff;}
+.card-photo .genre{color:#fff;}
 .card-photo h3{color:#fff;}
 .card-photo .meta{color:#fff;}
 .card-photo .date{color:#fff;}
