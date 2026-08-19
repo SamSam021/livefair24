@@ -1,11 +1,13 @@
 // data/major-cities.js
 //
-// Curated 6-major-cities list per country, used by /api/cities to power
+// Curated major-cities list per country, used by /api/cities to power
 // the "Browse concerts by cities" page. Deliberately a fixed editorial
 // list (not derived from live event data) — the whole point is a stable,
 // recognizable set of cities for a visitor's country every time they
 // land on the page, not a list that reshuffles depending on which cities
-// happen to have a show on sale today.
+// happen to have a show on sale today. 12 per country (rather than the
+// original 6) so the homepage carousel has enough real cities to
+// actually be worth scrolling through.
 //
 // `slug` is only meaningful for cities that have a real dedicated page
 // under /cities/<country>/<slug>.html — routes/cities.js falls back to
@@ -23,6 +25,12 @@ const MAJOR_CITIES = {
       { name: 'Cologne' },
       { name: 'Frankfurt' },
       { name: 'Düsseldorf' },
+      { name: 'Stuttgart' },
+      { name: 'Leipzig' },
+      { name: 'Dortmund' },
+      { name: 'Essen' },
+      { name: 'Bremen' },
+      { name: 'Dresden' },
     ],
   },
   US: {
@@ -35,6 +43,12 @@ const MAJOR_CITIES = {
       { name: 'Houston' },
       { name: 'Miami' },
       { name: 'San Francisco' },
+      { name: 'Las Vegas' },
+      { name: 'Boston' },
+      { name: 'Seattle' },
+      { name: 'Austin' },
+      { name: 'Nashville' },
+      { name: 'Atlanta' },
     ],
   },
   GB: {
@@ -47,6 +61,12 @@ const MAJOR_CITIES = {
       { name: 'Glasgow' },
       { name: 'Liverpool' },
       { name: 'Leeds' },
+      { name: 'Edinburgh' },
+      { name: 'Bristol' },
+      { name: 'Sheffield' },
+      { name: 'Newcastle' },
+      { name: 'Cardiff' },
+      { name: 'Belfast' },
     ],
   },
   IE: {
@@ -59,6 +79,12 @@ const MAJOR_CITIES = {
       { name: 'Galway' },
       { name: 'Waterford' },
       { name: 'Drogheda' },
+      { name: 'Dundalk' },
+      { name: 'Swords' },
+      { name: 'Bray' },
+      { name: 'Navan' },
+      { name: 'Ennis' },
+      { name: 'Tralee' },
     ],
   },
   IT: {
@@ -71,6 +97,12 @@ const MAJOR_CITIES = {
       { name: 'Turin' },
       { name: 'Bologna' },
       { name: 'Florence' },
+      { name: 'Venice' },
+      { name: 'Genoa' },
+      { name: 'Palermo' },
+      { name: 'Bari' },
+      { name: 'Verona' },
+      { name: 'Catania' },
     ],
   },
   FR: {
@@ -83,6 +115,12 @@ const MAJOR_CITIES = {
       { name: 'Toulouse' },
       { name: 'Nice' },
       { name: 'Nantes' },
+      { name: 'Strasbourg' },
+      { name: 'Montpellier' },
+      { name: 'Bordeaux' },
+      { name: 'Lille' },
+      { name: 'Rennes' },
+      { name: 'Reims' },
     ],
   },
 };
