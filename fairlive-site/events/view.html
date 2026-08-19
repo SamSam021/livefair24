@@ -823,8 +823,17 @@ async function loadRelatedConcerts(){
   }
 
   if(ev.artist && ev.artist !== 'Event'){
+    // Real attractionId-based link when available (same priority as
+    // artistHref() above), but falls back to a filtered search for the
+    // artist name rather than the generic /artists/ hub — a "browse
+    // everything" hub is a poor fallback specifically for a card whose
+    // whole purpose is "more from this one artist"; a name search stays
+    // relevant even without a real ID to link to.
+    const relatedArtistHref = ev.attractionId
+      ? `/artists/${encodeURIComponent(ev.attractionId)}/${slugifyForHref(ev.artist)}/`
+      : (KNOWN_ARTIST_PAGES[ev.artist.toLowerCase()] || `/search/?q=${encodeURIComponent(ev.artist)}`);
     cards.push({
-      href: KNOWN_ARTIST_PAGES[ev.artist.toLowerCase()] || `/search/?q=${encodeURIComponent(ev.artist)}`,
+      href: relatedArtistHref,
       genre: ev.genre || 'Artist',
       title: `${ev.artist} — All tour dates`,
       meta: '',
