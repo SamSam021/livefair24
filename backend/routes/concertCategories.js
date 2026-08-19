@@ -15,6 +15,12 @@ const { BUCKETS, bucketForGenre } = require('../lib/concertGenreBuckets');
 
 const SITEMAP_MARKETS = ['US', 'DE', 'GB']; // same initial-launch markets as eventsSitemap.js / artistVenueSitemap.js
 const MAX_PER_BUCKET = 6; // matches the reference layout's "5 + See all" per category
+const PAGES_PER_MARKET = 3; // 3 x 200 = up to 600 real events per market — a single
+  // 150-event page left rarer genres (festivals especially) with too small
+  // a sample to ever surface a real result; this is still 100% real
+  // Ticketmaster data, just more of it, not anything invented to fill a
+  // bucket artificially.
+const PAGE_SIZE = 200; // Ticketmaster's documented max page size
 
 function slugify(str) {
   return (str || '')
@@ -30,15 +36,19 @@ async function collectMusicEventsAcrossMarkets(tm, env) {
   const all = [];
   await Promise.all(
     SITEMAP_MARKETS.map(async (countryCode) => {
-      try {
-        // allCategories deliberately omitted/false — the provider applies
-        // classificationName=music automatically in that case (see
-        // ticketmaster.js), which is what a concerts-only category menu
-        // needs; unlike routes/suggested.js this must never include sports.
-        const results = await tm.searchEvents({ query: '', city: '', countryCode, limit: 150 }, env);
-        if (Array.isArray(results)) all.push(...results);
-      } catch (err) {
-        console.warn('[concertCategories]', countryCode, err.message);
+      for (let page = 0; page < PAGES_PER_MARKET; page++) {
+        try {
+          // allCategories deliberately omitted/false — the provider applies
+          // classificationName=music automatically in that case (see
+          // ticketmaster.js), which is what a concerts-only category menu
+          // needs; unlike routes/suggested.js this must never include sports.
+          const results = await tm.searchEvents({ query: '', city: '', countryCode, limit: PAGE_SIZE, page }, env);
+          if (!Array.isArray(results) || results.length === 0) break; // no more pages for this market
+          all.push(...results);
+        } catch (err) {
+          console.warn('[concertCategories]', countryCode, 'page', page, err.message);
+          break;
+        }
       }
     })
   );

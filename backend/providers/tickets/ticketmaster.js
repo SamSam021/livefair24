@@ -146,6 +146,13 @@ module.exports = {
     const key = env.TICKETMASTER_API_KEY;
     const size = params.limit || 10;
     const parts = [`apikey=${key}`, `size=${size}`];
+    // Optional pagination — Ticketmaster's own `page` query param (0-indexed).
+    // Added for routes/concertCategories.js, which needs a wider pool of
+    // real events than one 150-200-result page gives per market to have a
+    // real chance of surfacing every genre bucket (e.g. festival-tagged
+    // events are comparatively rare) — every other existing call site
+    // that doesn't pass params.page is completely unaffected.
+    if (params.page != null) parts.push(`page=${encodeURIComponent(params.page)}`);
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
     if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
