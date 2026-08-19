@@ -164,13 +164,37 @@ async function getUpcomingMatchesForSport(sportSlug, limit = 20) {
   return result.rows;
 }
 
-// Keyword search scoped to one sport — matches against either team's
-// name, same idea as the ticket-provider keyword search but against our
-// own DB instead of Ticketmaster, since this sport's real data lives
-// here, not with a ticket provider. Never touches other sports' teams
-// even if a query happens to match one, since sportSlug is part of the
-// WHERE clause itself, not a post-filter.
-async function searchMatchesForSport(sportSlug, keyword, limit = 20) {
+// Flexible, filtered match search for one sport — the DB-backed
+// equivalent of the ticket-provider search concerts.html uses (city +
+// date range + keyword), so a sport's category page can offer the same
+// Location/Dates/Search fields concerts.html does, not a simplified
+// version. Every filter is optional; sportSlug is the only one that's
+// always applied, and it's baked into the JOIN/WHERE itself — same
+// isolation guarantee as every other query in this file.
+async function searchMatchesForSport(sportSlug, options = {}) {
+  const { keyword, city, dateFrom, dateTo, limit = 20 } = options;
+  const conditions = ['s.slug = $1', 'm.start_datetime >= now()'];
+  const params = [sportSlug];
+
+  if (keyword) {
+    params.push(`%${keyword}%`);
+    const idx = params.length;
+    conditions.push(`(ht.name ILIKE $${idx} OR awt.name ILIKE $${idx} OR v.name ILIKE $${idx} OR v.city ILIKE $${idx})`);
+  }
+  if (city) {
+    params.push(`%${city}%`);
+    conditions.push(`v.city ILIKE $${params.length}`);
+  }
+  if (dateFrom) {
+    params.push(dateFrom);
+    conditions.push(`m.start_datetime >= $${params.length}`);
+  }
+  if (dateTo) {
+    params.push(dateTo);
+    conditions.push(`m.start_datetime <= $${params.length}`);
+  }
+  params.push(limit);
+
   const result = await query(
     `SELECT m.id, m.slug, m.start_datetime, m.status,
             ht.name AS home_team_name, ht.slug AS home_team_slug,
@@ -184,11 +208,10 @@ async function searchMatchesForSport(sportSlug, keyword, limit = 20) {
      JOIN teams ht ON ht.id = m.home_team_id
      JOIN teams awt ON awt.id = m.away_team_id
      LEFT JOIN venues v ON v.id = m.venue_id
-     WHERE s.slug = $1 AND m.start_datetime >= now()
-       AND (ht.name ILIKE $2 OR awt.name ILIKE $2 OR v.name ILIKE $2 OR v.city ILIKE $2)
+     WHERE ${conditions.join(' AND ')}
      ORDER BY m.start_datetime ASC
-     LIMIT $3`,
-    [sportSlug, `%${keyword}%`, limit]
+     LIMIT $${params.length}`,
+    params
   );
   return result.rows;
 }

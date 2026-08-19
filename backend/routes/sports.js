@@ -80,17 +80,23 @@ async function getSportSuggested(sportSlug) {
   return { sport, trending };
 }
 
-async function searchSportMatches(sportSlug, q) {
+async function searchSportMatches(sportSlug, options = {}) {
   const sport = await sportsQueries.getSportBySlug(sportSlug);
   if (!sport) {
     throw Object.assign(new Error('Sport not found'), { statusCode: 404 });
   }
-  const keyword = (q || '').trim();
-  if (!keyword) {
+  const { q, city, dateFrom, dateTo } = options;
+  const hasAnyFilter = (q && q.trim()) || city || dateFrom || dateTo;
+  if (!hasAnyFilter) {
     const matches = await sportsQueries.getUpcomingMatchesForSport(sportSlug);
     return { sport, count: matches.length, results: matches };
   }
-  const matches = await sportsQueries.searchMatchesForSport(sportSlug, keyword);
+  const matches = await sportsQueries.searchMatchesForSport(sportSlug, {
+    keyword: q && q.trim() ? q.trim() : undefined,
+    city,
+    dateFrom,
+    dateTo,
+  });
   return { sport, count: matches.length, results: matches };
 }
 

@@ -347,7 +347,12 @@ const server = http.createServer(async (req, res) => {
     if (pathname.match(/^\/api\/sports\/[^/]+\/search$/) && req.method === 'GET') {
       const sportSlug = decodeURIComponent(pathname.split('/')[3]);
       try {
-        return sendJSON(res, 200, await sportsRoutes.searchSportMatches(sportSlug, query.q));
+        return sendJSON(res, 200, await sportsRoutes.searchSportMatches(sportSlug, {
+          q: query.q,
+          city: query.city,
+          dateFrom: query.dateFrom,
+          dateTo: query.dateTo,
+        }));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
