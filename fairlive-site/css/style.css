@@ -149,10 +149,22 @@ img{max-width:100%;display:block;}
    colors flip to light since they now sit on a photo instead of white. */
 .card-photo{background-size:cover;background-position:center;border-color:transparent;}
 .card-photo:hover{border-color:transparent;}
-.card-photo .genre{color:#fff;}
-.card-photo h3{color:#fff;}
-.card-photo .meta{color:#fff;}
-.card-photo .date{color:#fff;}
+/* .card.card-photo (not just .card-photo) here specifically —
+   .card-photo alone has the exact same specificity as the base .card
+   .genre/.meta/.date rules below (two classes each), and since those
+   base rules happen to come later in the file, they were winning the
+   cascade tie regardless of what color this rule set, even though it
+   looked like it should apply. Confirmed via a real screenshot: title
+   (h3) rendered white correctly because the base .card h3 rule never
+   set a color at all, so there was nothing to lose a tie against —
+   genre/meta/date all have real competing color declarations, so they
+   silently kept losing. Doubling the class on the ancestor makes this
+   selector unambiguously more specific, so it wins regardless of
+   source order from here on. */
+.card.card-photo h3{color:#fff;}
+.card.card-photo .genre{color:#fff;}
+.card.card-photo .meta{color:#fff;}
+.card.card-photo .date{color:#fff;}
 .card-photo .card-foot{border-top-color:rgba(255,255,255,.25);}
 .card-photo .card-foot .from{color:rgba(255,255,255,.75);}
 .card-photo .card-foot .from b{color:#ffd166;}
