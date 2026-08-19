@@ -261,6 +261,17 @@ function mapEventToResult(ev) {
   const venue = (ev._embedded && ev._embedded.venues && ev._embedded.venues[0]) || null;
   const attraction = (ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0]) || null;
   const genre = (ev.classifications && ev.classifications[0] && ev.classifications[0].segment) || null;
+  // Ticketmaster's finer classification level (their own documented
+  // hierarchy: segment -> genre -> subGenre — e.g. segment "Music",
+  // genre "Rock" or "Hip-Hop/Rap", subGenre "Alternative Rock"). Kept
+  // as a separate field from `genre` above (which is actually the
+  // *segment*, Music vs Sports — an existing naming choice this file
+  // already had before this field was added, not changed here to avoid
+  // breaking every call site already reading `.genre`). Used by
+  // routes/concertCategories.js to bucket real artists into music
+  // sub-categories (Rap/Hip-Hop, Pop/Rock, etc.) — never fabricated,
+  // null when Ticketmaster doesn't provide one for this event.
+  const musicGenre = (ev.classifications && ev.classifications[0] && ev.classifications[0].genre) || null;
   return {
     source: 'ticketmaster',
     sourceLabel: 'Ticketmaster',
@@ -284,6 +295,7 @@ function mapEventToResult(ev) {
     // this directly instead of guessing at more query parameters.
     saleStatus: ev.dates && ev.dates.status ? ev.dates.status.code : null,
     genre: genre ? genre.name : null,
+    musicGenre: musicGenre ? musicGenre.name : null,
     venue: venue ? venue.name : null,
     city: venue && venue.city ? venue.city.name : null,
     // Confirmed real field on Ticketmaster's venue object (e.g.

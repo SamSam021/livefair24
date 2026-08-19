@@ -26,6 +26,7 @@ const artistVenueSitemapRoutes = require('./routes/artistVenueSitemap');
 const artistPageRoutes = require('./routes/artistPage');
 const venuePageRoutes = require('./routes/venuePage');
 const suggestedRoutes = require('./routes/suggested');
+const concertCategoriesRoutes = require('./routes/concertCategories');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -249,6 +250,13 @@ const server = http.createServer(async (req, res) => {
       try {
         const clientIp = getClientIp(req);
         return sendJSON(res, 200, await suggestedRoutes.getSuggested(clientIp, registry.getMergedEnv(), query.country, query.category));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/concerts/categories' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await concertCategoriesRoutes.getConcertCategories(registry.getMergedEnv()));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
