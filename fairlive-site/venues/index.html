@@ -80,15 +80,10 @@
   </section>
 
   <section class="section" style="padding-top:0;">
-    <div class="card-grid">
-      <a href="/venues/waldbuhne-berlin.html" class="card">
-        <div class="genre">Berlin, Germany</div>
-        <h3>Waldbühne</h3>
-        <div class="meta">22,000 capacity · Open-air amphitheatre</div>
-        <div class="card-foot"><span class="from">from <b>$66</b></span><span class="cta">1 upcoming show →</span></div>
-      </a>
+    <div class="card-grid" id="venueCardGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Loading venues…</div>
     </div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More venues are added as new tour dates are confirmed.</p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">Venues update automatically as new tour dates are confirmed.</p>
   </section>
 
 </div>
@@ -103,6 +98,43 @@
   </div>
   <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
 </footer>
+<script>
+// Same real-data pattern as /artists/ — pulls from /api/suggested
+// (category=music restricts to music venues only, per suggested.js's
+// venueGenreOk check), never a hardcoded/fictional entry.
+function escapeAttr(str){
+  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function loadVenueHub(){
+  const grid = document.getElementById('venueCardGrid');
+  try{
+    const res = await fetch('/api/suggested?category=music');
+    if(!res.ok) throw new Error('Suggested API error');
+    const data = await res.json();
+    const venues = data.venues || [];
+    if(venues.length === 0){
+      grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">No venues to show right now — check back soon.</div>';
+      return;
+    }
+    grid.innerHTML = venues.map(v => {
+      const href = `/venues/${encodeURIComponent(v.slug)}/`;
+      const location = escapeAttr([v.city, v.state].filter(Boolean).join(', '));
+      const name = escapeAttr(v.name);
+      const count = v.count || 0;
+      return `<a href="${href}" class="card">
+        <div class="genre">${location || 'Venue'}</div>
+        <h3>${name}</h3>
+        <div class="meta">${count} upcoming show${count === 1 ? '' : 's'}</div>
+        <div class="card-foot"><span class="cta">View shows →</span></div>
+      </a>`;
+    }).join('');
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Could not load venues right now.</div>';
+  }
+}
+loadVenueHub();
+</script>
 <script src="../js/cookie-banner.js" defer></script>
 </body>
 </html>
