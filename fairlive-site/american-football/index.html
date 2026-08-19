@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>American Football Tickets — Search Games | LiveFair24</title>
+<meta name="description" content="Search American Football tickets. Every result on this page is american football — never concerts, other sports, or hotels.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://livefair24.com/american-football/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+
+<!-- Schema.org WebSite -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "LiveFair24 American Football",
+  "url": "https://livefair24.com/american-football/",
+  "description": "American Football ticket search."
+}
+</script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="badge badge-live" style="margin-bottom:20px;">● Live fixtures</span>
+    <h1>American Football tickets.<br>Nothing else.</h1>
+    <p>Every game, team, and result on this page is American Football — this page never shows concerts, other sports, or hotels.</p>
+
+    <form class="search-form" role="search" aria-label="Search American Football" onsubmit="return runSportSearch(event)" style="max-width:560px;margin:0 auto;">
+      <input type="text" id="sportSearchInput" class="search-input" placeholder="Team, venue, or city — e.g. Dallas Outlaws, Atlanta" autocomplete="off" aria-label="Search American Football games">
+      <button type="submit" class="search-btn">Search →</button>
+    </form>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Suggested — trending teams for this sport only. Real DB-backed
+       upcoming-match counts (routes/sports.js's getSportSuggested),
+       never Ticketmaster/concerts data — this carousel has no code path
+       that can reach anything but the "american-football" sport row. -->
+  <section class="section" id="suggestedSection" style="display:none;padding-bottom:0;">
+    <div class="section-header">
+      <div><h2>Suggested</h2><p>Trending American Football teams.</p></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="suggestedPrev" aria-label="Scroll left" onclick="scrollSuggested(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="suggestedNext" aria-label="Scroll right" onclick="scrollSuggested(1)">›</button>
+      </div>
+    </div>
+    <div class="suggested-scroll" id="suggestedScroll"></div>
+  </section>
+
+  <!-- Featured / Upcoming — every fixture already comes from
+       getUpcomingMatchesForSport('american-football'), which filters on
+       start_datetime >= now() in the SQL itself, so "featured" and
+       "upcoming" are genuinely the same real, always-current list here
+       rather than two separately-maintained sections that could drift
+       out of sync with each other. -->
+  <section class="section" id="matchesSection">
+    <div class="section-header">
+      <div><h2 id="matchesHeading">Upcoming American Football games</h2><p id="matchesSubtext">Every fixture, always real.</p></div>
+    </div>
+    <div class="card-grid" id="matchesGrid">
+      <div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading matches…</div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col"><h4>Browse</h4><ul><li><a href="/concerts/">Concerts</a></li><li><a href="/football/">Football</a></li><li><a href="/cities/">All cities</a></li><li><a href="/venues/">Venues</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/impressum.html">Impressum</a></li><li><a href="/privacy.html">Datenschutz &amp; Cookies</a></li></ul></div>
+  </div>
+</footer>
+
+<div class="category-rail" aria-label="Browse by category">
+  <a href="/concerts/" class="category-rail-item" aria-label="Concerts">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span class="category-rail-tooltip">Concerts</span>
+  </a>
+  <a href="/football/" class="category-rail-item" aria-label="Football / Soccer">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.4h-4.8l-1.4-4.4z"/><path d="M12 7.5V4M15.8 10.3l3-2M8.2 10.3l-3-2M9.6 14.7l-1.5 3.4M14.4 14.7l1.5 3.4"/></svg>
+    <span class="category-rail-tooltip">Football / Soccer</span>
+  </a>
+  <div class="category-rail-divider"></div>
+  <a href="/baseball/" class="category-rail-item" aria-label="Baseball">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5 8c2.5 1.5 2.5 6.5 0 8M19 8c-2.5 1.5-2.5 6.5 0 8"/></svg>
+    <span class="category-rail-tooltip">Baseball</span>
+  </a>
+  <a href="/basketball/" class="category-rail-item" aria-label="Basketball">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.5 5.5c2.5 2.5 2.5 10.5 0 13M18.5 5.5c-2.5 2.5-2.5 10.5 0 13"/></svg>
+    <span class="category-rail-tooltip">Basketball</span>
+  </a>
+  <a href="/hockey/" class="category-rail-item" aria-label="Hockey">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="6" rx="3"/><path d="M14 4l6 6M17 4h3v3"/></svg>
+    <span class="category-rail-tooltip">Hockey</span>
+  </a>
+  <a href="/american-football/" class="category-rail-item" aria-label="American Football">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12c0-3 3-7.5 7.5-7.5S19.5 9 19.5 12 16.5 19.5 12 19.5 4.5 15 4.5 12Z"/><path d="M7.5 12h9M10 9.5v1M10 13.5v1M14 9.5v1M14 13.5v1"/></svg>
+    <span class="category-rail-tooltip">American Football</span>
+  </a>
+  <div class="category-rail-divider"></div>
+  <a href="/" class="category-rail-item" aria-label="Browse all">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+    <span class="category-rail-tooltip">Browse all</span>
+  </a>
+</div>
+
+<script>
+const SPORT_SLUG = 'american-football';
+
+function escapeAttr(str){
+  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatMatchDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' · ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ---- Matches grid (Featured + Upcoming — same real, always-current
+// list, see the section comment above) ----
+function matchCardHtml(m){
+  const genreLine = m.league_name ? `American Football · ${escapeAttr(m.league_name)}` : 'American Football';
+  const venueLine = [m.venue_name, m.city].filter(Boolean).map(escapeAttr).join(', ');
+  return `<a href="/matches/${escapeAttr(m.slug)}.html" class="card event-card" style="text-decoration:none;">
+    <div class="genre">${genreLine}</div>
+    <h3>${escapeAttr(m.home_team_name)} vs ${escapeAttr(m.away_team_name)}</h3>
+    <div class="meta">${venueLine}</div>
+    <div class="date">${escapeAttr(formatMatchDate(m.start_datetime))}</div>
+  </a>`;
+}
+
+async function loadMatches(searchQuery){
+  const grid = document.getElementById('matchesGrid');
+  const heading = document.getElementById('matchesHeading');
+  const subtext = document.getElementById('matchesSubtext');
+  try{
+    const url = searchQuery
+      ? `/api/sports/${SPORT_SLUG}/search?q=${encodeURIComponent(searchQuery)}`
+      : `/api/sports/${SPORT_SLUG}/matches`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Sport matches API error');
+    const data = await res.json();
+
+    if(searchQuery){
+      heading.textContent = `American Football games matching "${searchQuery}"`;
+      subtext.textContent = `${data.count} result${data.count === 1 ? '' : 's'}.`;
+    } else {
+      heading.textContent = 'Upcoming American Football games';
+      subtext.textContent = 'Every fixture, always real.';
+    }
+
+    if(!data.results || data.results.length === 0){
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No matching American Football fixtures right now.</div>';
+      return;
+    }
+    grid.innerHTML = data.results.map(matchCardHtml).join('');
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load American Football fixtures right now.</div>';
+  }
+}
+
+function runSportSearch(evt){
+  evt.preventDefault();
+  const q = document.getElementById('sportSearchInput').value.trim();
+  loadMatches(q);
+  return false;
+}
+
+// A team card from Suggested links here with ?team=<slug> — pre-fills
+// the search box with that team's name (fetched from the trending list
+// already in hand, no extra request needed) and re-runs the same
+// american-football-only search rather than opening a separate, not-yet-built
+// team page.
+function applyTeamFilterFromUrl(trending){
+  const params = new URLSearchParams(window.location.search);
+  const teamSlug = params.get('team');
+  if(!teamSlug) return;
+  const team = trending.find(t => t.slug === teamSlug);
+  if(!team) return;
+  document.getElementById('sportSearchInput').value = team.name;
+  loadMatches(team.name);
+}
+
+// ---- Suggested (trending teams) ----
+function teamCardHtml(team){
+  const iconHtml = team.imageUrl
+    ? `<img src="${escapeAttr(team.imageUrl)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+    : '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12c0-3 3-7.5 7.5-7.5S19.5 9 19.5 12 16.5 19.5 12 19.5 4.5 15 4.5 12Z"/><path d="M7.5 12h9M10 9.5v1M10 13.5v1M14 9.5v1M14 13.5v1"/></svg>';
+  return `<a href="/american-football/?team=${encodeURIComponent(team.slug)}" class="suggested-card">
+    <div class="suggested-card-icon">${iconHtml}</div>
+    <div class="suggested-card-body">
+      <div class="suggested-card-name">${escapeAttr(team.name)}</div>
+      <div class="suggested-card-tags"><span class="suggested-tag">${team.count} upcoming</span></div>
+    </div>
+  </a>`;
+}
+
+async function loadSuggested(){
+  try{
+    const res = await fetch(`/api/sports/${SPORT_SLUG}/suggested`);
+    if(!res.ok) throw new Error('Sport suggested API error');
+    const data = await res.json();
+    if(!data.trending || data.trending.length === 0) return;
+    document.getElementById('suggestedScroll').innerHTML = data.trending.map(teamCardHtml).join('');
+    document.getElementById('suggestedSection').style.display = '';
+    updateSuggestedArrowState();
+    applyTeamFilterFromUrl(data.trending);
+  } catch(err){
+    console.error(err);
+  }
+}
+
+function scrollSuggested(direction){
+  const el = document.getElementById('suggestedScroll');
+  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
+}
+function updateSuggestedArrowState(){
+  const el = document.getElementById('suggestedScroll');
+  const prevBtn = document.getElementById('suggestedPrev');
+  const nextBtn = document.getElementById('suggestedNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+document.getElementById('suggestedScroll').addEventListener('scroll', updateSuggestedArrowState);
+window.addEventListener('resize', updateSuggestedArrowState);
+
+loadMatches();
+loadSuggested();
+</script>
+</body>
+</html>
