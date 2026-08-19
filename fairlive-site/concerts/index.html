@@ -1055,8 +1055,12 @@ function suggestedCardHtml(item){
   // the parent's content on the element's error event), and to the
   // icon outright when there's no real image at all (most venues, and
   // any act Ticketmaster just doesn't have art for).
+  // Descriptive alt text — was previously alt="" (empty), which is
+  // invisible to both screen readers and image-search relevance;
+  // safeName is already HTML-escaped above, safe to reuse directly here.
+  const altText = item.type === 'artist' ? `${safeName} performing live` : `${safeName} concert venue`;
   const iconHtml = item.imageUrl
-    ? `<img src="${item.imageUrl}" alt="" loading="lazy" class="suggested-card-img" data-icon-type="${item.type}" style="width:100%;height:100%;object-fit:cover;">`
+    ? `<img src="${item.imageUrl}" alt="${altText}" loading="lazy" class="suggested-card-img" data-icon-type="${item.type}" style="width:100%;height:100%;object-fit:cover;">`
     : icon;
   return `<a href="${href}" class="suggested-card">
     <div class="suggested-card-icon">${iconHtml}</div>

@@ -17,3 +17,5 @@ Allow: /guides/
 
 Sitemap: https://livefair24.com/sitemap.xml
 Sitemap: https://livefair24.com/sitemap-events.xml
+Sitemap: https://livefair24.com/sitemap-artists.xml
+Sitemap: https://livefair24.com/sitemap-venues.xml
