@@ -10,6 +10,14 @@
     <priority>1.0</priority>
   </url>
 
+  <!-- Concerts hub — real, live page, was missing entirely before. -->
+  <url>
+    <loc>https://livefair24.com/concerts/</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+
   <!-- Event pages — highest-value SEO pages -->
   <url>
     <loc>https://livefair24.com/events/nova-wren-berlin-2026-08-16.html</loc>
@@ -112,6 +120,18 @@
     across US/DE/GB, so it can never go stale the way a hand-maintained
     list of individual events would the moment one sells out. Both
     sitemaps are declared in robots.txt.
+
+    Deliberately NOT listed: /matches/fc-bergkristall-vs-rheingold-united-
+    2026-09-12.html. It's fictional demo data for the sports feature
+    (currently rolled back to "coming soon" stub pages) and is currently
+    set to index,follow, and still linked from several live pages (the
+    homepage's "Try:" pill, its own Upcoming matches section, concerts.html's
+    pill, and /sports/) — all leftover references from before that rollback.
+    Adding it here would make Google more likely to index fabricated
+    content as if it were real, which is the opposite of what this file
+    is for. Flagged for a real decision (noindex the page, or clean up
+    the leftover links) rather than fixed here, since it touches multiple
+    pages beyond this file.
   -->
 
 </urlset>
