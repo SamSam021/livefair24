@@ -189,11 +189,22 @@
   <section class="section" id="concerts">
     <div class="section-header">
       <div><h2>Upcoming concerts</h2><p>Live ticket prices updated every 2 minutes.</p></div>
-      <a href="/cities/">See all cities →</a>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="/cities/">See all cities →</a>
+        <div class="suggested-arrows">
+          <button type="button" class="suggested-arrow-btn" id="eventCardPrev" aria-label="Scroll left" onclick="scrollEventCards(-1)">‹</button>
+          <button type="button" class="suggested-arrow-btn" id="eventCardNext" aria-label="Scroll right" onclick="scrollEventCards(1)">›</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Event cards — clickable, first one pre-selected -->
-    <div class="card-grid" id="eventCardGrid">
+    <!-- Event cards — clickable, first one pre-selected. Container is
+         now a horizontal scroll row instead of a grid (CSS-only change,
+         see .card-grid-scroll) — the "first card pre-selected" behavior
+         itself lives entirely in the JS below (initHomepageEvents ->
+         selectEvent(0), and the .active class each card already has),
+         completely untouched by this. -->
+    <div class="card-grid-scroll" id="eventCardGrid">
 
       <div class="card event-card active" data-id="0" style="cursor:pointer;" onclick="selectEvent(0,'ticket')">
         <div class="genre">Singer-Songwriter</div>
@@ -1110,6 +1121,29 @@ window.addEventListener('load', initHomepageEvents);
 // dependency on the main event cards, so it loads in parallel rather
 // than waiting its turn.
 window.addEventListener('load', loadSuggested);
+
+// Arrow-based scrolling for the "Upcoming concerts" carousel — same
+// pattern as scrollSuggested/updateSuggestedArrowState above, just a
+// different container. Purely a scroll/UI concern: doesn't read or
+// write EVENTS, doesn't call selectEvent, and doesn't touch how cards
+// get their content or their "active" (pre-selected) state — that's
+// all still initHomepageEvents/loadTrendingConcerts/selectEvent(0),
+// completely unchanged.
+function scrollEventCards(direction){
+  const el = document.getElementById('eventCardGrid');
+  el.scrollBy({ left: direction * 632, behavior: 'smooth' });
+}
+function updateEventCardArrowState(){
+  const el = document.getElementById('eventCardGrid');
+  const prevBtn = document.getElementById('eventCardPrev');
+  const nextBtn = document.getElementById('eventCardNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+document.getElementById('eventCardGrid').addEventListener('scroll', updateEventCardArrowState);
+window.addEventListener('resize', updateEventCardArrowState);
+updateEventCardArrowState();
 </script>
 <script src="/js/cookie-banner.js" defer></script>
 <script src="/js/search-autocomplete.js" defer></script>
