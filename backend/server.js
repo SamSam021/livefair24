@@ -55,6 +55,18 @@ function sendJSON(res, statusCode, obj, extraHeaders) {
   res.writeHead(statusCode, Object.assign({
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
+    // Every JSON response from this server is dynamic and often
+    // IP/geolocation-personalized (e.g. /api/cities, /api/trending) —
+    // confirmed real bug: with no cache header at all, a browser (or any
+    // CDN in front of App Runner) was free to reuse an earlier response
+    // indefinitely, so one visitor's homepage kept showing US cities
+    // from a stale cached /api/cities response while a fresh request to
+    // the same endpoint (via a different page, no cache entry yet)
+    // correctly showed Germany. The routes that genuinely benefit from
+    // caching (trending.js, concertCategories.js) already implement
+    // their own explicit server-side cache with a real TTL — this only
+    // stops uncontrolled, invisible caching one layer further out.
+    'Cache-Control': 'no-store',
   }, extraHeaders || {}));
   res.end(body);
 }
