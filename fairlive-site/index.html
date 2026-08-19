@@ -988,7 +988,7 @@ const SUGGESTED_ARTIST_ICON_SVG = '<svg width="20" height="20" viewBox="0 0 24 2
 const SUGGESTED_VENUE_ICON_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
 
 function suggestedCardHtml(item){
-  const href = item.type === 'artist' ? `/artists/${encodeURIComponent(item.slug)}/` : `/venues/${encodeURIComponent(item.slug)}/`;
+  const href = item.type === 'artist' ? `/artists/${encodeURIComponent(item.id)}/${encodeURIComponent(item.slug)}/` : `/venues/${encodeURIComponent(item.slug)}/`;
   const icon = item.type === 'artist' ? SUGGESTED_ARTIST_ICON_SVG : SUGGESTED_VENUE_ICON_SVG;
   const tagLabels = { recent: 'Recent', near: 'Near you', trending: 'Trending' };
   const tags = [`<span class="suggested-tag${item.tag === 'recent' ? ' recent' : ''}">${tagLabels[item.tag] || 'Near you'}</span>`];
@@ -1021,7 +1021,7 @@ async function loadSuggested(){
   // artistPage.js writes the artist photo. Either way this is just
   // whatever that page actually wrote, so no per-type branching is
   // needed here.
-  const recent = getRecentlyViewed().slice(0, 4).map(e => ({ type: e.type, slug: e.slug, name: e.name, tag: 'recent', count: null, imageUrl: e.imageUrl || null }));
+  const recent = getRecentlyViewed().slice(0, 4).map(e => ({ type: e.type, id: e.id || null, slug: e.slug, name: e.name, tag: 'recent', count: null, imageUrl: e.imageUrl || null }));
   const seen = new Set(recent.map(r => r.type + ':' + r.slug));
   let nearYou = [];
   try {
@@ -1034,7 +1034,7 @@ async function loadSuggested(){
       // literal distance the same way. Matches the pattern actually
       // observed on TickPick's own homepage: sports cards say "Local
       // Team," music cards say "Trending."
-      const artists = (data.artists||[]).map(a => ({ type:'artist', slug:a.slug, name:a.name, tag: a.category === 'Sports' ? 'near' : 'trending', count:a.count, imageUrl:a.imageUrl }));
+      const artists = (data.artists||[]).map(a => ({ type:'artist', id:a.id, slug:a.slug, name:a.name, tag: a.category === 'Sports' ? 'near' : 'trending', count:a.count, imageUrl:a.imageUrl }));
       const venues = (data.venues||[]).map(v => ({ type:'venue', slug:v.slug, name:v.name, tag:'near', count:v.count, imageUrl:v.imageUrl }));
       nearYou = artists.concat(venues).filter(item => !seen.has(item.type+':'+item.slug));
     }
