@@ -51,6 +51,54 @@ img{max-width:100%;display:block;}
   .nav-links a:last-child{border-bottom:none;}
 }
 
+/* The floating category rail (music-note/sports icon sidebar) and its
+   Concerts flyout are hidden entirely on mobile — all of their
+   functionality (Concerts genre browsing with real artists, Sports)
+   moves into the traditional hamburger menu instead (see
+   .nav-links-concerts-expand below), which is far more reachable and
+   discoverable on a small screen than a floating overlay competing
+   with page content for space. Desktop is completely unaffected —
+   this rule only fires under the same breakpoint the rest of the
+   site's mobile-only rules already use. */
+@media(max-width:768px){
+  .category-rail{ display:none; }
+  .concert-category-menu{ display:none !important; }
+}
+
+/* Expandable "Concerts" row inside the mobile hamburger menu — replaces
+   the rail's mic-icon flyout with an accordion that fits a traditional
+   list-style menu. Populated from the exact same /api/concerts/categories
+   data the desktop flyout uses (see the shared script below), so mobile
+   and desktop always show the same real, live artists — nothing here is
+   a separate or simplified data source. */
+.nav-links-concerts-btn{
+  display:flex; align-items:center; justify-content:space-between; width:100%;
+  background:none; border:none; padding:14px 2px; border-bottom:1px solid var(--line);
+  font-size:15.5px; font-weight:600; color:var(--ink); font-family:inherit; text-align:left; cursor:pointer;
+}
+.nav-links-concerts-btn .nlc-chev{ transition:transform .15s; font-size:13px; color:var(--ink-faint); flex-shrink:0; }
+.nav-links-concerts-btn.open .nlc-chev{ transform:rotate(90deg); }
+.nav-links-concerts-submenu{ display:none; padding:2px 0 10px 10px; border-bottom:1px solid var(--line); }
+.nav-links-concerts-submenu.open{ display:block; }
+.nlc-group{ margin-bottom:12px; }
+.nlc-group:last-child{ margin-bottom:0; }
+.nlc-group-label{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-family:'JetBrains Mono',monospace; margin-bottom:4px; }
+.nlc-group a{ display:block; padding:7px 2px; font-size:14px; font-weight:500; color:var(--ink-dim); border-bottom:none; }
+.nlc-loading, .nlc-empty{ font-size:13px; color:var(--ink-faint); padding:8px 2px; }
+.nlc-seeall{ color:var(--blue) !important; font-weight:700 !important; }
+
+/* index.html and concerts/index.html never showed a nav-links row on
+   desktop before (only the logo + Event/Hotel search-mode toggle) —
+   adding the traditional menu to them for mobile shouldn't change
+   their desktop nav at all. The base .nav-links rule above is visible
+   by default above 768px, so this explicitly keeps it hidden there for
+   just these two pages; the @media block above already handles making
+   it open correctly on mobile via the burger, unaffected by this. */
+.nav-links-mobile-only{ display:none; }
+@media(max-width:768px){
+  .nav-links-mobile-only.open{ display:flex; }
+}
+
 /* Responsive tables — scroll horizontally instead of clipping/squishing */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .table-scroll table{min-width:640px;}

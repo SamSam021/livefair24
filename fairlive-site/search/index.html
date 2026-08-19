@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=20260819h">
+<link rel="stylesheet" href="../css/style.css?v=20260819i">
 <style>
 .search-page-hero{ padding:36px 0 28px; }
 .search-box-row{ display:flex; gap:10px; max-width:640px; margin-top:18px; }
@@ -35,6 +35,12 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-links" id="navLinks">
       <a href="/cities/">Browse cities</a>
+      <div class="nav-links-concerts-expand">
+        <button type="button" class="nav-links-concerts-btn" id="navConcertsBtn" aria-expanded="false" aria-controls="navConcertsSubmenu">Concerts <span class="nlc-chev">›</span></button>
+        <div class="nav-links-concerts-submenu" id="navConcertsSubmenu">
+          <div class="nlc-loading">Loading…</div>
+        </div>
+      </div>
       <a href="/artists/">Artists</a>
       <a href="/venues/">Venues</a>
       <a href="/guides/how-it-works.html">How it works</a>
@@ -298,6 +304,14 @@ window.addEventListener('load', function(){
   var menu = document.getElementById('ccmMenu');
   var catsEl = document.getElementById('ccmCats');
   var artistsEl = document.getElementById('ccmArtists');
+  // Mobile hamburger-menu accordion — same real data, different
+  // rendering shape (a flat expandable list instead of a two-pane
+  // flyout), since the rail + flyout above are CSS-hidden on mobile
+  // (see .category-rail / .concert-category-menu mobile rules) and
+  // this replaces them there. Guarded independently below so a page
+  // missing one piece doesn't break the other.
+  var mobileBtn = document.getElementById('navConcertsBtn');
+  var mobileSubmenu = document.getElementById('navConcertsSubmenu');
   if(!trigger || !menu) return;
 
   var data = null;
@@ -368,10 +382,12 @@ window.addEventListener('load', function(){
         activeKey = (firstWithArtists || data.buckets[0]).key;
         renderCats();
         renderArtists();
+        renderMobileConcertsMenu();
       } catch(err){
         console.error(err);
         catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
         artistsEl.innerHTML = '';
+        if(mobileSubmenu) mobileSubmenu.innerHTML = '<div class="nlc-empty">Could not load categories right now.</div>';
       }
     })();
     return loadPromise;
@@ -410,6 +426,36 @@ window.addEventListener('load', function(){
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape') closeMenu();
   });
+
+  // Renders the real categories/artists into the mobile hamburger
+  // menu's expandable "Concerts" accordion — grouped by genre, same
+  // buckets and same real Ticketmaster artists as the desktop flyout,
+  // just laid out as a flat list instead of a two-pane popup (fits a
+  // traditional dropdown menu, which is the whole point of this).
+  function renderMobileConcertsMenu(){
+    if(!mobileSubmenu || !data) return;
+    mobileSubmenu.innerHTML = data.buckets.map(function(b){
+      if(b.artists.length === 0) return '';
+      var links = b.artists.map(function(a){
+        var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
+        return '<a href="' + href + '">' + escapeHtml(a.name) + '</a>';
+      }).join('');
+      var seeAll = b.totalCount > b.artists.length
+        ? '<a href="/concerts/" class="nlc-seeall">See all ' + escapeHtml(b.label) + ' →</a>' : '';
+      return '<div class="nlc-group"><div class="nlc-group-label">' + escapeHtml(b.label) + '</div>' + links + seeAll + '</div>';
+    }).join('') || '<div class="nlc-empty">No current tour dates — check back soon.</div>';
+    mobileSubmenu.innerHTML += '<a href="/concerts/" class="nlc-seeall" style="display:block;margin-top:4px;">Browse all concerts →</a>';
+  }
+
+  if(mobileBtn && mobileSubmenu){
+    mobileBtn.addEventListener('click', function(e){
+      e.stopPropagation(); // same reasoning as the desktop category buttons above — this can re-render mobileSubmenu's own contents on later loads
+      var isOpen = mobileBtn.classList.toggle('open');
+      mobileSubmenu.classList.toggle('open', isOpen);
+      mobileBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      if(isOpen && !data) loadData(); // prefetch below usually already has this ready; only a real fetch if it somehow hasn't landed yet
+    });
+  }
 
   // Eager background prefetch — fires once, shortly after this script
   // runs, without waiting for a click. The server-side cache
