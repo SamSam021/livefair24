@@ -37,9 +37,58 @@
     <h1>Basketball tickets.<br>Nothing else.</h1>
     <p>Every game, team, and result on this page is basketball — this page never shows concerts, other sports, or hotels.</p>
 
-    <form class="search-form" role="search" aria-label="Search basketball" onsubmit="return runSportSearch(event)" style="max-width:560px;margin:0 auto;">
-      <input type="text" id="sportSearchInput" class="search-input" placeholder="Team, venue, or city — e.g. New York Voyage, Chicago" autocomplete="off" aria-label="Search basketball games">
-      <button type="submit" class="search-btn">Search →</button>
+    <form class="search-form search-form-segmented" role="search" aria-label="Search basketball" onsubmit="return runSportSearch(event)" style="max-width:620px;margin:0 auto;">
+      <div class="search-segment search-segment-location">
+        <label class="search-segment-label" for="searchLocation">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          Location
+        </label>
+        <input type="text" id="searchLocation" class="search-segment-input" placeholder="City or Zip Code" autocomplete="off">
+      </div>
+      <div class="search-segment search-segment-dates">
+        <button type="button" id="searchDatesBtn" class="search-dates-trigger" aria-expanded="false" aria-controls="searchDatesPanel">
+          <span class="search-segment-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+            Dates
+          </span>
+          <span id="searchDatesLabel" class="search-dates-current">All Dates</span>
+        </button>
+        <input type="hidden" name="dateFrom" id="searchDateFrom">
+        <input type="hidden" name="dateTo" id="searchDateTo">
+
+        <div id="searchDatesPanel" class="search-dates-panel">
+          <div class="cal-inputs-row">
+            <div>
+              <label class="cal-input-label">Start date</label>
+              <input type="text" id="searchStartDateText" class="cal-text-input" placeholder="DD Mon YYYY" readonly>
+            </div>
+            <div>
+              <label class="cal-input-label">End date</label>
+              <input type="text" id="searchEndDateText" class="cal-text-input" placeholder="DD Mon YYYY" readonly>
+            </div>
+          </div>
+          <div class="cal-nav-row">
+            <button type="button" id="searchCalPrev" class="cal-nav-btn" aria-label="Previous month">←</button>
+            <button type="button" id="searchCalNext" class="cal-nav-btn" aria-label="Next month">→</button>
+          </div>
+          <div id="searchCalendarMonths" class="cal-months"></div>
+          <div class="cal-actions-row">
+            <button type="button" id="searchCalReset" class="cal-reset-btn">Reset</button>
+            <div class="cal-actions-right">
+              <button type="button" id="searchCalCancel" class="cal-cancel-btn">Cancel</button>
+              <button type="button" id="searchCalApply" class="cal-apply-btn">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="search-segment search-segment-query">
+        <label class="search-segment-label" for="sportSearchInput">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+          Search
+        </label>
+        <input class="search-input" id="sportSearchInput" type="search" placeholder="Team, venue, or city — e.g. New York Voyage, Chicago" autocomplete="off" aria-label="Search basketball games">
+      </div>
+      <button class="search-btn" type="submit">Search →</button>
     </form>
   </div>
 </header>
@@ -118,6 +167,15 @@
   </a>
 </div>
 
+<script src="/js/search-date-range.js" defer></script>
+<script src="/js/search-location.js" defer></script>
+<!-- search-autocomplete.js deliberately NOT included — it calls
+     /api/search, which is Ticketmaster/concerts-scoped. Reusing it here
+     verbatim would put concert suggestions in this page's query-field
+     dropdown, which is exactly the isolation leak this whole page
+     exists to avoid. Location (city) autocomplete and the Dates picker
+     are both self-contained, make no API calls, and are safe to reuse
+     as-is. -->
 <script>
 const SPORT_SLUG = 'basketball';
 
@@ -144,20 +202,29 @@ function matchCardHtml(m){
   </a>`;
 }
 
-async function loadMatches(searchQuery){
+async function loadMatches(filters){
   const grid = document.getElementById('matchesGrid');
   const heading = document.getElementById('matchesHeading');
   const subtext = document.getElementById('matchesSubtext');
+  filters = filters || {};
+  const hasFilters = Boolean(filters.q || filters.city || filters.dateFrom || filters.dateTo);
   try{
-    const url = searchQuery
-      ? `/api/sports/${SPORT_SLUG}/search?q=${encodeURIComponent(searchQuery)}`
-      : `/api/sports/${SPORT_SLUG}/matches`;
+    let url = `/api/sports/${SPORT_SLUG}/matches`;
+    if(hasFilters){
+      const params = new URLSearchParams();
+      if(filters.q) params.set('q', filters.q);
+      if(filters.city) params.set('city', filters.city);
+      if(filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if(filters.dateTo) params.set('dateTo', filters.dateTo);
+      url = `/api/sports/${SPORT_SLUG}/search?${params.toString()}`;
+    }
     const res = await fetch(url);
     if(!res.ok) throw new Error('Sport matches API error');
     const data = await res.json();
 
-    if(searchQuery){
-      heading.textContent = `Basketball games matching "${searchQuery}"`;
+    if(hasFilters){
+      const parts = [filters.q, filters.city].filter(Boolean);
+      heading.textContent = parts.length ? `Basketball games matching "${parts.join(', ')}"` : 'Basketball games in that date range';
       subtext.textContent = `${data.count} result${data.count === 1 ? '' : 's'}.`;
     } else {
       heading.textContent = 'Upcoming basketball games';
@@ -178,7 +245,10 @@ async function loadMatches(searchQuery){
 function runSportSearch(evt){
   evt.preventDefault();
   const q = document.getElementById('sportSearchInput').value.trim();
-  loadMatches(q);
+  const city = document.getElementById('searchLocation').value.trim();
+  const dateFrom = document.getElementById('searchDateFrom').value;
+  const dateTo = document.getElementById('searchDateTo').value;
+  loadMatches({ q, city, dateFrom, dateTo });
   return false;
 }
 
@@ -194,7 +264,7 @@ function applyTeamFilterFromUrl(trending){
   const team = trending.find(t => t.slug === teamSlug);
   if(!team) return;
   document.getElementById('sportSearchInput').value = team.name;
-  loadMatches(team.name);
+  loadMatches({ q: team.name });
 }
 
 // ---- Suggested (trending teams) ----
