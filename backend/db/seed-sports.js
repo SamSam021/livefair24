@@ -13,7 +13,7 @@
 // Idempotent — ON CONFLICT (slug) DO UPDATE throughout, safe to re-run.
 
 const { query, isConfigured } = require('./pg-client');
-const { SPORT, LEAGUE, SEASON, VENUES, TEAMS, FIXTURES, fixtureSlug, fixtureName } = require('./seed-data/sports');
+const { SPORTS_DATA, fixtureSlug, fixtureName } = require('./seed-data/sports');
 
 async function getCountryId(code) {
   const result = await query('SELECT id FROM countries WHERE code = $1', [code]);
@@ -23,32 +23,32 @@ async function getCountryId(code) {
   return result.rows[0].id;
 }
 
-async function upsertSport() {
+async function upsertSport(sport) {
   const result = await query(
     `INSERT INTO sports (name, slug, icon) VALUES ($1, $2, $3)
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, icon = EXCLUDED.icon
      RETURNING id`,
-    [SPORT.name, SPORT.slug, SPORT.icon]
+    [sport.name, sport.slug, sport.icon]
   );
   return result.rows[0].id;
 }
 
-async function upsertLeague(sportId, countryId) {
+async function upsertLeague(league, sportId, countryId) {
   const result = await query(
     `INSERT INTO leagues (sport_id, name, slug, country_id) VALUES ($1, $2, $3, $4)
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`,
-    [sportId, LEAGUE.name, LEAGUE.slug, countryId]
+    [sportId, league.name, league.slug, countryId]
   );
   return result.rows[0].id;
 }
 
-async function upsertSeason(leagueId) {
-  const existing = await query('SELECT id FROM seasons WHERE league_id = $1 AND name = $2', [leagueId, SEASON.name]);
+async function upsertSeason(season, leagueId) {
+  const existing = await query('SELECT id FROM seasons WHERE league_id = $1 AND name = $2', [leagueId, season.name]);
   if (existing.rows.length > 0) return existing.rows[0].id;
   const inserted = await query(
     'INSERT INTO seasons (league_id, name) VALUES ($1, $2) RETURNING id',
-    [leagueId, SEASON.name]
+    [leagueId, season.name]
   );
   return inserted.rows[0].id;
 }
@@ -103,18 +103,11 @@ async function upsertLiveEventForMatch(f, matchId, venueId, teamNameBySlug) {
   );
 }
 
-async function seed() {
-  if (!isConfigured()) {
-    console.error('PostgreSQL is not configured. Set PG_CONNECTION_STRING or PG_HOST/etc, then re-run.');
-    process.exit(1);
-  }
-
-  console.log('Seeding demo sports data...');
-
+async function seedOneSport({ SPORT, LEAGUE, SEASON, VENUES, TEAMS, FIXTURES }) {
   const countryId = await getCountryId(LEAGUE.countryCode);
-  const sportId = await upsertSport();
-  const leagueId = await upsertLeague(sportId, countryId);
-  const seasonId = await upsertSeason(leagueId);
+  const sportId = await upsertSport(SPORT);
+  const leagueId = await upsertLeague(LEAGUE, sportId, countryId);
+  const seasonId = await upsertSeason(SEASON, leagueId);
 
   const venueIdBySlug = {};
   for (const v of VENUES) venueIdBySlug[v.slug] = await upsertVenue(v, await getCountryId(v.countryCode));
@@ -134,7 +127,25 @@ async function seed() {
     await upsertLiveEventForMatch(f, matchId, venueIdByTeamSlug[f.homeSlug], teamNameBySlug);
   }
 
-  console.log(`✓ Seeded: 1 sport, 1 league, 1 season, ${VENUES.length} venues, ${TEAMS.length} teams, ${FIXTURES.length} matches (+ ${FIXTURES.length} live_events rows).`);
+  console.log(`  ✓ ${SPORT.name}: 1 league, 1 season, ${VENUES.length} venues, ${TEAMS.length} teams, ${FIXTURES.length} matches.`);
+}
+
+async function seed() {
+  if (!isConfigured()) {
+    console.error('PostgreSQL is not configured. Set PG_CONNECTION_STRING or PG_HOST/etc, then re-run.');
+    process.exit(1);
+  }
+
+  console.log('Seeding demo sports data...');
+
+  for (const sportData of SPORTS_DATA) {
+    await seedOneSport(sportData);
+  }
+
+  const totalVenues = SPORTS_DATA.reduce((n, s) => n + s.VENUES.length, 0);
+  const totalTeams = SPORTS_DATA.reduce((n, s) => n + s.TEAMS.length, 0);
+  const totalFixtures = SPORTS_DATA.reduce((n, s) => n + s.FIXTURES.length, 0);
+  console.log(`✓ Seeded ${SPORTS_DATA.length} sports total: ${totalVenues} venues, ${totalTeams} teams, ${totalFixtures} matches (+ ${totalFixtures} live_events rows).`);
   process.exit(0);
 }
 

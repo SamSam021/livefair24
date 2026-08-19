@@ -225,7 +225,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/suggested' && req.method === 'GET') {
       try {
         const clientIp = getClientIp(req);
-        return sendJSON(res, 200, await suggestedRoutes.getSuggested(clientIp, registry.getMergedEnv(), query.country));
+        return sendJSON(res, 200, await suggestedRoutes.getSuggested(clientIp, registry.getMergedEnv(), query.country, query.category));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
@@ -318,6 +318,36 @@ const server = http.createServer(async (req, res) => {
       const slug = decodeURIComponent(pathname.split('/')[4]);
       try {
         return sendJSON(res, 200, await sportsRoutes.getLeagueFixtures(slug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    // Sport category pages (/football/, etc.) — every one of these is
+    // scoped by :sportSlug straight through to the SQL query itself
+    // (db/queries/sports.js), so a football page can never end up
+    // showing baseball/basketball data even once those exist, let alone
+    // concerts. See routes/sports.js's comment above these three
+    // functions for the full reasoning.
+    if (pathname.match(/^\/api\/sports\/[^/]+\/matches$/) && req.method === 'GET') {
+      const sportSlug = decodeURIComponent(pathname.split('/')[3]);
+      try {
+        return sendJSON(res, 200, await sportsRoutes.getSportMatches(sportSlug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/sports\/[^/]+\/suggested$/) && req.method === 'GET') {
+      const sportSlug = decodeURIComponent(pathname.split('/')[3]);
+      try {
+        return sendJSON(res, 200, await sportsRoutes.getSportSuggested(sportSlug));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname.match(/^\/api\/sports\/[^/]+\/search$/) && req.method === 'GET') {
+      const sportSlug = decodeURIComponent(pathname.split('/')[3]);
+      try {
+        return sendJSON(res, 200, await sportsRoutes.searchSportMatches(sportSlug, query.q));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }

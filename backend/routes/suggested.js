@@ -52,7 +52,7 @@ function slugify(str) {
     .slice(0, 80);
 }
 
-async function getSuggested(clientIp, env, overrideCountry) {
+async function getSuggested(clientIp, env, overrideCountry, category) {
   const detectedCountry = await ipapi.getCountryCodeForIp(clientIp);
   const countryCode = overrideCountry || detectedCountry || FALLBACK_COUNTRY;
 
@@ -111,7 +111,13 @@ async function getSuggested(clientIp, env, overrideCountry) {
       // exactly this with "Explorado Abenteuermuseum": it showed up as
       // a suggested venue, then 404'd when visited.
       const venueGenre = ev.genre || 'Other';
-      if (venueGenre === 'Sports' || venueGenre === 'Music') {
+      // category === 'music' restricts to Music venues only — used by
+      // /concerts/, which must never surface a sports venue. Without
+      // this, /concerts/'s Suggested carousel could show a football
+      // stadium alongside real concert venues, the exact kind of
+      // cross-category leak this whole category param exists to stop.
+      const venueGenreOk = category === 'music' ? venueGenre === 'Music' : (venueGenre === 'Sports' || venueGenre === 'Music');
+      if (venueGenreOk) {
         if (!venueGroups.has(ev.venue)) venueGroups.set(ev.venue, { name: ev.venue, count: 0, city: ev.city || null, state: ev.state || null });
         venueGroups.get(ev.venue).count += 1;
       }
@@ -150,8 +156,16 @@ async function getSuggested(clientIp, env, overrideCountry) {
   // rather than leaving empty slots or inventing placeholder cards —
   // matches how every other "no real data" case on this site is
   // handled today.
+  //
+  // category === 'music' overrides all of that and returns music acts
+  // only, even if sportsActs has real results — this is what makes
+  // /concerts/'s Suggested carousel actually concerts-only rather than
+  // just "usually mostly music". Every other caller (the general
+  // homepage) keeps the mixed behavior unchanged.
   let artists;
-  if (sportsActs.length === 0) {
+  if (category === 'music') {
+    artists = musicActs.slice(0, MAX_SUGGESTIONS_PER_TYPE);
+  } else if (sportsActs.length === 0) {
     artists = musicActs.slice(0, MAX_SUGGESTIONS_PER_TYPE);
   } else if (musicActs.length === 0) {
     artists = sportsActs.slice(0, MAX_SUGGESTIONS_PER_TYPE);

@@ -13,6 +13,14 @@ const COUNTRIES = [
   { name: 'United Kingdom', code: 'GB' },
   { name: 'Italy', code: 'IT' },
   { name: 'France', code: 'FR' },
+  // Added for db/seed-data/sports.js's basketball, baseball, hockey, and
+  // American football data — those are all US-set (matching where each
+  // sport's real-world audience is centered), and seed-sports.js's
+  // getCountryId() requires every countryCode it references to already
+  // exist in this shared table. Without this, seeding any of those four
+  // sports would fail outright with "Country code 'US' not found",
+  // regardless of seed order.
+  { name: 'United States', code: 'US' },
 ];
 
 const VENUES = [
