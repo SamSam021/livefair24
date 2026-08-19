@@ -377,25 +377,35 @@ const server = http.createServer(async (req, res) => {
         return res.end('Server error');
       }
     }
-    // Real, indexable artist and venue hub pages — /artists/{slug}/ and
-    // /venues/{slug}/. The [^/.]+ (no dots allowed) is deliberate: it
-    // excludes existing static files like /artists/nova-wren.html and
-    // /venues/waldbuhne-berlin.html, and the bare hub pages
-    // (/artists/, /venues/) don't match either since the slug group
-    // requires at least one character — both fall through to
-    // serveStatic below, completely unaffected by these new routes.
-    const artistPageMatch = pathname.match(/^\/artists\/([^/.]+)\/?$/);
+    // Real, indexable artist hub pages — /artists/{attractionId}/{slug}.
+    // Resolved by Ticketmaster's own attractionId, same convention as
+    // /events/{eventId}/{slug} below — not a keyword re-search of the
+    // slug (see routes/artistPage.js's header comment for the confirmed
+    // real case, "2. Hamburg Festival 2026", that motivated this: a
+    // fresh keyword search of a deslugified name isn't reliable for
+    // unusual titles). Two path segments required after /artists/, same
+    // reasoning as the /events/ pattern below: never collides with
+    // existing single-segment static files like /artists/nova-wren.html,
+    // and the bare /artists/ browse page doesn't match either since both
+    // segments are required — both fall through to serveStatic,
+    // completely unaffected by this route.
+    const artistPageMatch = pathname.match(/^\/artists\/([^/]+)\/([^/]+)\/?$/);
     if (artistPageMatch && req.method === 'GET') {
-      const [, slug] = artistPageMatch;
+      const [, attractionId, requestedSlug] = artistPageMatch;
       try {
         const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
-        const result = await artistPageRoutes.renderArtistPage(decodeURIComponent(slug), registry.getMergedEnv(), siteOrigin);
+        const result = await artistPageRoutes.renderArtistPage(
+          decodeURIComponent(attractionId),
+          decodeURIComponent(requestedSlug),
+          registry.getMergedEnv(),
+          siteOrigin
+        );
         if (!result) {
           res.writeHead(404, { 'Content-Type': 'text/plain' });
           return res.end('No upcoming events found for this artist');
         }
-        if (result.canonicalSlug !== slug) {
-          res.writeHead(301, { Location: `/artists/${encodeURIComponent(result.canonicalSlug)}/` });
+        if (result.canonicalSlug !== requestedSlug) {
+          res.writeHead(301, { Location: `/artists/${encodeURIComponent(attractionId)}/${result.canonicalSlug}` });
           return res.end();
         }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

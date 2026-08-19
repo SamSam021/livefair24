@@ -149,6 +149,19 @@ module.exports = {
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
     if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
+    // Ticketmaster's own documented filter for "all current events tied
+    // to this specific attraction" — a direct ID lookup, not a keyword
+    // guess. Added for routes/artistPage.js's ID-based resolution: a
+    // fresh keyword re-search of a deslugified URL (e.g. "2 hamburg
+    // festival 2026") is unreliable for anything with unusual title
+    // formatting (leading digits, punctuation, generic words), and a
+    // confirmed real case ("2. Hamburg Festival 2026") 404'd despite
+    // being a genuine, currently-listed event, purely because the
+    // keyword re-search didn't re-match its own literal title.
+    // attractionId sidesteps that class of failure entirely — Ticketmaster
+    // already knows exactly which events belong to this attraction, no
+    // text matching involved.
+    if (params.attractionId) parts.push(`attractionId=${encodeURIComponent(params.attractionId)}`);
     // Confirmed via a real discovery response: without this, a bare
     // country browse returns comedy shows, museum exhibits, and generic
     // club nights alongside actual concerts ("die Comedy Show",
@@ -162,13 +175,15 @@ module.exports = {
     // — could surface a hockey game or theater show alongside real
     // concerts. Applied unconditionally now, city/keyword search included.
     //
-    // EXCEPTION: params.allCategories — set only by the homepage's search
-    // bar (never the dedicated /concerts/ page, which keeps the
-    // restriction exactly as before) — deliberately skips this filter, so
-    // a homepage search can surface anything real Ticketmaster actually
-    // has, not just music. This is the one legitimate, intentional use of
-    // this ticket-provider search for non-concert results.
-    if (!params.allCategories) parts.push('classificationName=music');
+    // EXCEPTION: params.allCategories — set by the homepage's search bar,
+    // routes/suggested.js's broad discovery call, and now attractionId
+    // lookups too (skipped below) — deliberately skips this filter. An
+    // attractionId lookup targets one specific, already-validated
+    // attraction (routes/suggested.js only ever suggests attractions with
+    // a confirmed Sports or Music genre) — restricting to
+    // classificationName=music here would wrongly return zero events for
+    // a real Sports attraction being looked up by ID.
+    if (!params.allCategories && !params.attractionId) parts.push('classificationName=music');
     // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against
@@ -178,7 +193,7 @@ module.exports = {
     // was surfacing far-future, just-announced tour dates with no
     // pricing populated yet. Events happening sooner are far more likely
     // to already have real on-sale pricing.
-    if (params.countryCode && !params.query) parts.push('sort=date,asc');
+    if ((params.countryCode || params.attractionId) && !params.query) parts.push('sort=date,asc');
     // Ticketmaster expects startDateTime/endDateTime as full ISO 8601 with
     // a trailing Z (UTC) — e.g. 2026-09-01T00:00:00Z. UNVERIFIED: unlike
     // keyword/city (confirmed working against a real live call earlier),

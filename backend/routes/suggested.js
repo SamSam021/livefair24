@@ -127,14 +127,19 @@ async function getSuggested(clientIp, env, overrideCountry) {
   // specifically meant to suggest concerts and sports, nothing broader.
   const sportsActs = [];
   const musicActs = [];
-  for (const g of actGroups.values()) {
+  for (const [attractionId, g] of actGroups.entries()) {
     let topGenre = 'Other';
     let topGenreCount = 0;
     for (const [genre, c] of g.genreCounts) {
       if (c > topGenreCount) { topGenre = genre; topGenreCount = c; }
     }
     if (topGenre !== 'Sports' && topGenre !== 'Music') continue;
-    const entry = { name: g.name, count: g.count, slug: slugify(g.name), category: topGenre, imageUrl: g.imageUrl };
+    // id is Ticketmaster's own attractionId — actGroups is now keyed by
+    // it exclusively (see the loop above that builds actGroups), so this
+    // is always a real ID, never a name-derived fallback. Threaded
+    // through to the frontend so /artists/ links can resolve by ID
+    // instead of re-searching by name — see routes/artistPage.js.
+    const entry = { id: attractionId, name: g.name, count: g.count, slug: slugify(g.name), category: topGenre, imageUrl: g.imageUrl };
     (topGenre === 'Sports' ? sportsActs : musicActs).push(entry);
   }
   sportsActs.sort((a, b) => b.count - a.count);

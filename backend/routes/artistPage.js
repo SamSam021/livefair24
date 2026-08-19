@@ -1,19 +1,28 @@
 // routes/artistPage.js
 //
-// GET /artists/{slug}/ — the middle layer between the homepage and
-// individual event pages, matching the pattern TickPick actually uses in
-// production (confirmed by reading their live site): Category -> real
-// performer hub page (with a genuine, current event count) -> individual
-// event. LiveFair24 had the top and bottom layers before this; this is
-// the missing middle one.
+// GET /artists/{attractionId}/{slug} — the middle layer between the
+// homepage and individual event pages, matching the pattern TickPick
+// actually uses in production (confirmed by reading their live site):
+// Category -> real performer hub page (with a genuine, current event
+// count) -> individual event. LiveFair24 had the top and bottom layers
+// before this; this is the missing middle one.
 //
-// Same discipline as routes/eventPage.js: this is never generated from a
-// keyword list. It queries Ticketmaster's real, live search for the
-// artist name derived from the URL slug, and only renders a page at all
-// if that search actually turns up real, current events — matching
-// Section 29's own rule ("only publish this page if the entity
-// otherwise provides meaningful value"). No event count is ever
-// fabricated; it's always exactly how many real results came back.
+// Resolved by Ticketmaster's own attractionId — same convention as
+// /events/{eventId}/{slug} in eventPage.js — rather than a keyword
+// re-search of the URL slug. That used to be how this worked, and it
+// had a confirmed real failure mode: "2. Hamburg Festival 2026" was a
+// genuine, currently-listed, correctly-suggested event, but a fresh
+// keyword search of its deslugified name ("2 hamburg festival 2026")
+// didn't reliably re-match its own literal title (leading digit,
+// punctuation, generic wording), so the page 404'd despite the event
+// being real. attractionId sidesteps that whole class of failure —
+// Ticketmaster already knows exactly which events belong to this
+// attraction, no text matching involved. Same discipline as
+// routes/eventPage.js either way: this only renders if the lookup
+// actually turns up real, current events — matching Section 29's own
+// rule ("only publish this page if the entity otherwise provides
+// meaningful value"). No event count is ever fabricated; it's always
+// exactly how many real results came back.
 
 const fs = require('fs');
 const path = require('path');
@@ -51,46 +60,25 @@ function escapeHtml(str) {
   return (str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Turns a URL slug back into a search keyword — "billie-eilish" ->
-// "billie eilish". Doesn't need to be a perfect reconstruction of the
-// original capitalization; Ticketmaster's keyword search isn't
-// case-sensitive, and the REAL display name used on the page always
-// comes back from their actual response, never from this guess.
-function deslugify(slug) {
-  return slug.replace(/-/g, ' ').trim();
-}
-
-// Same grouping approach as attractionKey() in routes/trending.js — a
-// keyword search can return loosely-related results (different artists
-// with similar names), so this groups by Ticketmaster's own attraction
-// ID where available and keeps only the largest group, i.e. the actual
-// artist being searched for rather than an unrelated near-match.
-function attractionKey(ev) {
-  return ev.attractionId || (ev.name || '').split('|')[0].trim().toLowerCase();
-}
-
-async function fetchArtistEvents(searchName, env) {
+async function fetchArtistEventsById(attractionId, env) {
   const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
   if (!tm || !tm.isEnabled(env) || typeof tm.searchEvents !== 'function') return [];
-  const results = await tm.searchEvents({ query: searchName, limit: 50 }, env);
+  // allCategories: true — this is a direct ID lookup for one specific,
+  // already-validated attraction (routes/suggested.js only ever
+  // suggests attractions with a confirmed Sports or Music genre), so
+  // the classificationName=music restriction the provider applies to
+  // broad keyword/browse searches would wrongly zero out a real Sports
+  // attraction's events here. See ticketmaster.js's searchEvents.
+  const results = await tm.searchEvents({ attractionId, limit: 50, allCategories: true }, env);
   if (!Array.isArray(results) || results.length === 0) return [];
 
-  const groups = new Map();
-  for (const ev of results) {
-    const key = attractionKey(ev);
-    if (!key) continue;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(ev);
-  }
-  let largest = [];
-  for (const group of groups.values()) {
-    if (group.length > largest.length) largest = group;
-  }
-
-  // Dedupe by eventId (a keyword search can occasionally return the same
-  // show twice across pagination) and sort soonest-first.
+  // Dedupe by eventId (pagination can occasionally return the same show
+  // twice) and sort soonest-first. No attractionKey grouping/largest-
+  // group step needed here the way the old keyword-based lookup
+  // required — attractionId already guarantees every result genuinely
+  // belongs to this one attraction, no unrelated near-matches possible.
   const seen = new Set();
-  const deduped = largest.filter((ev) => {
+  const deduped = results.filter((ev) => {
     if (!ev.eventId || seen.has(ev.eventId)) return false;
     seen.add(ev.eventId);
     return true;
@@ -99,17 +87,16 @@ async function fetchArtistEvents(searchName, env) {
   return deduped;
 }
 
-async function renderArtistPage(slug, env, siteOrigin) {
-  const searchName = deslugify(slug);
-  const events = await fetchArtistEvents(searchName, env);
-  // No real, current events for this name at all -> not eligible as a
-  // search-landing page, same reasoning as eventPage.js's "materially
-  // thin" rejection. Better to 404 than publish an empty shell.
+async function renderArtistPage(attractionId, requestedSlug, env, siteOrigin) {
+  const events = await fetchArtistEventsById(attractionId, env);
+  // No real, current events for this attraction at all -> not eligible
+  // as a page, same reasoning as eventPage.js's "materially thin"
+  // rejection. Better to 404 than publish an empty shell.
   if (events.length === 0) return null;
 
   const realArtistName = events[0].name;
   const canonicalSlug = slugify(realArtistName);
-  const canonicalUrl = `${siteOrigin}/artists/${canonicalSlug}/`;
+  const canonicalUrl = `${siteOrigin}/artists/${encodeURIComponent(attractionId)}/${canonicalSlug}/`;
   // First real event image for this act, if any — carried into the
   // "Recently viewed" localStorage entry below so homepage Suggested
   // cards for recent artists can show the same real photo that
@@ -191,15 +178,17 @@ async function renderArtistPage(slug, env, siteOrigin) {
 // Records this real artist page view for the homepage's "Suggested"
 // carousel — the "Recent" half of the same two-source pattern TickPick
 // uses (their own homepage shows cards tagged either "Recent" or "Local
-// Team"). Capped at 12, most recent first, deduped by slug so revisiting
+// Team"). Capped at 12, most recent first, deduped by id so revisiting
 // the same artist just moves it back to the front rather than creating
-// a duplicate entry.
+// a duplicate entry. id (Ticketmaster's attractionId) is what makes the
+// Suggested carousel's link back to this page resolve reliably — see
+// this file's header comment for why a slug-only link isn't enough.
 (function(){
   try {
     var KEY = 'lf24_recently_viewed';
-    var entry = { type: 'artist', slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realArtistName)}, imageUrl: ${JSON.stringify(artistImageUrl)}, viewedAt: Date.now() };
+    var entry = { type: 'artist', id: ${JSON.stringify(attractionId)}, slug: ${JSON.stringify(canonicalSlug)}, name: ${JSON.stringify(realArtistName)}, imageUrl: ${JSON.stringify(artistImageUrl)}, viewedAt: Date.now() };
     var existing = JSON.parse(localStorage.getItem(KEY) || '[]');
-    existing = existing.filter(function(e){ return !(e.type === entry.type && e.slug === entry.slug); });
+    existing = existing.filter(function(e){ return !(e.type === entry.type && e.id === entry.id); });
     existing.unshift(entry);
     localStorage.setItem(KEY, JSON.stringify(existing.slice(0, 12)));
   } catch(e) { /* localStorage unavailable (private browsing etc.) — not worth failing the page over */ }
