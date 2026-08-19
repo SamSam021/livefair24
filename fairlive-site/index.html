@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260819d">
+<link rel="stylesheet" href="css/style.css?v=20260819e">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -184,6 +184,29 @@
       </div>
     </div>
     <div class="suggested-scroll" id="suggestedScroll"></div>
+  </section>
+
+  <!-- Browse by city — 12 major cities for the visitor's detected
+       country, via /api/cities (unchanged IP-based country detection —
+       only the card design and city count changed). Replaces the old
+       static "browse by country" grid, which pointed to
+       /cities/<country>/ pages that mostly didn't exist. Same
+       card-size/arrow-color convention as the Suggested carousel above
+       (both modeled on eventim.de's own Highlights row), and a real
+       carousel now that there are enough cities per country to
+       actually be worth scrolling through. Positioned right after
+       Suggested and before Upcoming events. -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2 id="cityBrowseHeading">Browse concerts by city</h2><p id="cityBrowseSubtext">Popular cities near you.</p></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="cityPrev" aria-label="Scroll left" onclick="scrollCities(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="cityNext" aria-label="Scroll right" onclick="scrollCities(1)">›</button>
+      </div>
+    </div>
+    <div class="city-scroll" id="homeCityGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading cities…</div>
+    </div>
   </section>
 
   <!-- Featured events + live hotel panel -->
@@ -392,28 +415,6 @@
           </div>
         </div>
       </a>
-    </div>
-  </section>
-
-  <!-- Browse by city — 12 major cities for the visitor's detected
-       country, via /api/cities (unchanged IP-based country detection —
-       only the card design and city count changed). Replaces the old
-       static "browse by country" grid, which pointed to
-       /cities/<country>/ pages that mostly didn't exist. Same
-       card-size/arrow-color convention as the Suggested carousel above
-       (both modeled on eventim.de's own Highlights row), and a real
-       carousel now that there are enough cities per country to
-       actually be worth scrolling through. -->
-  <section class="section">
-    <div class="section-header">
-      <div><h2 id="cityBrowseHeading">Browse concerts by city</h2><p id="cityBrowseSubtext">Popular cities near you.</p></div>
-      <div class="suggested-arrows">
-        <button type="button" class="suggested-arrow-btn" id="cityPrev" aria-label="Scroll left" onclick="scrollCities(-1)">‹</button>
-        <button type="button" class="suggested-arrow-btn" id="cityNext" aria-label="Scroll right" onclick="scrollCities(1)">›</button>
-      </div>
-    </div>
-    <div class="city-scroll" id="homeCityGrid">
-      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading cities…</div>
     </div>
   </section>
 
