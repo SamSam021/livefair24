@@ -23,7 +23,6 @@ const BUCKETS = [
   { key: 'pop-rock', label: 'Pop / Rock' },
   { key: 'country-folk', label: 'Country / Folk' },
   { key: 'techno-electronic', label: 'Techno / Electronic' },
-  { key: 'festivals', label: 'Music Festivals' },
   { key: 'other', label: 'Other' },
 ];
 
@@ -53,8 +52,10 @@ const GENRE_TO_BUCKET = {
   'house': 'techno-electronic',
   'techno': 'techno-electronic',
 
-  'festival': 'festivals',
-  'music festival': 'festivals',
+  // Deliberately no 'festival' / 'music festival' entries — request was
+  // to drop this category outright, not just rename it. Any event with
+  // that genre now falls through to 'other' via bucketForGenre's default
+  // below, same as any other unmapped genre.
 };
 
 function bucketForGenre(genreName) {

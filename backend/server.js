@@ -527,6 +527,7 @@ const server = http.createServer(async (req, res) => {
     // verification pipeline themselves. Started after listen() begins,
     // not awaited, so it never delays the server actually coming up.
     trendingRoutes.startBackgroundTrendingRefresh();
+    concertCategoriesRoutes.startBackgroundConcertCategoriesRefresh();
   });
 
   // Price-drop alert scheduler — re-checks every watched event once an hour.
