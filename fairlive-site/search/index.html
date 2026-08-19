@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=20260819b">
+<link rel="stylesheet" href="../css/style.css?v=20260819c">
 <style>
 .search-page-hero{ padding:36px 0 28px; }
 .search-box-row{ display:flex; gap:10px; max-width:640px; margin-top:18px; }
@@ -302,6 +302,7 @@ window.addEventListener('load', function(){
 
   var data = null;
   var activeKey = null;
+  var loadPromise = null; // guards against duplicate concurrent fetches (prefetch + a click racing each other)
 
   function escapeHtml(str){
     return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
@@ -340,6 +341,30 @@ window.addEventListener('load', function(){
     renderArtists();
   }
 
+  async function loadData(){
+    // Returns the same in-flight promise to a caller that asks again
+    // before the first request finishes — specifically so the eager
+    // background prefetch (below) and a real click landing moments
+    // later never fire two separate fetches.
+    if(loadPromise) return loadPromise;
+    loadPromise = (async function(){
+      try{
+        var res = await fetch('/api/concerts/categories');
+        if(!res.ok) throw new Error('categories API error');
+        data = await res.json();
+        var firstWithArtists = data.buckets.find(function(b){ return b.artists.length > 0; });
+        activeKey = (firstWithArtists || data.buckets[0]).key;
+        renderCats();
+        renderArtists();
+      } catch(err){
+        console.error(err);
+        catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
+        artistsEl.innerHTML = '';
+      }
+    })();
+    return loadPromise;
+  }
+
   function openMenu(){
     // Panes start completely empty in the HTML (not pre-filled with
     // "Loading…") specifically so there is nothing to render at all if
@@ -347,34 +372,20 @@ window.addEventListener('load', function(){
     // stylesheet) — the menu itself is display:none until .open is
     // added, but this is a second, independent layer of safety, not a
     // replacement for that. The loading text is only ever injected here,
-    // at the exact moment the menu is actually opened.
+    // and only if the background prefetch below hasn't already finished
+    // by the time the visitor actually clicks — most real clicks land
+    // after the prefetch completes, so this rarely shows at all.
     if(!data){
       catsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
       artistsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
     }
     menu.classList.add('open');
     trigger.setAttribute('aria-expanded', 'true');
-    if(!data) loadData();
+    loadData();
   }
   function closeMenu(){
     menu.classList.remove('open');
     trigger.setAttribute('aria-expanded', 'false');
-  }
-
-  async function loadData(){
-    try{
-      var res = await fetch('/api/concerts/categories');
-      if(!res.ok) throw new Error('categories API error');
-      data = await res.json();
-      var firstWithArtists = data.buckets.find(function(b){ return b.artists.length > 0; });
-      activeKey = (firstWithArtists || data.buckets[0]).key;
-      renderCats();
-      renderArtists();
-    } catch(err){
-      console.error(err);
-      catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
-      artistsEl.innerHTML = '';
-    }
   }
 
   trigger.addEventListener('click', function(e){
@@ -387,6 +398,14 @@ window.addEventListener('load', function(){
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape') closeMenu();
   });
+
+  // Eager background prefetch — fires once, shortly after this script
+  // runs, without waiting for a click. The server-side cache
+  // (routes/concertCategories.js) already makes this cheap; this just
+  // removes the one remaining network round-trip from the moment the
+  // visitor actually opens the menu. Deferred slightly via setTimeout
+  // so it never competes with the hero/search bar's own initial render.
+  setTimeout(loadData, 400);
 })();
 </script>
 
