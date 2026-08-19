@@ -589,7 +589,7 @@ img{max-width:100%;display:block;}
 .ccm-empty, .ccm-loading{ color:var(--ink-faint); font-size:13.5px; padding:8px 0; }
 .ccm-seeall{ color:var(--blue); font-weight:700; }
 @media (max-width:760px){
-  .concert-category-menu{ right:8px; left:8px; width:auto; max-width:none; top:auto; bottom:74px; transform:none; max-height:60vh; }
+  .concert-category-menu{ right:8px; left:8px; width:auto; max-width:none; top:auto; bottom:82px; transform:none; max-height:55vh; }
   .ccm-artist-grid{ grid-template-columns:1fr; }
 }
 
@@ -597,12 +597,20 @@ img{max-width:100%;display:block;}
   /* Previously hidden entirely on mobile — but with the homepage's top
      nav links removed, this rail is now the only way to reach other
      pages (Concerts, Sports) on mobile, so it needs to stay usable
-     there rather than disappear. Shrunk and moved to a bottom-right
-     floating-button position instead of vertically centered on the
-     edge, since that's much less likely to sit on top of centered
-     content like a hero headline or search form on a narrow screen. */
+     there rather than disappear. Shrunk and moved to a bottom-left
+     floating-button position (matching the desktop rail's left-edge
+     placement) instead of vertically centered on the edge, since
+     that's much less likely to sit on top of centered content like a
+     hero headline or search form on a narrow screen.
+     bottom:82px (not 16px) is deliberate, not arbitrary — the cookie
+     settings toggle (.cookie-settings-toggle, see below) already
+     permanently occupies bottom:12px/left:12px on mobile and always
+     has; confirmed real collision where both floating buttons rendered
+     stacked on top of each other once this rail moved to the left
+     edge. This clears the cookie button (40px tall + its own 12px
+     offset) with a visible gap rather than guessing at a tight fit. */
   .category-rail{
-    top:auto; bottom:16px; left:12px; transform:none;
+    top:auto; bottom:82px; left:12px; transform:none;
     padding:8px 6px; gap:3px;
   }
   .category-rail-item{ width:34px; height:34px; }
