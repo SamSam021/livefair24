@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/concerts/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/style.css?v=20260819b">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -1214,12 +1214,8 @@ updateEventCardArrowState();
   </a>
 </div>
 <div class="concert-category-menu" id="ccmMenu" role="dialog" aria-label="Browse concerts by category">
-  <div class="ccm-cats" id="ccmCats">
-    <div class="ccm-loading">Loading…</div>
-  </div>
-  <div class="ccm-artists" id="ccmArtists">
-    <div class="ccm-loading">Loading…</div>
-  </div>
+  <div class="ccm-cats" id="ccmCats"></div>
+  <div class="ccm-artists" id="ccmArtists"></div>
 </div>
 <script>
 // Powers the Concerts flyout menu — fetches real, current artists from
@@ -1275,6 +1271,17 @@ updateEventCardArrowState();
   }
 
   function openMenu(){
+    // Panes start completely empty in the HTML (not pre-filled with
+    // "Loading…") specifically so there is nothing to render at all if
+    // this markup is ever painted before its CSS (e.g. a stale cached
+    // stylesheet) — the menu itself is display:none until .open is
+    // added, but this is a second, independent layer of safety, not a
+    // replacement for that. The loading text is only ever injected here,
+    // at the exact moment the menu is actually opened.
+    if(!data){
+      catsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
+      artistsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
+    }
     menu.classList.add('open');
     trigger.setAttribute('aria-expanded', 'true');
     if(!data) loadData();
