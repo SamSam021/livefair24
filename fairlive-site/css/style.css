@@ -162,7 +162,7 @@ img{max-width:100%;display:block;}
    selector unambiguously more specific, so it wins regardless of
    source order from here on. */
 .card.card-photo h3{color:#fff;}
-.card.card-photo .genre{color:#fff;}
+.card.card-photo .genre{color:#cfe0ff;}
 .card.card-photo .meta{color:#fff;}
 .card.card-photo .date{color:#fff;}
 .card-photo .card-foot{border-top-color:rgba(255,255,255,.25);}
