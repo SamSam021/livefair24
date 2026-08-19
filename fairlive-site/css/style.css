@@ -155,7 +155,19 @@ img{max-width:100%;display:block;}
 .card h3{font-family:'Sora',sans-serif;font-weight:700;font-size:19px;line-height:1.2;margin-bottom:8px;}
 .card .meta{font-size:12.5px;color:var(--ink-dim);margin-bottom:4px;}
 .card .date{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-faint);margin-bottom:14px;}
-.card-foot{display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px dashed var(--line);}
+.card-foot{display:flex;flex-wrap:wrap;row-gap:8px;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px dashed var(--line);}
+/* Forces this specific item onto its own row within the wrapping
+   .card-foot above — standard flex technique (flex-basis:100% pushes
+   everything after it to a new line). Fixes "View full event page"
+   colliding with "Hotels": .card-foot has three children (from,
+   card-actions, this link) but was never allowed to wrap, so the link
+   — meant to sit on its own row below (its inline margin-top:8px only
+   does anything once it's actually on a new line) — got squeezed onto
+   the same row as the other two instead. CSS-only fix, no markup
+   changes, so every page using .card-foot (cities, venues, artists,
+   sports, both homepage and concerts) is fixed the same way with no
+   risk to pages that don't have a third item at all. */
+.card-foot .full-event-link{flex-basis:100%;}
 .card-foot .from{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-faint);}
 .card-foot .from b{color:var(--gold);font-size:16px;}
 .card-foot .card-actions{display:flex;gap:14px;align-items:center;}
