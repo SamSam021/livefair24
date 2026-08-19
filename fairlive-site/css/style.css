@@ -51,20 +51,6 @@ img{max-width:100%;display:block;}
   .nav-links a:last-child{border-bottom:none;}
 }
 
-/* The floating category rail (music-note/sports icon sidebar) and its
-   Concerts flyout are hidden entirely on mobile — all of their
-   functionality (Concerts genre browsing with real artists, Sports)
-   moves into the traditional hamburger menu instead (see
-   .nav-links-concerts-expand below), which is far more reachable and
-   discoverable on a small screen than a floating overlay competing
-   with page content for space. Desktop is completely unaffected —
-   this rule only fires under the same breakpoint the rest of the
-   site's mobile-only rules already use. */
-@media(max-width:768px){
-  .category-rail{ display:none; }
-  .concert-category-menu{ display:none !important; }
-}
-
 /* Expandable "Concerts" row inside the mobile hamburger menu — replaces
    the rail's mic-icon flyout with an accordion that fits a traditional
    list-style menu. Populated from the exact same /api/concerts/categories
@@ -639,6 +625,23 @@ img{max-width:100%;display:block;}
 @media (max-width:760px){
   .concert-category-menu{ right:8px; left:8px; width:auto; max-width:none; top:auto; bottom:82px; transform:none; max-height:55vh; }
   .ccm-artist-grid{ grid-template-columns:1fr; }
+
+  /* The floating category rail (music-note/sports icon sidebar) and
+     its Concerts flyout are hidden entirely on mobile — all of their
+     functionality (Concerts genre browsing with real artists, Sports)
+     moves into the traditional hamburger menu's expandable "Concerts"
+     accordion instead. Desktop is unaffected — mobile-only breakpoint.
+     Placed in THIS media query block (not the earlier one right after
+     nav-links), and specifically AFTER the base .category-rail rule
+     above in source order — same class of bug as the calendar-panel
+     fix elsewhere in this file: the base rule explicitly sets
+     display:flex, so an override placed BEFORE it in the file gets
+     silently cancelled by the later, equal-specificity base rule,
+     regardless of the media condition. Confirmed this exact mistake
+     really did leave the rail visible on mobile after the first
+     attempt at this fix. */
+  .category-rail{ display:none; }
+  .concert-category-menu{ display:none !important; }
 
   /* Confirmed real overflow bug: the base .search-dates-panel rule
      above is position:absolute with left:0, which anchors it to
