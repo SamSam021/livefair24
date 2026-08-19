@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/sports/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=20260819c">
+<link rel="stylesheet" href="../css/style.css?v=20260819d">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -228,7 +228,19 @@
         '<span>' + escapeHtml(b.label) + '</span><span class="count">' + b.totalCount + '</span></button>';
     }).join('') + '<a href="/concerts/" class="ccm-cat-btn ccm-seeall" style="display:block;margin-top:8px;">Browse all concerts →</a>';
     catsEl.querySelectorAll('.ccm-cat-btn[data-key]').forEach(function(btn){
-      btn.addEventListener('click', function(){ setActive(btn.dataset.key); });
+      // stopPropagation is required, not cosmetic: setActive() below
+      // calls renderCats() synchronously, which replaces this exact
+      // button via catsEl.innerHTML — detaching it from the document
+      // mid-click. The document-level "click outside closes the menu"
+      // listener (attached below) runs after this one during bubbling
+      // and checks menu.contains(e.target); against a node that's
+      // already been removed from the DOM, that check wrongly returns
+      // false and closes the menu the instant a category is picked.
+      // Confirmed via direct testing — the menu really did close, and
+      // reopening it correctly showed the newly active category,
+      // proving setActive() itself worked fine and this was purely an
+      // event-bubbling ordering issue.
+      btn.addEventListener('click', function(e){ e.stopPropagation(); setActive(btn.dataset.key); });
     });
   }
 
