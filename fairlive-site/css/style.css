@@ -93,6 +93,18 @@ img{max-width:100%;display:block;}
 .hero-light h1{color:var(--ink);}
 .hero-light p{color:var(--ink-dim);opacity:1;}
 
+/* Centers the badge, headline, subtext, search bar and "Try:" pills as
+   a block within the hero — scoped to .hero-centered only (applied
+   just on the homepage hero) so concerts.html and any other page
+   using .hero-inner keeps its original left-aligned layout. Flex
+   column + align-items:center centers each child regardless of its
+   own width (the search form and pill row both have their own
+   max-width), rather than needing margin:auto tuned per child. */
+.hero-centered .hero-inner{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+.hero-centered .hero-inner h1,
+.hero-centered .hero-inner p{ max-width:640px; }
+.hero-centered .pill-row{ justify-content:center; }
+
 /* Search bar */
 .search-form{display:flex;gap:10px;max-width:620px;flex-wrap:wrap;}
 .search-input{flex:1;min-width:200px;padding:14px 18px;border-radius:12px;border:none;font-size:15px;font-family:'Manrope',sans-serif;font-weight:600;box-shadow:0 2px 12px rgba(0,0,0,.15);}
