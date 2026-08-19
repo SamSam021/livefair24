@@ -984,8 +984,8 @@ function getRecentlyViewed(){
 // "escaped" SVG onto the page as stray broken text next to the card.
 // Attaching the fallback with addEventListener (below, in
 // loadSuggested) sidesteps the quoting problem entirely.
-const SUGGESTED_ARTIST_ICON_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
-const SUGGESTED_VENUE_ICON_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+const SUGGESTED_ARTIST_ICON_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+const SUGGESTED_VENUE_ICON_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
 
 function suggestedCardHtml(item){
   const href = item.type === 'artist' ? `/artists/${encodeURIComponent(item.id)}/${encodeURIComponent(item.slug)}/` : `/venues/${encodeURIComponent(item.slug)}/`;
@@ -1001,15 +1001,14 @@ function suggestedCardHtml(item){
   // icon outright when there's no real image at all (most venues, and
   // any act Ticketmaster just doesn't have art for).
   const iconHtml = item.imageUrl
-    ? `<img src="${item.imageUrl}" alt="" loading="lazy" class="suggested-card-img" data-icon-type="${item.type}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`
+    ? `<img src="${item.imageUrl}" alt="" loading="lazy" class="suggested-card-img" data-icon-type="${item.type}" style="width:100%;height:100%;object-fit:cover;">`
     : icon;
   return `<a href="${href}" class="suggested-card">
-    <div class="suggested-card-icon"${item.imageUrl ? ' style="background:none;padding:0;overflow:hidden;"' : ''}>${iconHtml}</div>
+    <div class="suggested-card-icon">${iconHtml}</div>
     <div class="suggested-card-body">
       <div class="suggested-card-name">${safeName}</div>
       <div class="suggested-card-tags">${tags.join('')}</div>
     </div>
-    <span class="suggested-card-arrow">›</span>
   </a>`;
 }
 
@@ -1063,7 +1062,7 @@ async function loadSuggested(){
 // there's nothing further to scroll to in that direction.
 function scrollSuggested(direction){
   const el = document.getElementById('suggestedScroll');
-  el.scrollBy({ left: direction * 528, behavior: 'smooth' });
+  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
 }
 function updateSuggestedArrowState(){
   const el = document.getElementById('suggestedScroll');

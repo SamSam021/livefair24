@@ -468,34 +468,44 @@ img{max-width:100%;display:block;}
 
 
 /* ---- Suggested carousel (Recent + Near you) — homepage ---- */
-.suggested-scroll{ display:flex; gap:14px; overflow-x:auto; padding:4px 2px 12px; scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none; }
+.suggested-scroll{ display:flex; gap:10px; overflow-x:auto; padding:4px 2px 12px; scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none; }
 .suggested-scroll::-webkit-scrollbar{ display:none; }
 #suggestedSection .section-header{ border-bottom:none; padding-bottom:0; margin-bottom:16px; }
 .suggested-arrows{ display:flex; gap:8px; }
+/* Colors match eventim.de's own Highlights-row arrows exactly (sampled
+   from a real screenshot): #0B69FF solid fill on the enabled arrow,
+   #AACBFF light fill on the disabled one — a distinct color swap, not
+   a faded/opacity version of the same button like this used to be. */
 .suggested-arrow-btn{
-  width:36px; height:36px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
-  color:var(--ink-dim); font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  transition:background .15s, border-color .15s, color .15s;
+  width:36px; height:36px; border-radius:999px; border:none; background:#0B69FF;
+  color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .15s;
 }
-.suggested-arrow-btn:hover{ background:var(--surface-2); border-color:var(--blue); color:var(--blue); }
-.suggested-arrow-btn:disabled{ opacity:.35; cursor:not-allowed; }
-.suggested-arrow-btn:disabled:hover{ background:var(--surface); border-color:var(--line); color:var(--ink-dim); }
+.suggested-arrow-btn:hover{ background:#0956d6; }
+.suggested-arrow-btn:disabled{ background:#AACBFF; color:#fff; cursor:not-allowed; }
+.suggested-arrow-btn:disabled:hover{ background:#AACBFF; }
+/* Poster-style card — sized to match eventim.de's own Highlights cards
+   (measured directly from a real screenshot: ~213px wide, ~263px tall
+   image at roughly a 4:5 portrait ratio), replacing the old small
+   horizontal icon-row layout. overflow:hidden on the card itself (not
+   the image) means the top corners of the image are clipped to match
+   the card's own border-radius automatically, no need to duplicate
+   the radius on the image separately. */
 .suggested-card{
-  flex:0 0 auto; width:250px; display:flex; align-items:center; gap:12px;
-  background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px;
+  flex:0 0 auto; width:210px; display:block;
+  background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden;
   transition:border-color .15s, box-shadow .15s;
 }
 .suggested-card:hover{ border-color:var(--blue); box-shadow:0 4px 14px rgba(16,24,40,.08); }
 .suggested-card-icon{
-  width:44px; height:44px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  width:100%; height:260px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
   background:linear-gradient(135deg, var(--blue-soft), var(--surface-2)); color:var(--blue);
 }
-.suggested-card-body{ flex:1; min-width:0; }
-.suggested-card-name{ font-family:'Sora',sans-serif; font-weight:700; font-size:14px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.suggested-card-tags{ display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.suggested-card-body{ padding:12px 14px 14px; }
+.suggested-card-name{ font-family:'Sora',sans-serif; font-weight:700; font-size:15px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.suggested-card-tags{ display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
 .suggested-tag{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-dim); white-space:nowrap; }
 .suggested-tag.recent{ background:var(--blue-soft); color:var(--blue-deep); }
-.suggested-card-arrow{ color:var(--ink-faint); flex-shrink:0; }
 
 /* ---- Search mode toggle (Event+Hotel / Event / Hotel) — nav bar, same
    position TickPick uses for its Buy/Sell/Create toggle ---- */
