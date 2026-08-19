@@ -582,8 +582,23 @@ function renderTrendingEventCards(events){
 
   grid.innerHTML = events.map((ev, i) => {
     const fullPageHref = eventViewHref(ev);
+    // Real Ticketmaster photo as the card's own background when one
+    // exists — same size/DOM structure either way, just the
+    // background-image (photo + a baked-in dark gradient for text
+    // legibility, in one declaration) and the .card-photo class that
+    // flips the text colors to light. No imageUrl -> unchanged plain
+    // white card, exactly as before. Single-quote escaped in case a
+    // URL ever contains one — confirmed elsewhere in this codebase
+    // (routes/suggested.js's old onerror="" bug) that skipping this
+    // for a value going into an HTML attribute is a real way to
+    // corrupt the surrounding markup, not just a theoretical risk.
+    const safeImageUrl = (ev.imageUrl || '').replace(/'/g, '%27');
+    const cardStyle = ev.imageUrl
+      ? `cursor:pointer;background-image:linear-gradient(rgba(10,14,25,.55),rgba(10,14,25,.82)),url('${safeImageUrl}');`
+      : 'cursor:pointer;';
+    const cardClass = `card event-card${ev.imageUrl ? ' card-photo' : ''}${i===0?' active':''}`;
     return `
-    <div class="card event-card${i===0?' active':''}" data-id="${i}" style="cursor:pointer;" onclick="selectEvent(${i},'ticket')">
+    <div class="${cardClass}" data-id="${i}" style="${cardStyle}" onclick="selectEvent(${i},'ticket')">
       <div class="genre">${ev.genre || 'Live'}</div>
       <h3>${ev.artist}</h3>
       <div class="meta">${ev.venue}, ${ev.city}, ${ev.country}</div>
@@ -659,6 +674,13 @@ async function loadTrendingConcerts(originalHTML){
       lat: r.lat,
       lng: r.lng,
       sourceUrl: r.url,
+      // Real Ticketmaster promo image for this event, when one exists
+      // — same field the Suggested carousel already uses
+      // (mapEventToResult's imageUrl), just not previously threaded
+      // through here. Used by renderTrendingEventCards below to set
+      // the card's photo background; left undefined/null falls back to
+      // the plain white card, same as everywhere else on the site.
+      imageUrl: r.imageUrl,
       // Kept separate from `id` below (which stays the 0-5 array index
       // the existing card-selection DOM logic depends on) — these carry
       // Ticketmaster's own identifiers, so the selected event can be

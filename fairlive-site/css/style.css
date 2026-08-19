@@ -128,6 +128,29 @@ img{max-width:100%;display:block;}
 .card-grid-scroll .card{flex:0 0 300px;}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;transition:border-color .15s,transform .15s,box-shadow .15s;}
 .card:hover{border-color:#c3d6fd;transform:translateY(-3px);box-shadow:0 16px 32px -20px rgba(16,24,40,.2);}
+/* Photo variant of .card — homepage "Upcoming concerts" only, applied
+   via JS only when a real Ticketmaster imageUrl exists for that event
+   (never for the static fallback demo cards, which have no real photo
+   and keep the plain white look). Same exact card size/padding as
+   before — the photo becomes the card's own background (with a dark
+   gradient baked into the same background-image declaration, set
+   inline per-card since the photo itself is per-card) instead of an
+   added element, so nothing about the card's footprint changes. Text
+   colors flip to light since they now sit on a photo instead of white. */
+.card-photo{background-size:cover;background-position:center;border-color:transparent;}
+.card-photo:hover{border-color:transparent;}
+.card-photo .genre{color:#cfe0ff;}
+.card-photo h3{color:#fff;}
+.card-photo .meta{color:rgba(255,255,255,.88);}
+.card-photo .date{color:rgba(255,255,255,.72);}
+.card-photo .card-foot{border-top-color:rgba(255,255,255,.25);}
+.card-photo .card-foot .from{color:rgba(255,255,255,.75);}
+.card-photo .card-foot .from b{color:#ffd166;}
+.card-photo .card-foot .cta{color:#fff;}
+.card-photo .card-foot .cta:hover{color:#cfe0ff;}
+.card-photo .card-foot .cta-hotels{color:rgba(255,255,255,.85);}
+.card-photo .card-foot .cta-hotels:hover{color:#fff;}
+.card-photo .full-event-link{color:#cfe0ff !important;}
 .card .genre{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--blue-deep);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
 .card h3{font-family:'Sora',sans-serif;font-weight:700;font-size:19px;line-height:1.2;margin-bottom:8px;}
 .card .meta{font-size:12.5px;color:var(--ink-dim);margin-bottom:4px;}
