@@ -516,7 +516,7 @@ img{max-width:100%;display:block;}
 
 /* ---- Floating category sidebar (Tickpick-style icon rail) ---- */
 .category-rail{
-  position:fixed; top:50%; right:20px; transform:translateY(-50%); z-index:60;
+  position:fixed; top:50%; left:20px; transform:translateY(-50%); z-index:60;
   background:var(--surface); border-radius:999px; box-shadow:0 8px 28px rgba(16,24,40,.16);
   padding:14px 10px; display:flex; flex-direction:column; gap:6px; align-items:center;
 }
@@ -533,7 +533,7 @@ img{max-width:100%;display:block;}
 .category-rail-item.disabled{ color:var(--ink-faint); }
 .category-rail-item.disabled:hover{ color:var(--ink-faint); background:var(--surface-2); }
 .category-rail-tooltip{
-  position:absolute; right:52px; top:50%; transform:translateY(-50%);
+  position:absolute; left:52px; top:50%; transform:translateY(-50%);
   background:var(--ink); color:#fff; font-size:12px; font-weight:600; white-space:nowrap;
   padding:6px 11px; border-radius:8px; opacity:0; pointer-events:none; transition:opacity .15s;
 }
@@ -547,7 +547,7 @@ img{max-width:100%;display:block;}
    /api/concerts/categories (routes/concertCategories.js) — real
    Ticketmaster attractions, never hardcoded names. ---- */
 .concert-category-menu{
-  position:fixed; top:50%; right:78px; transform:translateY(-50%);
+  position:fixed; top:50%; left:78px; transform:translateY(-50%);
   width:560px; max-width:calc(100vw - 96px); max-height:70vh;
   background:var(--surface); border-radius:20px; box-shadow:0 20px 50px rgba(16,24,40,.22);
   display:none; overflow:hidden; z-index:61;
@@ -590,12 +590,12 @@ img{max-width:100%;display:block;}
      edge, since that's much less likely to sit on top of centered
      content like a hero headline or search form on a narrow screen. */
   .category-rail{
-    top:auto; bottom:16px; right:12px; transform:none;
+    top:auto; bottom:16px; left:12px; transform:none;
     padding:8px 6px; gap:3px;
   }
   .category-rail-item{ width:34px; height:34px; }
   .category-rail-item svg{ width:16px; height:16px; }
-  .category-rail-tooltip{ right:42px; font-size:11px; padding:5px 9px; }
+  .category-rail-tooltip{ left:42px; font-size:11px; padding:5px 9px; }
 }
 
 
