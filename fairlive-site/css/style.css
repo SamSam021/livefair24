@@ -591,6 +591,27 @@ img{max-width:100%;display:block;}
 @media (max-width:760px){
   .concert-category-menu{ right:8px; left:8px; width:auto; max-width:none; top:auto; bottom:82px; transform:none; max-height:55vh; }
   .ccm-artist-grid{ grid-template-columns:1fr; }
+
+  /* Confirmed real overflow bug: the base .search-dates-panel rule
+     above is position:absolute with left:0, which anchors it to
+     .search-segment-dates' own left edge — but that segment sits
+     wherever it happens to fall inside the search form/hero padding,
+     not at the true viewport edge. width:min(680px,92vw) was sized
+     for the viewport, but positioned from that offset ancestor, so the
+     panel's right side ran off-screen (visible cut-off calendar
+     columns and a clipped "End date" field). Ticketmaster's own mobile
+     calendar avoids this the same way .concert-category-menu above
+     already does for an identical class of bug: switch to
+     position:fixed with explicit left/right viewport offsets on
+     mobile, completely independent of the trigger's position. Placed
+     in this later media query block (not the earlier one right after
+     the base rule) specifically so it comes after that rule in source
+     order — same specificity, so an override placed BEFORE the rule
+     it's meant to override gets silently cancelled by it instead. */
+  .search-dates-panel{
+    position:fixed; left:8px; right:8px; top:auto; bottom:12px;
+    width:auto; max-width:none; max-height:80vh; overflow-y:auto;
+  }
 }
 
 @media (max-width:760px){
