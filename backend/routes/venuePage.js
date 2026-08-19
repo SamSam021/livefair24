@@ -191,4 +191,4 @@ async function renderVenuePage(slug, env, siteOrigin) {
   return { html, canonicalSlug };
 }
 
-module.exports = { renderVenuePage };
+module.exports = { renderVenuePage, slugify };

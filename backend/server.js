@@ -22,6 +22,7 @@ const trendingRoutes = require('./routes/trending');
 const citiesRoutes = require('./routes/cities');
 const eventPageRoutes = require('./routes/eventPage');
 const eventsSitemapRoutes = require('./routes/eventsSitemap');
+const artistVenueSitemapRoutes = require('./routes/artistVenueSitemap');
 const artistPageRoutes = require('./routes/artistPage');
 const venuePageRoutes = require('./routes/venuePage');
 const suggestedRoutes = require('./routes/suggested');
@@ -205,6 +206,28 @@ const server = http.createServer(async (req, res) => {
         console.error('[events sitemap]', err.message);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         return res.end('Could not generate events sitemap');
+      }
+    }
+    if (pathname === '/sitemap-artists.xml' && req.method === 'GET') {
+      try {
+        const xml = await artistVenueSitemapRoutes.generateArtistsSitemapXml(registry.getMergedEnv());
+        res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+        return res.end(xml);
+      } catch (err) {
+        console.error('[artists sitemap]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Could not generate artists sitemap');
+      }
+    }
+    if (pathname === '/sitemap-venues.xml' && req.method === 'GET') {
+      try {
+        const xml = await artistVenueSitemapRoutes.generateVenuesSitemapXml(registry.getMergedEnv());
+        res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+        return res.end(xml);
+      } catch (err) {
+        console.error('[venues sitemap]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Could not generate venues sitemap');
       }
     }
     if (pathname === '/api/search' && req.method === 'GET') {

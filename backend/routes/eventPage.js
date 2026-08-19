@@ -84,6 +84,19 @@ async function fetchRealEvent(eventId, env) {
     eventId: mapped.eventId || eventId,
     sourceUrl: mapped.url || null,
     genre: mapped.genre || '',
+    // Both were silently dropped here before, despite mapEventToResult
+    // (shared by this and every other Ticketmaster call site) already
+    // returning real values for both — same class of gap as the
+    // homepage trending-card imageUrl fix. imageUrl feeds the JSON-LD
+    // image property below (a Google-recommended field for Event rich
+    // results); currency fixes offers.priceCurrency, which was
+    // hardcoded to 'USD' regardless of the event's real currency —
+    // wrong for EUR/GBP events. NOTE: the visible "from $X" price
+    // display a few lines below (`ticket:`) still hardcodes a dollar
+    // sign the same way — that's a separate, pre-existing display bug
+    // beyond this schema fix, flagged but not changed here.
+    imageUrl: mapped.imageUrl || null,
+    currency: mapped.currency || null,
   };
 }
 
@@ -167,6 +180,15 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
     '@type': 'MusicEvent',
     name: realEvent.artist,
     startDate: realEvent.time ? `${realEvent.isoDate}T${realEvent.time}` : realEvent.isoDate,
+    // Both safe to state unconditionally, not fields we're guessing at:
+    // every event that reaches this point already passed the
+    // "materially thin" eligibility check above (real venue + real
+    // date, currently returned by a live search) — there's no code
+    // path here for a cancelled/postponed/virtual event, so these are
+    // factually true for every page this function actually renders,
+    // not an assumption layered on top.
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: {
       '@type': 'Place',
       name: realEvent.venue,
@@ -176,12 +198,36 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
         addressCountry: realEvent.country || undefined,
       },
     },
+    // Schema.org's own model distinguishes the event's name from who's
+    // performing at it — name above stays as the artist name too
+    // (Ticketmaster gives us no separate "event title" distinct from
+    // the performer, and that's normal/expected for a single-act
+    // concert), but performer is the more precise, complete way to
+    // represent the same real fact, and is specifically called out in
+    // Google's own MusicEvent examples.
+    performer: {
+      '@type': 'MusicGroup',
+      name: realEvent.artist,
+    },
   };
+  if (realEvent.imageUrl) {
+    // Google-recommended property for Event rich results — real
+    // Ticketmaster promo photo when one exists, omitted entirely
+    // (never a placeholder) when it doesn't, same discipline as every
+    // other image on this site.
+    jsonLd.image = [realEvent.imageUrl];
+  }
   if (realEvent.ticket != null && realEvent.sourceUrl) {
     jsonLd.offers = {
       '@type': 'Offer',
       price: realEvent.ticket.replace('$', ''),
-      priceCurrency: 'USD',
+      // Was hardcoded 'USD' regardless of the event's real currency —
+      // wrong for EUR/GBP events. realEvent.currency is Ticketmaster's
+      // own real priceRanges[].currency value now that it's actually
+      // threaded through (see fetchRealEvent above); 'USD' stays only
+      // as the fallback for the rare case Ticketmaster didn't return
+      // one at all.
+      priceCurrency: realEvent.currency || 'USD',
       url: realEvent.sourceUrl,
       availability: 'https://schema.org/InStock',
     };

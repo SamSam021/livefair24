@@ -200,4 +200,4 @@ async function renderArtistPage(attractionId, requestedSlug, env, siteOrigin) {
   return { html, canonicalSlug };
 }
 
-module.exports = { renderArtistPage };
+module.exports = { renderArtistPage, slugify };
