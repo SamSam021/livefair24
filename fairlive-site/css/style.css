@@ -126,7 +126,17 @@ img{max-width:100%;display:block;}
 .card-grid-scroll{display:flex;overflow-x:auto;gap:16px;padding:4px 2px 12px;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;}
 .card-grid-scroll::-webkit-scrollbar{display:none;}
 .card-grid-scroll .card{flex:0 0 300px;}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;transition:border-color .15s,transform .15s,box-shadow .15s;}
+/* display:flex + flex-direction:column here, combined with
+   margin-top:auto on .card-foot below, is what actually aligns the
+   dotted-line footer at the same height across a row of cards —
+   without it, a card with a short one-line title and one with a
+   longer wrapped title end up with their footers at different
+   vertical positions, since each card's height (and where its content
+   stops) was purely driven by its own content. The parent scroll/grid
+   row already stretches all cards to the tallest one's height by
+   default; this just lets each card's own footer use that extra space
+   by sitting at the very bottom instead of directly after the date. */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;transition:border-color .15s,transform .15s,box-shadow .15s;display:flex;flex-direction:column;}
 .card:hover{border-color:#c3d6fd;transform:translateY(-3px);box-shadow:0 16px 32px -20px rgba(16,24,40,.2);}
 /* Photo variant of .card — homepage "Upcoming concerts" only, applied
    via JS only when a real Ticketmaster imageUrl exists for that event
@@ -155,7 +165,7 @@ img{max-width:100%;display:block;}
 .card h3{font-family:'Sora',sans-serif;font-weight:700;font-size:19px;line-height:1.2;margin-bottom:8px;}
 .card .meta{font-size:12.5px;color:var(--ink-dim);margin-bottom:4px;}
 .card .date{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-faint);margin-bottom:14px;}
-.card-foot{display:flex;flex-wrap:wrap;row-gap:8px;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px dashed var(--line);}
+.card-foot{display:flex;flex-wrap:wrap;row-gap:8px;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px dashed var(--line);margin-top:auto;}
 /* Forces this specific item onto its own row within the wrapping
    .card-foot above — standard flex technique (flex-basis:100% pushes
    everything after it to a new line). Fixes "View full event page"
