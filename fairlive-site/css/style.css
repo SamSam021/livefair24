@@ -507,6 +507,30 @@ img{max-width:100%;display:block;}
 .suggested-tag{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-dim); white-space:nowrap; }
 .suggested-tag.recent{ background:var(--blue-soft); color:var(--blue-deep); }
 
+/* ---- Browse-by-city carousel — same card size (210px, ~260px photo,
+   4:5 portrait) and same arrow colors as the Suggested carousel above,
+   both measured from eventim.de's own Highlights row. Real photo per
+   city (providers/geo/cityImage.js's Wikipedia lookup, via
+   /api/cities), city name overlaid directly on the photo since that's
+   the natural treatment for a plain city photo — no separate caption
+   row needed underneath the way Suggested's title+tags need one. ---- */
+.city-scroll{ display:flex; gap:10px; overflow-x:auto; padding:4px 2px 12px; scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none; }
+.city-scroll::-webkit-scrollbar{ display:none; }
+.city-card{
+  flex:0 0 auto; width:210px; display:block;
+  background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+  transition:border-color .15s, box-shadow .15s;
+}
+.city-card:hover{ border-color:var(--blue); box-shadow:0 4px 14px rgba(16,24,40,.08); }
+.city-card-photo{
+  width:100%; height:260px; background-size:cover; background-position:center;
+  background-color:var(--blue-soft); background-image:linear-gradient(135deg, var(--blue-soft), var(--surface-2));
+  display:flex; align-items:flex-end;
+}
+.city-card-overlay{ width:100%; padding:28px 14px 14px; background:linear-gradient(to top, rgba(10,14,25,.82), rgba(10,14,25,0)); }
+.city-card-name{ font-family:'Sora',sans-serif; font-weight:700; font-size:17px; color:#fff; }
+.city-card-cta{ font-size:12px; color:rgba(255,255,255,.85); margin-top:2px; }
+
 /* ---- Search mode toggle (Event+Hotel / Event / Hotel) — nav bar, same
    position TickPick uses for its Buy/Sell/Create toggle ---- */
 .search-mode-toggle{ display:inline-flex; gap:2px; background:var(--surface-2); border-radius:999px; padding:4px; }
