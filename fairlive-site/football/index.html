@@ -1154,5 +1154,143 @@ window.addEventListener('load', loadSuggested);
   </a>
 </div>
 
+<script>
+// ============================================================
+// FOOTBALL-ONLY OVERRIDE — appended after copying concerts/index.html
+// verbatim, to scope the Suggested carousel, the search form, and the
+// event cards grid to real football data. Nothing above this block was
+// edited; this only redirects where those three things get their data.
+// ============================================================
+(function(){
+  function escapeAttr(str){
+    return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function formatMatchDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) + ' \u00b7 ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  // The copied page auto-loads real trending CONCERTS into this same
+  // grid on 'load' (initHomepageEvents) and real music/sports mixed
+  // Suggested cards (loadSuggested, fetching /api/suggested?category=
+  // music). Both are named functions already registered above, so they
+  // can be precisely un-registered here before 'load' fires, rather
+  // than needing to touch where they're defined or originally wired up.
+  if (typeof initHomepageEvents === 'function') window.removeEventListener('load', initHomepageEvents);
+  if (typeof loadSuggested === 'function') window.removeEventListener('load', loadSuggested);
+
+  // ---- Event cards grid -> real upcoming football matches ----
+  function matchCardHtml(m){
+    const genre = m.league_name ? `Football \u00b7 ${escapeAttr(m.league_name)}` : 'Football';
+    const venueLine = [m.venue_name, m.city].filter(Boolean).map(escapeAttr).join(', ');
+    return `<a href="/matches/${escapeAttr(m.slug)}.html" class="card event-card" style="text-decoration:none;">
+      <div class="genre">${genre}</div>
+      <h3>${escapeAttr(m.home_team_name)} vs ${escapeAttr(m.away_team_name)}</h3>
+      <div class="meta">${venueLine}</div>
+      <div class="date">${escapeAttr(formatMatchDate(m.start_datetime))}</div>
+    </a>`;
+  }
+
+  async function loadFootballMatches(filters){
+    const grid = document.getElementById('eventCardGrid');
+    if(!grid) return;
+    filters = filters || {};
+    const hasFilters = Boolean(filters.q || filters.city || filters.dateFrom || filters.dateTo);
+    try{
+      let url = '/api/sports/football/matches';
+      if(hasFilters){
+        const params = new URLSearchParams();
+        if(filters.q) params.set('q', filters.q);
+        if(filters.city) params.set('city', filters.city);
+        if(filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+        if(filters.dateTo) params.set('dateTo', filters.dateTo);
+        url = `/api/sports/football/search?${params.toString()}`;
+      }
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('Football matches API error');
+      const data = await res.json();
+      if(!data.results || data.results.length === 0){
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No matching football fixtures right now.</div>';
+        return;
+      }
+      grid.innerHTML = data.results.map(matchCardHtml).join('');
+    } catch(err){
+      console.error(err);
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load football fixtures right now.</div>';
+    }
+  }
+
+  // ---- Search -> stays on this page and only ever queries football,
+  // instead of the copied form's default action="/search/" (Ticketmaster
+  // /concerts-only). The Location/Dates/Search fields themselves are
+  // untouched — this only intercepts submission. ----
+  const form = document.querySelector('.search-form-segmented');
+  if(form){
+    form.addEventListener('submit', function(evt){
+      evt.preventDefault();
+      const city = (document.getElementById('searchLocation') || {}).value || '';
+      const dateFrom = (document.getElementById('searchDateFrom') || {}).value || '';
+      const dateTo = (document.getElementById('searchDateTo') || {}).value || '';
+      const q = (document.getElementById('searchQueryInput') || {}).value || '';
+      loadFootballMatches({ city: city.trim(), dateFrom, dateTo, q: q.trim() });
+      return false;
+    });
+  }
+
+  // ---- Suggested carousel -> trending football teams instead of
+  // artists/venues. ----
+  function teamCardHtml(team){
+    const iconSvg = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.4h-4.8l-1.4-4.4z"/></svg>';
+    const iconHtml = team.imageUrl
+      ? `<img src="${escapeAttr(team.imageUrl)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+      : iconSvg;
+    return `<a href="/football/?team=${encodeURIComponent(team.slug)}" class="suggested-card">
+      <div class="suggested-card-icon">${iconHtml}</div>
+      <div class="suggested-card-body">
+        <div class="suggested-card-name">${escapeAttr(team.name)}</div>
+        <div class="suggested-card-tags"><span class="suggested-tag">${team.count} upcoming</span></div>
+      </div>
+    </a>`;
+  }
+
+  async function loadFootballSuggested(){
+    try{
+      const res = await fetch('/api/sports/football/suggested');
+      if(!res.ok) throw new Error('Football suggested API error');
+      const data = await res.json();
+      const scroll = document.getElementById('suggestedScroll');
+      const section = document.getElementById('suggestedSection');
+      if(!scroll || !section) return;
+      if(!data.trending || data.trending.length === 0){ section.style.display = 'none'; return; }
+      scroll.innerHTML = data.trending.map(teamCardHtml).join('');
+      section.style.display = '';
+      if(typeof updateSuggestedArrowState === 'function') updateSuggestedArrowState();
+
+      // A team card here links back with ?team=<slug> — pre-fill the
+      // search query field and re-run the same football-only search.
+      const params = new URLSearchParams(window.location.search);
+      const teamSlug = params.get('team');
+      if(teamSlug){
+        const team = data.trending.find(t => t.slug === teamSlug);
+        if(team){
+          const qInput = document.getElementById('searchQueryInput');
+          if(qInput) qInput.value = team.name;
+          loadFootballMatches({ q: team.name });
+        }
+      }
+    } catch(err){
+      console.error(err);
+    }
+  }
+
+  window.addEventListener('load', function(){
+    loadFootballMatches();
+    loadFootballSuggested();
+  });
+})();
+</script>
+
 </body>
 </html>
