@@ -97,6 +97,16 @@ async function fetchRealEvent(eventId, env) {
     // beyond this schema fix, flagged but not changed here.
     imageUrl: mapped.imageUrl || null,
     currency: mapped.currency || null,
+    // Also silently dropped before, same pattern as imageUrl/currency
+    // above — Ticketmaster's own attractionId, needed to link this
+    // event's artist name to that artist's own real hub page
+    // (/artists/{attractionId}/{slug}/, ID-resolved per
+    // routes/artistPage.js) instead of the generic /artists/ browse
+    // page every event page linked to before. Not every event has one
+    // (see routes/suggested.js's comment on one-off ticket products
+    // with no real attraction behind them) — null falls back to the
+    // generic hub link rather than building a URL that can't resolve.
+    attractionId: mapped.attractionId || null,
   };
 }
 
@@ -143,14 +153,20 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
   // event…" and an empty div. Filling these in here means the core
   // visible identity is present immediately, matching the same
   // "don't require JS to discover the core event identity" principle
-  // already applied to the <head> tags above. The client-side JS still
-  // runs afterward and overwrites these with the exact same real
-  // values — harmless, and it also upgrades the venue/artist links to
-  // their dedicated pages when one exists (KNOWN_VENUE_PAGES /
-  // KNOWN_ARTIST_PAGES — a lookup table that only exists client-side),
-  // which is why the server-rendered links below deliberately point to
-  // the generic /venues/ and /artists/ browse pages rather than
-  // guessing at a specific page that may not exist.
+  // already applied to the <head> tags above.
+  //
+  // The artist link below now points straight to that artist's own
+  // real hub page (/artists/{attractionId}/{slug}/, ID-resolved per
+  // routes/artistPage.js) whenever attractionId is available — this
+  // used to always point at the generic /artists/ browse page, back
+  // when artist pages were only a small client-side KNOWN_ARTIST_PAGES
+  // lookup table (fairlive-site/events/view.html) rather than a real,
+  // general server-rendered page for any artist. That client-side
+  // table's own artistHref() was updated to prefer this same real link
+  // too, so it no longer overwrites this with a stale/incomplete guess
+  // once the page's JS runs. Venue links are left pointing to the
+  // generic /venues/ hub for now — venue pages don't have this same
+  // ID-based resolution yet.
   html = html.replace(
     /id="pageTitle">Loading event…</,
     `id="pageTitle">${escapeHtml(realEvent.artist)}<`
@@ -166,7 +182,10 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
     metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${venueLink}${venueLink && rest ? ', ' : ''}${rest}</span></div>`);
   }
   if (realEvent.artist) {
-    metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><a href="/artists/" style="color:var(--blue);font-weight:700;">${escapeHtml(realEvent.artist)}</a></div>`);
+    const artistLinkHref = realEvent.attractionId
+      ? `/artists/${encodeURIComponent(realEvent.attractionId)}/${slugify(realEvent.artist)}/`
+      : '/artists/';
+    metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><a href="${artistLinkHref}" style="color:var(--blue);font-weight:700;">${escapeHtml(realEvent.artist)}</a></div>`);
   }
   html = html.replace(
     'id="pageMetaRow"></div>',
