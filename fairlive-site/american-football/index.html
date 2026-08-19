@@ -4,22 +4,58 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<title>American Football Tickets — Search Games | LiveFair24</title>
-<meta name="description" content="Search American Football tickets. Every result on this page is American Football — never concerts, other sports, or hotels.">
+<title>Concert Tickets — Search Prices + Hotels | LiveFair24</title>
+<meta name="description" content="Search concert ticket prices and find the nearest hotel. See your total trip cost before you buy. Updated every 2 minutes.">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://livefair24.com/american-football/">
+<link rel="canonical" href="https://livefair24.com/concerts/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+/* ---- Inline hotel panel styles ---- */
+.event-panel{ background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:28px; margin-top:28px; }
+.event-panel-header{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--line); }
+.event-panel-header .ep-title{ font-family:'Sora',sans-serif; font-weight:700; font-size:20px; }
+.event-panel-header .ep-meta{ font-size:13px; color:var(--ink-dim); margin-top:4px; font-family:'JetBrains Mono',monospace; }
+.event-panel-header .ep-price{ text-align:right; }
+.event-panel-header .ep-price .lbl{ font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.07em; font-family:'JetBrains Mono',monospace; }
+.event-panel-header .ep-price .amt{ font-family:'Sora',sans-serif; font-weight:800; font-size:32px; color:var(--gold); line-height:1; }
+</style>
 
-<!-- Schema.org WebSite -->
+<!-- Open Graph -->
+<meta property="og:title" content="Concert Tickets — Search Prices + Hotels">
+<meta property="og:description" content="Search concert ticket prices, find a hotel near the venue, and see your total trip cost.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://livefair24.com/">
+
+<!-- Schema.org WebSite with Sitelinks Searchbox -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "LiveFair24 American Football",
-  "url": "https://livefair24.com/american-football/",
-  "description": "American Football ticket search."
+  "name": "LiveFair24",
+  "url": "https://livefair24.com/",
+  "description": "Concert ticket search. Find ticket prices, find a hotel near the venue, and calculate your total trip cost.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://livefair24.com/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+<!-- Schema.org Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "LiveFair24",
+  "url": "https://livefair24.com/",
+  "logo": "https://livefair24.com/assets/logo.png",
+  "sameAs": [],
+  "description": "Concert ticket and hotel search platform."
 }
 </script>
 </head>
@@ -28,22 +64,45 @@
 <nav class="site-nav">
   <div class="nav-inner">
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="search-mode-toggle" role="group" aria-label="What to search for">
+      <button type="button" class="smt-btn active" data-mode="both" onclick="setSearchMode('both')"><span class="smt-full">Event+Hotel</span><span class="smt-short">Both</span></button>
+      <button type="button" class="smt-btn" data-mode="event" onclick="setSearchMode('event')">Event</button>
+      <button type="button" class="smt-btn" data-mode="hotel" onclick="setSearchMode('hotel')">Hotel</button>
+    </div>
   </div>
 </nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
 
 <header class="hero">
   <div class="hero-inner">
-    <span class="badge badge-live" style="margin-bottom:20px;">● Live fixtures</span>
-    <h1>American Football tickets.<br>Nothing else.</h1>
-    <p>Every game, team, and result on this page is American Football — this page never shows concerts, other sports, or hotels.</p>
+    <span class="badge badge-live" style="margin-bottom:20px;">● Live prices — updated every 2 minutes</span>
+    <h1>Live happens once.<br>Don't miss it.</h1>
+    <p>Search ticket prices, find a hotel near the venue, and see your complete trip cost — all in one search.</p>
 
-    <form class="search-form search-form-segmented" role="search" aria-label="Search American Football" onsubmit="return runSportSearch(event)" style="max-width:620px;margin:0 auto;">
+    <form class="search-form search-form-segmented" action="/search/" method="get" role="search" aria-label="Search concerts">
       <div class="search-segment search-segment-location">
         <label class="search-segment-label" for="searchLocation">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           Location
         </label>
-        <input type="text" id="searchLocation" class="search-segment-input" placeholder="City or Zip Code" autocomplete="off">
+        <input type="text" id="searchLocation" name="city" class="search-segment-input" placeholder="City or Zip Code" autocomplete="off">
       </div>
       <div class="search-segment search-segment-dates">
         <button type="button" id="searchDatesBtn" class="search-dates-trigger" aria-expanded="false" aria-controls="searchDatesPanel">
@@ -82,26 +141,42 @@
         </div>
       </div>
       <div class="search-segment search-segment-query">
-        <label class="search-segment-label" for="sportSearchInput">
+        <label class="search-segment-label" for="searchQueryInput">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
           Search
         </label>
-        <input class="search-input" id="sportSearchInput" type="search" placeholder="Team, venue, or city — e.g. Dallas Outlaws, Atlanta" autocomplete="off" aria-label="Search American Football games">
+        <input class="search-input" id="searchQueryInput" type="search" name="q" placeholder="Artist, event or city — e.g. Coldplay Berlin" autocomplete="off" aria-label="Search for a concert">
       </div>
       <button class="search-btn" type="submit">Search →</button>
     </form>
+
+    <div class="pill-row" style="margin-top:20px;">
+      <span style="font-size:12px;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;align-self:center;">Try:</span>
+      <a href="/events/nova-wren-berlin-2026-08-16.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">Nova Wren Berlin</a>
+      <a href="/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html" class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">Bergkristall vs Rheingold</a>
+    </div>
   </div>
 </header>
 
+<main>
 <div class="container">
 
-  <!-- Suggested — trending teams for this sport only. Real DB-backed
-       upcoming-match counts (routes/sports.js's getSportSuggested),
-       never Ticketmaster/concerts data — this carousel has no code path
-       that can reach anything but the "american-football" sport row. -->
+  <!-- Stats -->
+  <div class="stat-strip">
+    <div><div class="num">Live</div><div class="lbl">ticket prices tracked</div></div>
+    <div><div class="num">16+</div><div class="lbl">hotels per venue</div></div>
+    <div><div class="num">2 min</div><div class="lbl">price refresh interval</div></div>
+    <div><div class="num">$0</div><div class="lbl">markup — you pay seller price</div></div>
+  </div>
+
+  <!-- Suggested — same two-source pattern as TickPick's real homepage
+       ("Recent" from your own browsing history, "Near you" from
+       geographic proximity), both backed by real data. Hidden entirely
+       via JS if there's nothing genuine to show — never a section with
+       an empty state or invented placeholder cards. -->
   <section class="section" id="suggestedSection" style="display:none;padding-bottom:0;">
     <div class="section-header">
-      <div><h2>Suggested</h2><p>Trending American Football teams.</p></div>
+      <div><h2>Suggested</h2></div>
       <div class="suggested-arrows">
         <button type="button" class="suggested-arrow-btn" id="suggestedPrev" aria-label="Scroll left" onclick="scrollSuggested(-1)">‹</button>
         <button type="button" class="suggested-arrow-btn" id="suggestedNext" aria-label="Scroll right" onclick="scrollSuggested(1)">›</button>
@@ -110,30 +185,942 @@
     <div class="suggested-scroll" id="suggestedScroll"></div>
   </section>
 
-  <!-- Featured / Upcoming — every fixture already comes from
-       getUpcomingMatchesForSport('american-football'), which filters on
-       start_datetime >= now() in the SQL itself, so "featured" and
-       "upcoming" are genuinely the same real, always-current list here
-       rather than two separately-maintained sections that could drift
-       out of sync with each other. -->
-  <section class="section" id="matchesSection">
+  <!-- Featured events + live hotel panel -->
+  <section class="section" id="concerts">
     <div class="section-header">
-      <div><h2 id="matchesHeading">Upcoming American Football games</h2><p id="matchesSubtext">Every fixture, always real.</p></div>
+      <div><h2>Upcoming concerts</h2><p>Live ticket prices updated every 2 minutes.</p></div>
+      <a href="/cities/">See all cities →</a>
     </div>
-    <div class="card-grid" id="matchesGrid">
-      <div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading matches…</div>
+
+    <!-- Event cards — clickable, first one pre-selected -->
+    <div class="card-grid" id="eventCardGrid">
+
+      <div class="card event-card active" data-id="0" style="cursor:pointer;" onclick="selectEvent(0,'ticket')">
+        <div class="genre">Singer-Songwriter</div>
+        <h3>Rosa Calder</h3>
+        <div class="meta">Pier 2, Bremen, Germany</div>
+        <div class="date">Thu, 13 Aug 2026 · 20:00</div>
+        <div class="card-foot">
+          <span class="from">from <b>$38</b></span>
+          <div class="card-actions">
+            <a href="/events/rosa-calder-bremen-2026-08-13.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(0,'ticket')">View tickets →</a>
+            <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(0,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card event-card" data-id="1" style="cursor:pointer;" onclick="selectEvent(1,'ticket')">
+        <div class="genre">Pop / Rock</div>
+        <h3>Nova Wren</h3>
+        <div class="meta">Waldbühne, Berlin, Germany</div>
+        <div class="date">Sun, 16 Aug 2026 · 19:30</div>
+        <div class="card-foot">
+          <span class="from">from <b>$66</b></span>
+          <div class="card-actions">
+            <a href="/events/nova-wren-berlin-2026-08-16.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(1,'ticket')">View tickets →</a>
+            <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(1,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card event-card" data-id="2" style="cursor:pointer;" onclick="selectEvent(2,'ticket')">
+        <div class="genre">Rock</div>
+        <h3>Silvertone</h3>
+        <div class="meta">3Olympia Theatre, Dublin, Ireland</div>
+        <div class="date">Tue, 18 Aug 2026 · 19:30</div>
+        <div class="card-foot">
+          <span class="from">from <b>$44</b></span>
+          <div class="card-actions">
+            <a href="/events/silvertone-dublin-2026-08-18.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(2,'ticket')">View tickets →</a>
+            <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(2,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card event-card" data-id="3" style="cursor:pointer;" onclick="selectEvent(3,'ticket')">
+        <div class="genre">Indie Pop</div>
+        <h3>Delphine &amp; The Static Choir</h3>
+        <div class="meta">Brixton Academy, London, UK</div>
+        <div class="date">Wed, 19 Aug 2026 · 19:00</div>
+        <div class="card-foot">
+          <span class="from">from <b>$55</b></span>
+          <div class="card-actions">
+            <a href="/events/delphine-london-2026-08-19.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(3,'ticket')">View tickets →</a>
+            <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(3,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card event-card" data-id="4" style="cursor:pointer;" onclick="selectEvent(4,'ticket')">
+        <div class="genre">Techno</div>
+        <h3>Nocturne</h3>
+        <div class="meta">Fabrique, Milan, Italy</div>
+        <div class="date">Thu, 28 Aug 2026 · 22:00</div>
+        <div class="card-foot">
+          <span class="from">from <b>$36</b></span>
+          <div class="card-actions">
+            <a href="/events/nocturne-milan-2026-08-28.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(4,'ticket')">View tickets →</a>
+            <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(4,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card event-card" data-id="5" style="cursor:pointer;" onclick="selectEvent(5,'ticket')">
+        <div class="genre">Hip-Hop</div>
+        <h3>Kaito Reyes</h3>
+        <div class="meta">Zénith Paris, Paris, France</div>
+        <div class="date">Sat, 29 Aug 2026 · 20:00</div>
+        <div class="card-foot">
+          <span class="from">from <b>$59</b></span>
+          <div class="card-actions">
+            <a href="/events/kaito-reyes-paris-2026-08-29.html" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(5,'ticket')">View tickets →</a>
+            <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(5,'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live ticket prices — shown above the hotel/map panel -->
+    <div class="event-panel" id="ticketPanel">
+      <div class="ticket-panel-intro">
+        <h2>Ticket prices</h2>
+        <p>Same seat category, sorted by total price including fees. <span id="ticketDemoBadge" class="badge badge-gold" style="display:none;">Demo mode — sample prices, not real</span></p>
+      </div>
+      <div class="event-panel-header" style="margin-bottom:0;padding-bottom:0;border-bottom:none;">
+        <div>
+          <div class="ep-title" id="ticketEpTitle">Rosa Calder</div>
+          <div class="ep-meta" id="ticketEpMeta">Pier 2, Bremen, Germany · Thu, 13 Aug 2026</div>
+        </div>
+        <div class="ep-price">
+          <div class="lbl">Lowest total price</div>
+          <div class="amt" id="ticketEpPrice">$38.00</div>
+        </div>
+      </div>
+      <div class="seller-cards" id="sellerCards"></div>
+    </div>
+
+    <!-- Live hotel panel — shown below the selected card -->
+    <div class="event-panel" id="eventPanel">
+
+      <!-- Dynamic header -->
+      <div class="event-panel-header">
+        <div>
+          <div class="ep-title" id="epTitle">Hotels near Rosa Calder — Pier 2, Bremen</div>
+          <div class="ep-meta"><span id="epMeta">Thu, 13 Aug 2026 · 20:00 · Germany</span> <span id="hotelDemoBadge" class="badge badge-gold" style="display:none;">Demo mode</span></div>
+        </div>
+        <div class="ep-price">
+          <div class="lbl">Ticket price</div>
+          <div class="amt" id="epTicket">$38</div>
+        </div>
+      </div>
+
+      <div class="panel-layout">
+
+        <!-- Left: map + filters -->
+        <div>
+          <div id="homepageMap" class="hotel-map-el"></div>
+          <div class="hotel-filters">
+            <div>
+              <label class="hf-label">Max price / night</label>
+              <div class="range-row">
+                <input type="range" id="hpSlider" min="40" max="500" step="10" value="500">
+                <span class="range-val" id="hpVal">$500+</span>
+              </div>
+            </div>
+            <div>
+              <label class="hf-label">Max distance from venue</label>
+              <div class="range-row">
+                <input type="range" id="hdSlider" min="0.5" max="10" step="0.5" value="10">
+                <span class="range-val" id="hdVal">10+ km</span>
+              </div>
+            </div>
+            <div>
+              <label class="hf-label">Min rating</label>
+              <div class="rating-pills">
+                <button class="rpill active" data-r="0">Any</button>
+                <button class="rpill" data-r="3.5">3.5+</button>
+                <button class="rpill" data-r="4">4.0+</button>
+                <button class="rpill" data-r="4.5">4.5+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: hotel list -->
+        <div class="hotel-right">
+          <div class="hotel-count-bar" id="hotelCountBar">16 hotels found</div>
+          <div class="hotel-scroll" id="hotelScroll"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Browse by city — 12 major cities for the visitor's detected
+       country, via /api/cities (unchanged IP-based country detection —
+       only the card design and city count changed). Replaces the old
+       static "browse by country" grid, which pointed to
+       /cities/<country>/ pages that mostly didn't exist. Same
+       card-size/arrow-color convention as the Suggested carousel above
+       (both modeled on eventim.de's own Highlights row), and a real
+       carousel now that there are enough cities per country to
+       actually be worth scrolling through. -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2 id="cityBrowseHeading">Browse concerts by city</h2><p id="cityBrowseSubtext">Popular cities near you.</p></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="cityPrev" aria-label="Scroll left" onclick="scrollCities(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="cityNext" aria-label="Scroll right" onclick="scrollCities(1)">›</button>
+      </div>
+    </div>
+    <div class="city-scroll" id="homeCityGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading cities…</div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2>How LiveFair24 works</h2><p>Three steps to the cheapest concert trip.</p></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;">
+      <div class="card">
+        <div style="width:48px;height:48px;background:var(--blue-soft);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+          </svg>
+        </div>
+        <h3>1. Search any concert</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">Type an artist name, city, or event. We find every upcoming concert and match it across all providers.</p>
+      </div>
+      <div class="card">
+        <div style="width:48px;height:48px;background:var(--blue-soft);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <h3>2. See ticket prices</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">We show you the total price including all fees — not a misleading headline price.</p>
+      </div>
+      <div class="card">
+        <div style="width:48px;height:48px;background:var(--blue-soft);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <h3>3. Add hotel + total cost</h3>
+        <p style="font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.6;">We find hotels near the venue, calculate distance, and show you the complete trip cost: ticket + hotel + local transport.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2>Why LiveFair24?</h2><p>Not another ticket broker. Just a straight search.</p></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+      <div class="card">
+        <h3 style="font-size:16px;">Total price, not headline price</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We show: face value + mandatory fees + delivery. Never the misleading "from $X" that doubles at checkout.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px;">Real, live ticket prices</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">Prices update every 2 minutes so what you see is what you'll pay.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px;">Hotel + ticket in one search</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We calculate distance from venue, show nearby hotels, and show your complete trip cost in one view.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px;">No markup, no hidden fees</h3>
+        <p style="font-size:13.5px;color:var(--ink-dim);margin-top:10px;line-height:1.65;">We earn affiliate commission when you click through. You pay the seller's price. We never add our own markup.</p>
+      </div>
     </div>
   </section>
 
 </div>
+</main>
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <div class="footer-col"><h4>Browse</h4><ul><li><a href="/concerts/">Concerts</a></li><li><a href="/football/">Football</a></li><li><a href="/cities/">All cities</a></li><li><a href="/venues/">Venues</a></li></ul></div>
-    <div class="footer-col"><h4>Company</h4><ul><li><a href="/impressum.html">Impressum</a></li><li><a href="/privacy.html">Datenschutz &amp; Cookies</a></li></ul></div>
+    <div>
+      <div class="footer-logo">● LiveFair24</div>
+      <p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Browse</h4>
+      <ul>
+        <li><a href="/cities/">All cities</a></li>
+        <li><a href="/artists/">Artists</a></li>
+        <li><a href="/venues/">Venues</a></li>
+        <li><a href="/cities/">Browse cities</a></li>
+        <li><a href="/cities/germany/">Germany</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Guides</h4>
+      <ul>
+        <li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li>
+        <li><a href="/guides/hotels-near-venues.html">Hotels near venues</a></li>
+        <li><a href="/guides/how-it-works.html">How it works</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/guides/methodology.html">Methodology</a></li>
+        <li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      <li><a href="/impressum.html">Impressum</a></li></ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span>
+    <span>Prices updated every 2 minutes. All prices include fees where disclosed.</span>
   </div>
 </footer>
 
+<script>
+/* ============================================================
+   Hero search bar — Location + Dates + Search. The full calendar
+   date-range picker lives in js/search-date-range.js (loaded near the
+   bottom of this file) — it fills the hidden dateFrom/dateTo fields
+   directly, so /api/search gets genuine ISO dates on submit.
+   ============================================================ */
+
+/* ============================================================
+   Homepage hotel panel — event selection + Leaflet map + hotel
+   list with price/rating filters. All hotel data is mock/demo.
+   ============================================================ */
+
+/* ============================================================
+   Trending concerts by visitor country — replaces the static
+   "Upcoming concerts" cards with real events when a real ticket
+   provider (Ticketmaster) is configured and returns something for the
+   visitor's detected country. Falls back silently to the static
+   EVENTS-driven cards below (unchanged, still fully interactive) when
+   running in demo mode or no results come back — no error shown, no
+   visible difference from today's behavior in that case.
+   ============================================================ */
+
+function formatTrendingDate(dateStr, timeStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayLabel = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return timeStr ? `${dayLabel} · ${timeStr.slice(0,5)}` : dayLabel;
+}
+
+// Mirrors buildCanonicalSlug() in backend/routes/eventPage.js — doesn't
+// need to be byte-perfect, the server 301-redirects to the real
+// canonical slug if this guess is off. Only real events (a genuine
+// ticketmasterEventId) get this link at all — nothing for the SSR route
+// to look up otherwise.
+function slugifyForHref(str){
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+}
+function eventViewHref(ev){
+  if(!ev.ticketmasterEventId) return null;
+  const slug = slugifyForHref([ev.artist, ev.city, ev.isoDate].filter(Boolean).join('-')) || 'event';
+  return `/events/${encodeURIComponent(ev.ticketmasterEventId)}/${slug}`;
+}
+
+// Renders real trending cards using the EXACT same markup/classes/onclick
+// pattern as the static fallback cards below, so they're fully
+// interactive through the existing selectEvent() system — clicking
+// "Compare" or "Hotels" updates the same panels the static cards do,
+// just with real ticket/hotel data for a real event instead of demo data.
+function renderTrendingEventCards(events){
+  const grid = document.getElementById('eventCardGrid');
+  if(!grid) return;
+
+  grid.innerHTML = events.map((ev, i) => {
+    const fullPageHref = eventViewHref(ev);
+    return `
+    <div class="card event-card${i===0?' active':''}" data-id="${i}" style="cursor:pointer;" onclick="selectEvent(${i},'ticket')">
+      <div class="genre">${ev.genre || 'Live'}</div>
+      <h3>${ev.artist}</h3>
+      <div class="meta">${ev.venue}, ${ev.city}, ${ev.country}</div>
+      <div class="date">${ev.date}</div>
+      <div class="card-foot">
+        <span class="from">from <b>${ev.ticket}</b></span>
+        <div class="card-actions">
+          <a href="${ev.sourceUrl || '#'}" target="_blank" rel="noopener" class="cta" onclick="event.preventDefault();event.stopPropagation();selectEvent(${i},'ticket')">View tickets →</a>
+          <span class="cta-hotels" onclick="event.stopPropagation();selectEvent(${i},'hotel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Hotels</span>
+        </div>
+        ${fullPageHref ? `<a href="${fullPageHref}" class="full-event-link" onclick="event.stopPropagation();" style="display:block;margin-top:8px;font-size:12.5px;">View full event page →</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Fetches real trending events and, if a full set of genuinely usable
+// results comes back, REPLACES the EVENTS array's contents (mutated in
+// place with length=0+push, not reassigned, since fetchTickets/
+// fetchHotels/selectEvent all close over this same array reference) and
+// re-renders the cards. Returns true if it did this, false if it left
+// the static fictional fallback untouched (demo mode, too few usable
+// results, or a request failure) — the caller uses this to decide
+// whether the initial panel refresh below needs one.
+// Shows a neutral loading skeleton immediately (before any fetch starts)
+// instead of leaving the static demo cards visible while trending data
+// loads — confirmed in practice that a ~10 second real-data fetch made
+// the "shows demo, then silently swaps to real" transition genuinely
+// jarring, not just slow. Saves the current grid HTML so it can be
+// restored exactly as-is if the fetch fails or comes back empty.
+function showTrendingLoadingSkeleton(){
+  const grid = document.getElementById('eventCardGrid');
+  if(!grid) return null;
+  const originalHTML = grid.innerHTML;
+  grid.innerHTML = Array.from({length: 6}).map(() => `
+    <div class="card event-card trending-skeleton">
+      <div class="skeleton-line skeleton-genre"></div>
+      <div class="skeleton-line skeleton-title"></div>
+      <div class="skeleton-line skeleton-meta"></div>
+      <div class="skeleton-line skeleton-date"></div>
+      <div class="card-foot">
+        <span class="skeleton-line skeleton-price"></span>
+      </div>
+    </div>`).join('');
+  return originalHTML;
+}
+
+function restoreOriginalCards(originalHTML){
+  const grid = document.getElementById('eventCardGrid');
+  if(grid && originalHTML != null) grid.innerHTML = originalHTML;
+}
+
+async function loadTrendingConcerts(originalHTML){
+  try{
+    const res = await fetch('/api/trending');
+    if(!res.ok){ restoreOriginalCards(originalHTML); return false; }
+    const data = await res.json();
+    if(data.demoMode || data.results.length === 0){ restoreOriginalCards(originalHTML); return false; }
+
+    const mapped = data.results.map((r) => ({
+      artist: r.name,
+      genre: r.genre,
+      venue: r.venue,
+      city: r.city,
+      country: r.country,
+      date: formatTrendingDate(r.date, r.time),
+      isoDate: r.date,
+      // The backend already guarantees every result reaching here has a
+      // real price (events without one are filtered out server-side, per
+      // an explicit decision that unpriced concerts shouldn't appear as
+      // homepage cards at all) — this is just the display formatting.
+      ticket: `$${Math.round(r.lowestPrice)}`,
+      lat: r.lat,
+      lng: r.lng,
+      sourceUrl: r.url,
+      // Kept separate from `id` below (which stays the 0-5 array index
+      // the existing card-selection DOM logic depends on) — these carry
+      // Ticketmaster's own identifiers, so the selected event can be
+      // precisely traced back to the exact real listing it came from.
+      ticketmasterEventId: r.eventId,
+      attractionId: r.attractionId,
+    })).filter((ev) => ev.lat != null && ev.lng != null); // hotel search needs real coordinates — drop anything missing them rather than silently break the map
+
+    if(mapped.length === 0){ restoreOriginalCards(originalHTML); return false; }
+
+    EVENTS.length = 0;
+    mapped.forEach((ev, i) => EVENTS.push({ ...ev, id: i }));
+    renderTrendingEventCards(EVENTS);
+    return true;
+  } catch(err){
+    console.error(err);
+    restoreOriginalCards(originalHTML);
+    return false;
+  }
+}
+
+// Every city routes through the same search flow — no dedicated city
+// page gets special-cased over the others, so the experience stays
+// consistent no matter which city a visitor lands on.
+function cityHref(countryCode, city){
+  return `/search/?city=${encodeURIComponent(city.name)}`;
+}
+
+// Escapes a value for safe use inside an HTML attribute — needed here
+// because city photo URLs are interpolated directly into an inline
+// style="" attribute below. Confirmed elsewhere in this codebase
+// (routes/suggested.js's old onerror="" bug) that skipping this for
+// any interpolated-into-an-attribute value is a real, not theoretical,
+// way to corrupt the surrounding markup.
+function escapeAttr(str){
+  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function cityCardHtml(data, city){
+  const photoStyle = city.imageUrl ? ` style="background-image:url('${escapeAttr(city.imageUrl)}');"` : '';
+  return `<a href="${cityHref(data.countryCode, city)}" class="city-card">
+    <div class="city-card-photo"${photoStyle}>
+      <div class="city-card-overlay">
+        <div class="city-card-name">${escapeAttr(city.name)}</div>
+        <div class="city-card-cta">See upcoming concerts</div>
+      </div>
+    </div>
+  </a>`;
+}
+
+async function loadHomeCities(){
+  const grid = document.getElementById('homeCityGrid');
+  try{
+    const res = await fetch('/api/cities');
+    if(!res.ok) throw new Error('Cities API error');
+    const data = await res.json();
+
+    if(data.countryName){
+      document.getElementById('cityBrowseSubtext').textContent =
+        `${data.flag || ''} Popular cities for concerts in ${data.countryName}.`.trim();
+    }
+
+    if(!data.cities || data.cities.length === 0){
+      grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No cities to show yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = data.cities.map((city) => cityCardHtml(data, city)).join('');
+    updateCityArrowState();
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load cities right now.</div>';
+  }
+}
+loadHomeCities();
+
+// Same arrow-based carousel pattern as scrollSuggested/
+// updateSuggestedArrowState above — separate functions since this is a
+// different scroll container, but identical behavior: ~2 cards per
+// click, each arrow disables itself once there's nothing further to
+// scroll to in that direction.
+function scrollCities(direction){
+  const el = document.getElementById('homeCityGrid');
+  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
+}
+function updateCityArrowState(){
+  const el = document.getElementById('homeCityGrid');
+  const prevBtn = document.getElementById('cityPrev');
+  const nextBtn = document.getElementById('cityNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+document.getElementById('homeCityGrid').addEventListener('scroll', updateCityArrowState);
+window.addEventListener('resize', updateCityArrowState);
+
+const EVENTS = [
+  { id:0, artist:'Rosa Calder',               venue:'Pier 2',           city:'Bremen',       country:'Germany',        date:'Thu, 13 Aug 2026 · 20:00', isoDate:'2026-08-13', ticket:'$38', lat:53.0793, lng:8.8017  },
+  { id:1, artist:'Nova Wren',                  venue:'Waldbühne',        city:'Berlin',       country:'Germany',        date:'Sun, 16 Aug 2026 · 19:30', isoDate:'2026-08-16', ticket:'$66', lat:52.5200, lng:13.4050 },
+  { id:2, artist:'Silvertone',                  venue:'3Olympia Theatre', city:'Dublin',       country:'Ireland',        date:'Tue, 18 Aug 2026 · 19:30', isoDate:'2026-08-18', ticket:'$44', lat:53.3498, lng:-6.2603 },
+  { id:3, artist:'Delphine & The Static Choir', venue:'Brixton Academy',  city:'London',       country:'United Kingdom', date:'Wed, 19 Aug 2026 · 19:00', isoDate:'2026-08-19', ticket:'$55', lat:51.5074, lng:-0.1278 },
+  { id:4, artist:'Nocturne',                    venue:'Fabrique',         city:'Milan',        country:'Italy',          date:'Thu, 28 Aug 2026 · 22:00', isoDate:'2026-08-28', ticket:'$36', lat:45.4642, lng:9.1900  },
+  { id:5, artist:'Kaito Reyes',                 venue:'Zénith Paris',    city:'Paris',        country:'France',         date:'Sat, 29 Aug 2026 · 20:00', isoDate:'2026-08-29', ticket:'$59', lat:48.8566, lng:2.3522  },
+];
+/* ============================================================
+   All ticket + hotel data now comes from the backend's
+   /api/tickets and /api/hotels endpoints (see /backend). Those
+   endpoints aggregate whichever real provider API keys are
+   configured, and fall back to clearly-labeled demo data when
+   none are set yet. No prices are generated in the browser
+   anymore.
+   ============================================================ */
+
+async function fetchTickets(ev){
+  const params = new URLSearchParams({
+    artist: ev.artist, city: ev.city, basePrice: ev.ticket.replace('$',''), eventId: ev.id
+  });
+  const res = await fetch(`/api/tickets?${params}`);
+  if(!res.ok) throw new Error('Ticket API error');
+  return res.json();
+}
+
+async function fetchHotels(ev){
+  const checkIn = ev.isoDate;
+  const checkOutDate = new Date(ev.isoDate);
+  checkOutDate.setDate(checkOutDate.getDate()+1);
+  const checkOut = checkOutDate.toISOString().slice(0,10);
+  const params = new URLSearchParams({
+    lat: ev.lat, lng: ev.lng, checkIn, checkOut, eventId: ev.id, city: ev.city || ''
+  });
+  const res = await fetch(`/api/hotels?${params}`);
+  if(!res.ok) throw new Error('Hotel API error');
+  return res.json();
+}
+
+function renderSellerCards(data){
+  const sellers = data.results || [];
+  document.getElementById('ticketDemoBadge') && (document.getElementById('ticketDemoBadge').style.display = data.demoMode ? 'inline-flex' : 'none');
+
+  if(sellers.length === 0){
+    document.getElementById('ticketEpPrice').textContent = '—';
+    document.getElementById('sellerCards').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.</div>';
+    return;
+  }
+
+  document.getElementById('ticketEpPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
+
+  document.getElementById('sellerCards').innerHTML = sellers.map((s)=>`
+    <div class="seller-card ${s.isBestPrice?'best':''}">
+      ${s.isBestPrice?'<div class="seller-badge-best">★ BEST PRICE</div>':''}
+      <div class="seller-left">
+        <div class="seller-badge-sq p-${s.badge.toLowerCase()}">${s.badge}</div>
+        <div>
+          <div class="seller-name">${s.sellerName}</div>
+          <div class="seller-meta">${s.section || 'See seller for details'}</div>
+          <div class="seller-rating">${s.rating!=null ? `Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}` : 'Rating not provided by this seller'}</div>
+        </div>
+      </div>
+      <div class="seller-divider"></div>
+      <div class="seller-right">
+        <div class="seller-total-lbl">Total incl. fees</div>
+        <div class="seller-total-amt">$${s.total.toFixed(2)}</div>
+        <div class="seller-total-breakdown">$${s.faceValue.toFixed(2)} + $${s.fees.toFixed(2)}</div>
+        <a href="${s.url}" class="seller-cta" target="_blank" rel="noopener">Get tickets →</a>
+      </div>
+    </div>`).join('');
+}
+
+let map=null, mapLayer=null, currentMarkers=[], currentHotels=[];
+let maxPrice=500, minRating=0, maxDistance=10;
+let loadToken=0;
+
+// Search mode toggle (Event+Hotel / Event / Hotel) — controls which of
+// the two result panels below are visible once an event is selected.
+// Both panels already exist in the DOM regardless of mode (selectEvent()
+// only updates their contents, never recreates them), so this just
+// toggles display — the mode persists correctly across subsequent
+// selectEvent() calls without needing to re-apply it each time.
+let currentSearchMode = 'both';
+function setSearchMode(mode){
+  currentSearchMode = mode;
+  document.querySelectorAll('.smt-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  const ticketPanel = document.getElementById('ticketPanel');
+  const hotelPanel = document.getElementById('eventPanel');
+  if(ticketPanel) ticketPanel.style.display = (mode === 'hotel') ? 'none' : '';
+  if(hotelPanel) hotelPanel.style.display = (mode === 'event') ? 'none' : '';
+}
+
+async function selectEvent(idx, scrollTo=null){
+  document.querySelectorAll('.event-card').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.event-card[data-id="${idx}"]`).classList.add('active');
+
+  const ev = EVENTS[idx];
+  const thisLoad = ++loadToken; // guards against a slower earlier request overwriting a newer selection
+
+  document.getElementById('epTitle').textContent  = `Hotels near ${ev.artist} — ${ev.venue}, ${ev.city}`;
+  document.getElementById('epMeta').textContent   = `${ev.date} · ${ev.country}`;
+  document.getElementById('epTicket').textContent = ev.ticket;
+  document.getElementById('ticketEpTitle').textContent = ev.artist;
+  document.getElementById('ticketEpMeta').textContent = `${ev.venue}, ${ev.city}, ${ev.country} · ${ev.date.split(' · ')[0]}`;
+  document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading prices…</div>';
+  document.getElementById('hotelScroll').innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading hotels…</div>';
+
+  try{
+    const [ticketData, hotelData] = await Promise.all([fetchTickets(ev), fetchHotels(ev)]);
+    if(thisLoad !== loadToken) return; // a newer selection has since started loading — drop this stale result
+
+    renderSellerCards(ticketData);
+
+    document.getElementById('hotelDemoBadge') && (document.getElementById('hotelDemoBadge').style.display = hotelData.demoMode ? 'inline-flex' : 'none');
+    currentHotels = hotelData.results || [];
+    renderHotelList(currentHotels);
+    renderMap(ev, currentHotels);
+  } catch(err){
+    if(thisLoad !== loadToken) return;
+    console.error(err);
+    document.getElementById('sellerCards').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load prices right now.</div>';
+    document.getElementById('hotelScroll').innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13.5px;">Could not load hotels right now.</div>';
+  }
+
+  if(scrollTo === 'ticket') document.getElementById('ticketPanel').scrollIntoView({behavior:'smooth',block:'start'});
+  else if(scrollTo === 'hotel') document.getElementById('eventPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function filteredHotels(hotels){
+  return hotels.filter(h => h.pricePerNight <= (maxPrice>=500?99999:maxPrice) && (h.rating==null || h.rating >= minRating) && (h.distanceKm==null || h.distanceKm <= (maxDistance>=10?99999:maxDistance)));
+}
+
+function renderHotelList(hotels){
+  const filtered = filteredHotels(hotels);
+  document.getElementById('hotelCountBar').textContent =
+    `${filtered.length} of ${hotels.length} hotels near venue`;
+
+  // Two genuinely different empty states, shown distinctly: the API
+  // returned nothing at all for this location (real "no hotels
+  // available", per the requirement that this stay honest rather than
+  // implying a filter is at fault) vs. hotels exist but the visitor's
+  // own price/rating filters exclude all of them.
+  if(hotels.length===0){
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels available.</div>';
+    return;
+  }
+  if(filtered.length===0){
+    document.getElementById('hotelScroll').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No hotels match these filters.<br>Try raising the price or lowering the rating.</div>';
+    return;
+  }
+
+  document.getElementById('hotelScroll').innerHTML = filtered.map((h,i)=>`
+    <div class="hcard" data-idx="${i}">
+      <div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div>
+      <div class="hrow">
+        <span class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km from venue':'Distance n/a'}</span>
+        <span class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span class="hrev">${h.reviews!=null?`(${h.reviews.toLocaleString()})`:''}</span>`:''}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div class="hprice">${h.pricePerNight!=null?`$${h.pricePerNight}<span>/night</span>`:''}</div>
+        <a href="${h.url||'#'}" class="hbook" target="_blank" rel="noopener" onclick="event.stopPropagation()">Book →</a>
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('#hotelScroll .hcard').forEach(card=>{
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('#hotelScroll .hcard').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      const idx = parseInt(card.dataset.idx);
+      if(currentMarkers[idx]&&map){
+        map.setView(currentMarkers[idx].getLatLng(),16);
+        currentMarkers[idx].openPopup();
+      }
+    });
+  });
+}
+
+function renderMap(ev, hotels){
+  if(typeof L === 'undefined') return;
+
+  if(!map){
+    map = L.map('homepageMap',{scrollWheelZoom:false}).setView([ev.lat,ev.lng],14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19
+    }).addTo(map);
+    mapLayer = L.layerGroup().addTo(map);
+  } else {
+    map.setView([ev.lat,ev.lng],14);
+  }
+
+  mapLayer.clearLayers();
+  currentMarkers = [];
+
+  const venueIcon = L.divIcon({
+    className:'',
+    html:`<div style="background:var(--blue);width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.3)"><svg style="transform:rotate(45deg);" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20V8a1 1 0 0 1 .4-.8l7-5.25a1 1 0 0 1 1.2 0l7 5.25a1 1 0 0 1 .4.8v12"/><path d="M9 20v-4a3 3 0 0 1 6 0v4"/></svg></div>`,
+    iconSize:[36,36],iconAnchor:[18,36]
+  });
+  L.marker([ev.lat,ev.lng],{icon:venueIcon}).addTo(mapLayer)
+   .bindPopup(`<b>${ev.venue}</b><br>${ev.city}`);
+
+  const filtered = filteredHotels(hotels);
+  filtered.forEach(h=>{
+    if(h.lat==null || h.lng==null) return;
+    // A hotel with real coordinates but no price (e.g. Google Places,
+    // which gives real listings but never live rates) still gets a pin
+    // — just a neutral "hotel" marker instead of a price pill, rather
+    // than being silently dropped from the map entirely.
+    const icon = L.divIcon({
+      className:'',
+      html: h.pricePerNight != null
+        ? `<div class="price-pin">$${h.pricePerNight}</div>`
+        : `<div class="hotel-pin">🏨</div>`,
+      iconSize:[48,26],iconAnchor:[24,26]
+    });
+    const m = L.marker([h.lat,h.lng],{icon}).addTo(mapLayer)
+      .bindPopup(`<b>${h.name}</b><br>${[h.pricePerNight!=null?`$${h.pricePerNight}/night`:null, h.rating!=null?`★${h.rating.toFixed(1)}`:null, h.distanceKm!=null?`${h.distanceKm.toFixed(1)} km`:null].filter(Boolean).join(' · ')}`);
+    currentMarkers.push(m);
+  });
+
+  setTimeout(()=>map.invalidateSize(),200);
+}
+
+/* ---- Controls ----
+   Whole-card clicks are now handled via inline onclick attributes on
+   each card (both the static fallback cards and the dynamically
+   rendered trending cards use the same selectEvent(idx,'ticket')
+   pattern) — this old querySelectorAll-based listener only ever
+   attached to whatever cards existed at script-parse time, so it never
+   worked for trending cards injected later, and is now redundant for
+   the static ones. */
+
+const hpSlider = document.getElementById('hpSlider');
+hpSlider.addEventListener('input',()=>{
+  const v=parseInt(hpSlider.value);
+  maxPrice=v;
+  document.getElementById('hpVal').textContent = v>=500?'$500+':'$'+v;
+  renderHotelList(currentHotels);
+  renderMap(EVENTS[parseInt(document.querySelector('.event-card.active').dataset.id)], currentHotels);
+});
+
+const hdSlider = document.getElementById('hdSlider');
+hdSlider.addEventListener('input',()=>{
+  const v=parseFloat(hdSlider.value);
+  maxDistance=v;
+  document.getElementById('hdVal').textContent = v>=10?'10+ km':v+' km';
+  renderHotelList(currentHotels);
+  renderMap(EVENTS[parseInt(document.querySelector('.event-card.active').dataset.id)], currentHotels);
+});
+
+document.querySelectorAll('.rpill').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.rpill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    minRating=parseFloat(btn.dataset.r);
+    renderHotelList(currentHotels);
+    renderMap(EVENTS[parseInt(document.querySelector('.event-card.active').dataset.id)], currentHotels);
+  });
+});
+
+/* ---- Suggested carousel — same two-source pattern as TickPick's real
+   homepage ("Recent" from the visitor's own browsing history, "Near
+   you" from geographic proximity), both backed by real data. Recently
+   viewed comes from localStorage, written by the artist/venue pages
+   themselves (backend/routes/artistPage.js, venuePage.js) when someone
+   actually visits one. Near-you comes from /api/suggested, a real, live
+   Ticketmaster search grouped into real current counts. Nothing here is
+   invented — if both sources come back empty, the whole section stays
+   hidden rather than showing empty or placeholder cards. ---- */
+function getRecentlyViewed(){
+  try {
+    return JSON.parse(localStorage.getItem('lf24_recently_viewed') || '[]');
+  } catch(e) { return []; }
+}
+
+// Kept as constants (rather than inline in an onerror="..." HTML
+// attribute, which is what used to live here) because that markup is
+// full of double-quoted SVG attributes — embedding it into an
+// onerror="" attribute via JSON.stringify() escapes those quotes for
+// JavaScript's benefit, not the HTML parser's, so the attribute value
+// terminated at the first escaped quote and dumped the rest of the
+// "escaped" SVG onto the page as stray broken text next to the card.
+// Attaching the fallback with addEventListener (below, in
+// loadSuggested) sidesteps the quoting problem entirely.
+const SUGGESTED_ARTIST_ICON_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+const SUGGESTED_VENUE_ICON_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+function suggestedCardHtml(item){
+  const href = item.type === 'artist' ? `/artists/${encodeURIComponent(item.id)}/${encodeURIComponent(item.slug)}/` : `/venues/${encodeURIComponent(item.slug)}/`;
+  const icon = item.type === 'artist' ? SUGGESTED_ARTIST_ICON_SVG : SUGGESTED_VENUE_ICON_SVG;
+  const tagLabels = { recent: 'Recent', near: 'Near you', trending: 'Trending' };
+  const tags = [`<span class="suggested-tag${item.tag === 'recent' ? ' recent' : ''}">${tagLabels[item.tag] || 'Near you'}</span>`];
+  if(item.count != null) tags.push(`<span class="suggested-tag">${item.count} upcoming</span>`);
+  const safeName = (item.name||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Real Ticketmaster promotional image when one exists for this act —
+  // falls back to the generic icon on the same element if the image URL
+  // 404s or fails to load (a listener attached in loadSuggested swaps
+  // the parent's content on the element's error event), and to the
+  // icon outright when there's no real image at all (most venues, and
+  // any act Ticketmaster just doesn't have art for).
+  const iconHtml = item.imageUrl
+    ? `<img src="${item.imageUrl}" alt="" loading="lazy" class="suggested-card-img" data-icon-type="${item.type}" style="width:100%;height:100%;object-fit:cover;">`
+    : icon;
+  return `<a href="${href}" class="suggested-card">
+    <div class="suggested-card-icon">${iconHtml}</div>
+    <div class="suggested-card-body">
+      <div class="suggested-card-name">${safeName}</div>
+      <div class="suggested-card-tags">${tags.join('')}</div>
+    </div>
+  </a>`;
+}
+
+async function loadSuggested(){
+  // imageUrl on a recent artist entry is a real event/act photo from
+  // Ticketmaster; on a recent venue entry it's a real photo of that
+  // venue's own host city (Ticketmaster has no venue photos — see
+  // providers/geo/cityImage.js) written by venuePage.js the same way
+  // artistPage.js writes the artist photo. Either way this is just
+  // whatever that page actually wrote, so no per-type branching is
+  // needed here.
+  const recent = getRecentlyViewed().slice(0, 4).map(e => ({ type: e.type, id: e.id || null, slug: e.slug, name: e.name, tag: 'recent', count: null, imageUrl: e.imageUrl || null }));
+  const seen = new Set(recent.map(r => r.type + ':' + r.slug));
+  let nearYou = [];
+  try {
+    const res = await fetch('/api/suggested?category=music');
+    if(res.ok){
+      const data = await res.json();
+      const artists = (data.artists||[]).map(a => ({ type:'artist', id:a.id, slug:a.slug, name:a.name, tag: a.category === 'Sports' ? 'near' : 'trending', count:a.count, imageUrl:a.imageUrl }));
+      const venues = (data.venues||[]).map(v => ({ type:'venue', slug:v.slug, name:v.name, tag:'near', count:v.count, imageUrl:v.imageUrl }));
+      nearYou = artists.concat(venues).filter(item => !seen.has(item.type+':'+item.slug));
+    }
+  } catch(e) { /* optional homepage enhancement — fail silently, section just stays hidden */ }
+
+  const combined = recent.concat(nearYou).slice(0, 10);
+  if(combined.length === 0) return;
+
+  const scrollEl = document.getElementById('suggestedScroll');
+  scrollEl.innerHTML = combined.map(suggestedCardHtml).join('');
+  // Attached here rather than as an inline onerror="" attribute — see
+  // the comment above SUGGESTED_ARTIST_ICON_SVG for why that broke.
+  scrollEl.querySelectorAll('img.suggested-card-img').forEach(img => {
+    img.addEventListener('error', () => {
+      const parent = img.parentElement;
+      parent.innerHTML = img.dataset.iconType === 'artist' ? SUGGESTED_ARTIST_ICON_SVG : SUGGESTED_VENUE_ICON_SVG;
+      parent.style.background = '';
+    });
+  });
+  document.getElementById('suggestedSection').style.display = '';
+  updateSuggestedArrowState();
+}
+
+// Arrow-based navigation (not raw scrollbar dragging) — scrolls by
+// roughly two card-widths per click, and disables each arrow once
+// there's nothing further to scroll to in that direction.
+function scrollSuggested(direction){
+  const el = document.getElementById('suggestedScroll');
+  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
+}
+function updateSuggestedArrowState(){
+  const el = document.getElementById('suggestedScroll');
+  const prevBtn = document.getElementById('suggestedPrev');
+  const nextBtn = document.getElementById('suggestedNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+// Keeps the disabled state accurate even if someone scrolls manually
+// (trackpad, mobile swipe) instead of using the arrow buttons.
+document.getElementById('suggestedScroll').addEventListener('scroll', updateSuggestedArrowState);
+window.addEventListener('resize', updateSuggestedArrowState);
+
+/* ---- Auto-init first event ---- */
+// Sequenced deliberately: wait for the trending swap to fully finish
+// (whether it replaced EVENTS with real data or left the static fallback
+// untouched) before selectEvent(0) reads EVENTS[0] — calling both
+// independently on 'load' would race, since selectEvent(0) reads EVENTS
+// synchronously the instant it's called, potentially before an in-flight
+// trending fetch has replaced its contents.
+async function initHomepageEvents(){
+  const originalHTML = showTrendingLoadingSkeleton();
+  await loadTrendingConcerts(originalHTML);
+  selectEvent(0);
+}
+window.addEventListener('load', initHomepageEvents);
+// Independent of the above — the Suggested carousel has no ordering
+// dependency on the main event cards, so it loads in parallel rather
+// than waiting its turn.
+window.addEventListener('load', loadSuggested);
+</script>
+<script src="/js/cookie-banner.js" defer></script>
+<script src="/js/search-autocomplete.js" defer></script>
+<script src="/js/search-date-range.js" defer></script>
+<script src="/js/search-location.js" defer></script>
+<!-- Floating category rail — Tickpick-style icon sidebar. Concerts and
+     Sports link to real, working sections. The four sports LiveFair24
+     doesn't have inventory for yet (baseball, basketball, hockey,
+     American football) show the same icon style but don't navigate
+     anywhere — hovering shows "Coming soon" rather than linking to a
+     page with nothing real behind it. -->
 <div class="category-rail" aria-label="Browse by category">
   <a href="/concerts/" class="category-rail-item" aria-label="Concerts">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -167,152 +1154,5 @@
   </a>
 </div>
 
-<script src="/js/search-date-range.js" defer></script>
-<script src="/js/search-location.js" defer></script>
-<!-- search-autocomplete.js deliberately NOT included — it calls
-     /api/search, which is Ticketmaster/concerts-scoped. Reusing it here
-     verbatim would put concert suggestions in this page's query-field
-     dropdown, which is exactly the isolation leak this whole page
-     exists to avoid. Location (city) autocomplete and the Dates picker
-     are both self-contained, make no API calls, and are safe to reuse
-     as-is. -->
-<script>
-const SPORT_SLUG = 'american-football';
-
-function escapeAttr(str){
-  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function formatMatchDate(iso){
-  if(!iso) return '';
-  const d = new Date(iso);
-  if(isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' · ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-}
-
-// ---- Matches grid (Featured + Upcoming — same real, always-current
-// list, see the section comment above) ----
-function matchCardHtml(m){
-  const genreLine = m.league_name ? `American Football · ${escapeAttr(m.league_name)}` : 'American Football';
-  const venueLine = [m.venue_name, m.city].filter(Boolean).map(escapeAttr).join(', ');
-  return `<a href="/matches/${escapeAttr(m.slug)}.html" class="card event-card" style="text-decoration:none;">
-    <div class="genre">${genreLine}</div>
-    <h3>${escapeAttr(m.home_team_name)} vs ${escapeAttr(m.away_team_name)}</h3>
-    <div class="meta">${venueLine}</div>
-    <div class="date">${escapeAttr(formatMatchDate(m.start_datetime))}</div>
-  </a>`;
-}
-
-async function loadMatches(filters){
-  const grid = document.getElementById('matchesGrid');
-  const heading = document.getElementById('matchesHeading');
-  const subtext = document.getElementById('matchesSubtext');
-  filters = filters || {};
-  const hasFilters = Boolean(filters.q || filters.city || filters.dateFrom || filters.dateTo);
-  try{
-    let url = `/api/sports/${SPORT_SLUG}/matches`;
-    if(hasFilters){
-      const params = new URLSearchParams();
-      if(filters.q) params.set('q', filters.q);
-      if(filters.city) params.set('city', filters.city);
-      if(filters.dateFrom) params.set('dateFrom', filters.dateFrom);
-      if(filters.dateTo) params.set('dateTo', filters.dateTo);
-      url = `/api/sports/${SPORT_SLUG}/search?${params.toString()}`;
-    }
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('Sport matches API error');
-    const data = await res.json();
-
-    if(hasFilters){
-      const parts = [filters.q, filters.city].filter(Boolean);
-      heading.textContent = parts.length ? `American Football games matching "${parts.join(', ')}"` : 'American Football games in that date range';
-      subtext.textContent = `${data.count} result${data.count === 1 ? '' : 's'}.`;
-    } else {
-      heading.textContent = 'Upcoming American Football games';
-      subtext.textContent = 'Every fixture, always real.';
-    }
-
-    if(!data.results || data.results.length === 0){
-      grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No matching American Football fixtures right now.</div>';
-      return;
-    }
-    grid.innerHTML = data.results.map(matchCardHtml).join('');
-  } catch(err){
-    console.error(err);
-    grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load American Football fixtures right now.</div>';
-  }
-}
-
-function runSportSearch(evt){
-  evt.preventDefault();
-  const q = document.getElementById('sportSearchInput').value.trim();
-  const city = document.getElementById('searchLocation').value.trim();
-  const dateFrom = document.getElementById('searchDateFrom').value;
-  const dateTo = document.getElementById('searchDateTo').value;
-  loadMatches({ q, city, dateFrom, dateTo });
-  return false;
-}
-
-// A team card from Suggested links here with ?team=<slug> — pre-fills
-// the search box with that team's name (fetched from the trending list
-// already in hand, no extra request needed) and re-runs the same
-// american-football-only search rather than opening a separate, not-yet-built
-// team page.
-function applyTeamFilterFromUrl(trending){
-  const params = new URLSearchParams(window.location.search);
-  const teamSlug = params.get('team');
-  if(!teamSlug) return;
-  const team = trending.find(t => t.slug === teamSlug);
-  if(!team) return;
-  document.getElementById('sportSearchInput').value = team.name;
-  loadMatches({ q: team.name });
-}
-
-// ---- Suggested (trending teams) ----
-function teamCardHtml(team){
-  const iconHtml = team.imageUrl
-    ? `<img src="${escapeAttr(team.imageUrl)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
-    : '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12c0-3 3-7.5 7.5-7.5S19.5 9 19.5 12 16.5 19.5 12 19.5 4.5 15 4.5 12Z"/><path d="M7.5 12h9M10 9.5v1M10 13.5v1M14 9.5v1M14 13.5v1"/></svg>';
-  return `<a href="/american-football/?team=${encodeURIComponent(team.slug)}" class="suggested-card">
-    <div class="suggested-card-icon">${iconHtml}</div>
-    <div class="suggested-card-body">
-      <div class="suggested-card-name">${escapeAttr(team.name)}</div>
-      <div class="suggested-card-tags"><span class="suggested-tag">${team.count} upcoming</span></div>
-    </div>
-  </a>`;
-}
-
-async function loadSuggested(){
-  try{
-    const res = await fetch(`/api/sports/${SPORT_SLUG}/suggested`);
-    if(!res.ok) throw new Error('Sport suggested API error');
-    const data = await res.json();
-    if(!data.trending || data.trending.length === 0) return;
-    document.getElementById('suggestedScroll').innerHTML = data.trending.map(teamCardHtml).join('');
-    document.getElementById('suggestedSection').style.display = '';
-    updateSuggestedArrowState();
-    applyTeamFilterFromUrl(data.trending);
-  } catch(err){
-    console.error(err);
-  }
-}
-
-function scrollSuggested(direction){
-  const el = document.getElementById('suggestedScroll');
-  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
-}
-function updateSuggestedArrowState(){
-  const el = document.getElementById('suggestedScroll');
-  const prevBtn = document.getElementById('suggestedPrev');
-  const nextBtn = document.getElementById('suggestedNext');
-  if(!el || !prevBtn || !nextBtn) return;
-  prevBtn.disabled = el.scrollLeft <= 4;
-  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
-}
-document.getElementById('suggestedScroll').addEventListener('scroll', updateSuggestedArrowState);
-window.addEventListener('resize', updateSuggestedArrowState);
-
-loadMatches();
-loadSuggested();
-</script>
 </body>
 </html>
