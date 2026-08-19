@@ -360,7 +360,19 @@ const KNOWN_ARTIST_PAGES = {
   'nova wren': '/artists/nova-wren.html',
 };
 function venueHref(name){ return KNOWN_VENUE_PAGES[(name || '').toLowerCase()] || '/venues/'; }
-function artistHref(name){ return KNOWN_ARTIST_PAGES[(name || '').toLowerCase()] || '/artists/'; }
+// Prefers the real, general ID-based artist page
+// (/artists/{attractionId}/{slug}/, matches routes/eventPage.js's
+// server-side link and routes/artistPage.js's ID-based resolution) —
+// works for any artist with a real Ticketmaster attractionId, not just
+// the couple of names hardcoded below. KNOWN_ARTIST_PAGES kept only as
+// a secondary fallback for the rare case attractionId is missing;
+// generic /artists/ hub is the last resort, same as before.
+function artistHref(ev){
+  if(ev && ev.attractionId){
+    return `/artists/${encodeURIComponent(ev.attractionId)}/${slugifyForHref(ev.artist)}/`;
+  }
+  return KNOWN_ARTIST_PAGES[((ev && ev.artist) || '').toLowerCase()] || '/artists/';
+}
 
 // Real venue facts (capacity, address, transit) only exist for venues
 // we've actually researched — never fabricated for an arbitrary venue
@@ -415,7 +427,7 @@ document.getElementById('pageTitle').textContent = ev.artist;
     parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${venueLink}${venueLink && rest ? ', ' : ''}${rest}</span></div>`);
   }
   if(ev.artist && ev.artist !== 'Event'){
-    parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><a href="${artistHref(ev.artist)}" style="color:var(--blue);font-weight:700;">${ev.artist}</a></div>`);
+    parts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><a href="${artistHref(ev)}" style="color:var(--blue);font-weight:700;">${ev.artist}</a></div>`);
   }
   row.innerHTML = parts.join('');
 })();
