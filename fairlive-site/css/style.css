@@ -115,6 +115,17 @@ img{max-width:100%;display:block;}
 
 /* Cards */
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+/* Carousel variant of .card-grid — homepage-only, used just for the
+   "Upcoming concerts" cards (#eventCardGrid). Purely a layout/CSS
+   change: turns the grid into a horizontally-scrollable row with the
+   same arrow buttons/colors already used for Suggested and the city
+   carousel. Doesn't touch .card/.event-card styling, so every card's
+   own look is unchanged — and since the JS that populates
+   #eventCardGrid only ever sets .innerHTML on that element, none of
+   that loading/selection logic needed to change either. */
+.card-grid-scroll{display:flex;overflow-x:auto;gap:16px;padding:4px 2px 12px;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;}
+.card-grid-scroll::-webkit-scrollbar{display:none;}
+.card-grid-scroll .card{flex:0 0 300px;}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;transition:border-color .15s,transform .15s,box-shadow .15s;}
 .card:hover{border-color:#c3d6fd;transform:translateY(-3px);box-shadow:0 16px 32px -20px rgba(16,24,40,.2);}
 .card .genre{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--blue-deep);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
