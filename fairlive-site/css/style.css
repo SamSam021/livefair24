@@ -436,7 +436,11 @@ img{max-width:100%;display:block;}
 }
 .category-rail-item{
   width:40px; height:40px; border-radius:999px; display:flex; align-items:center; justify-content:center;
-  color:var(--ink-dim); cursor:pointer; transition:background .15s, color .15s; position:relative;
+  /* #000 — matches TickPick's own category rail exactly (sampled
+     directly from a screenshot: solid black, not a muted grey). This
+     used to be var(--ink-dim) (#5a6478), which is why it looked
+     visibly lighter/bluer than TickPick's version. */
+  color:#000; cursor:pointer; transition:background .15s, color .15s; position:relative;
   background:none; border:none;
 }
 .category-rail-item:hover{ background:var(--surface-2); color:var(--blue); }
