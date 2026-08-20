@@ -58,17 +58,7 @@ function httpGet(url) {
 // avoids re-hitting Wikipedia for the same city repeatedly during one
 // server's uptime. Doesn't persist across restarts; refills lazily,
 // which is fine for this.
-//
-// Successful lookups are cached indefinitely (value: the URL string).
-// FAILED lookups (value: null) are cached only briefly — confirmed real
-// bug: caching a null result forever meant one transient Wikipedia
-// hiccup (all cities for a country fire simultaneously via Promise.all
-// in routes/cities.js, so a burst rate-limit response is plausible) put
-// that city's image out for the rest of the server's uptime, with no
-// way to recover short of a restart. A short retry window fixes that
-// without hammering Wikipedia for a city that genuinely has no article.
-const cache = new Map(); // key -> { value, expiresAt } — expiresAt is Infinity for successful lookups
-const NEGATIVE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const cache = new Map();
 
 async function fetchThumbnail(title) {
   const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=thumbnail&pithumbsize=400&redirects=1&titles=${encodeURIComponent(title)}`;
@@ -93,26 +83,13 @@ async function fetchThumbnail(title) {
 // still tried as a fallback for places where state is unavailable
 // (most countries outside the US) or where "City, State" isn't
 // actually the article's title.
-//
-// wikiTitleOverride handles the OTHER real failure mode confirmed on
-// /api/cities: a bare city name that isn't actually ambiguous but
-// still doesn't resolve to the city article, because something else
-// owns that exact title on Wikipedia — "New York" alone is the STATE
-// article (the city's real title is "New York City"), so the old
-// state-based guess never even applied (major-cities.js's US entries
-// carry no per-city state) and every visitor got a blank card for the
-// single most recognizable US city on the list. Takes priority over
-// state-guessing when supplied, since it's a known-correct title, not
-// a guess.
-async function getCityImageUrl(cityName, state, wikiTitleOverride) {
+async function getCityImageUrl(cityName, state) {
   if (!cityName) return null;
   const normalizedState = state && state.trim().toLowerCase() !== cityName.trim().toLowerCase() ? state.trim() : null;
-  const key = `${cityName.trim().toLowerCase()}|${(normalizedState || '').toLowerCase()}|${(wikiTitleOverride || '').toLowerCase()}`;
-  const cached = cache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  const key = `${cityName.trim().toLowerCase()}|${(normalizedState || '').toLowerCase()}`;
+  if (cache.has(key)) return cache.get(key);
 
   const candidates = [];
-  if (wikiTitleOverride) candidates.push(wikiTitleOverride);
   if (normalizedState) candidates.push(`${cityName}, ${normalizedState}`);
   candidates.push(cityName);
 
@@ -126,7 +103,7 @@ async function getCityImageUrl(cityName, state, wikiTitleOverride) {
     }
     if (result) break;
   }
-  cache.set(key, { value: result, expiresAt: result ? Infinity : Date.now() + NEGATIVE_CACHE_TTL_MS });
+  cache.set(key, result);
   return result;
 }
 

@@ -25,7 +25,7 @@ async function getCitiesForVisitor(clientIp, overrideCountry) {
   // like, not a stand-in for something that has no photo of its own.
   // Run in parallel since each is an independent lookup.
   const citiesWithImages = await Promise.all(
-    cities.map(async (city) => ({ ...city, imageUrl: await cityImage.getCityImageUrl(city.name, null, city.wikiTitle) }))
+    cities.map(async (city) => ({ ...city, imageUrl: await cityImage.getCityImageUrl(city.name) }))
   );
 
   return {
