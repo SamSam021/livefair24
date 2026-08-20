@@ -190,7 +190,18 @@ module.exports = {
     // a confirmed Sports or Music genre) — restricting to
     // classificationName=music here would wrongly return zero events for
     // a real Sports attraction being looked up by ID.
-    if (!params.allCategories && !params.attractionId) parts.push('classificationName=music');
+    //
+    // params.classificationName — explicit override, added for
+    // routes/matches.js's real "Upcoming matches" carousel. Ticketmaster's
+    // real Discovery API has a genuine, separate "Sports" segment
+    // (confirmed via their own documented classification hierarchy, same
+    // one lib/concertGenreBuckets.js's comment already cites) — this
+    // lets a caller ask for classificationName=Sports specifically,
+    // instead of only ever getting the hardcoded 'music' default below
+    // or the fully-unfiltered allCategories:true. Takes priority over
+    // both when supplied.
+    if (params.classificationName) parts.push(`classificationName=${encodeURIComponent(params.classificationName)}`);
+    else if (!params.allCategories && !params.attractionId) parts.push('classificationName=music');
     // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against

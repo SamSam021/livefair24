@@ -28,6 +28,7 @@ const venuePageRoutes = require('./routes/venuePage');
 const suggestedRoutes = require('./routes/suggested');
 const concertCategoriesRoutes = require('./routes/concertCategories');
 const countryEventsRoutes = require('./routes/countryEvents');
+const matchesRoutes = require('./routes/matches');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -277,6 +278,13 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/country-events' && req.method === 'GET') {
       try {
         return sendJSON(res, 200, await countryEventsRoutes.getCountryEvents(registry.getMergedEnv(), query.country));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/matches' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await matchesRoutes.getMatches(registry.getMergedEnv()));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
@@ -548,6 +556,7 @@ const server = http.createServer(async (req, res) => {
     // not awaited, so it never delays the server actually coming up.
     trendingRoutes.startBackgroundTrendingRefresh();
     concertCategoriesRoutes.startBackgroundConcertCategoriesRefresh();
+    matchesRoutes.startBackgroundMatchesRefresh();
   });
 
   // Price-drop alert scheduler — re-checks every watched event once an hour.
