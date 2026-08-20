@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>About LiveFair24 | LiveFair24</title>
+<meta name="description" content="LiveFair24 shows real, live concert ticket prices alongside nearby hotels, so you can see the total cost of a trip before you book.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://livefair24.com/about.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=20260819m">
+
+<meta property="og:title" content="About LiveFair24">
+<meta property="og:description" content="Real, live concert ticket prices alongside nearby hotels — the total cost of a trip, before you book.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://livefair24.com/about.html">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"Concerts","item":"https://livefair24.com/"},
+    {"@type":"ListItem","position":2,"name":"About"}
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
+    <div class="nav-links" id="navLinks">
+      <a href="/cities/">Browse cities</a>
+      <a href="/concerts/">Concerts</a>
+      <a href="/artists/">Artists</a>
+      <a href="/venues/">Venues</a>
+      <a href="/guides/how-it-works.html">How it works</a>
+      <a href="sports/index.html">Sports</a>
+    </div>
+    <div class="nav-right">
+      <a href="/search/" class="nav-cta">Search concerts</a>
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">Concerts</a><span class="sep">›</span>
+    <span>About</span>
+  </div>
+</div>
+
+<main>
+<div class="container">
+
+  <section style="padding:40px 0 24px;max-width:74ch;">
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,48px);">About LiveFair24</h1>
+    <p style="font-size:16px;color:var(--ink-dim);margin-top:14px;line-height:1.7;">
+      LiveFair24 is a concert and sports ticket search site. We show real, live ticket prices for events, pair them with nearby hotel options, and add the two together so you can see the actual total cost of going to a show — before you commit to anything.
+    </p>
+  </section>
+
+  <section class="section" style="padding-top:0;max-width:74ch;">
+
+    <h2 style="font-size:19px;margin-bottom:10px;">What we do</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.75;margin-bottom:20px;">
+      Ticket prices update continuously from our ticketing partner, and we pull hotel availability and pricing for the area around each venue. Instead of comparing a ticket price on one site and a hotel price on another, LiveFair24 puts both together so the real cost of a trip — ticket plus a place to stay — is visible in one place.
+    </p>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.75;margin-bottom:20px;">
+      You can read more about exactly how this works on our <a href="/guides/how-it-works.html" style="color:var(--blue);">How it works</a> page.
+    </p>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">How we make money</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.75;margin-bottom:20px;">
+      LiveFair24 is free to use. When you buy a ticket or book a hotel through a link on our site, we may earn an affiliate commission from that booking — at no extra cost to you. This never affects the prices you're shown; every price comes directly from the ticket or hotel provider. Full details are on our <a href="/affiliate-disclosure.html" style="color:var(--blue);">affiliate disclosure</a> page.
+    </p>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">Who's behind this</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.75;margin-bottom:20px;">
+      LiveFair24 is operated by S.M. Moshtaghi. For the full legal entity details, see our <a href="/impressum.html" style="color:var(--blue);">Impressum</a>, and for how we handle your data, see our <a href="/privacy.html" style="color:var(--blue);">Privacy Policy</a>.
+    </p>
+
+    <h2 style="font-size:19px;margin-bottom:10px;">Get in touch</h2>
+    <p style="font-size:14.5px;color:var(--ink-dim);line-height:1.75;">
+      Questions, feedback, or something looks wrong? Visit our <a href="/contact.html" style="color:var(--blue);">contact page</a>.
+    </p>
+
+  </section>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">● LiveFair24</div>
+      <p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Browse</h4>
+      <ul>
+        <li><a href="/cities/">All cities</a></li>
+        <li><a href="/artists/">Artists</a></li>
+        <li><a href="/venues/">Venues</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Guides</h4>
+      <ul>
+        <li><a href="/guides/how-it-works.html">How it works</a></li>
+        <li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li><li><a href="/guides/hotels-near-venues.html">Hotels near venues</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+        <li><a href="impressum.html">Impressum</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span>
+  </div>
+</footer>
+
+<script src="js/cookie-banner.js" defer></script>
+</body>
+</html>
