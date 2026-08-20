@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260819m">
+<link rel="stylesheet" href="css/style.css?v=20260819o">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -160,7 +160,6 @@
     <div class="pill-row" style="margin-top:20px;">
       <span style="font-size:12px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;align-self:center;">Try:</span>
       <a href="/events/nova-wren-berlin-2026-08-16.html" class="pill">Nova Wren Berlin</a>
-      <a href="/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html" class="pill">Bergkristall vs Rheingold</a>
     </div>
   </div>
 </header>
@@ -398,29 +397,24 @@
     </div>
   </section>
 
-  <!-- Upcoming matches — the sports equivalent of the concerts section above,
-       kept as its own separate segment rather than mixed in, per your
-       request. Links out to the match's own full page (ticket prices,
-       hotel map/filters) rather than duplicating the embedded
-       selectEvent() panel system here. -->
+  <!-- Upcoming matches — real, live sports events from Ticketmaster's
+       own Sports segment (routes/matches.js), replacing the single
+       fictional demo match (FC Bergkristall vs Rheingold United) that
+       used to be hardcoded here. Same horizontal-carousel pattern as
+       the Suggested section above (arrow-scroll, not raw dragging).
+       Links out to each match's own real, indexable event page
+       (/events/{eventId}/{slug}/, routes/eventPage.js) rather than
+       duplicating the embedded selectEvent() panel system here. -->
   <section class="section" id="sports">
     <div class="section-header">
-      <div><h2>Upcoming matches</h2><p>Live ticket prices, same search as concerts.</p></div>
-      <a href="/sports/index.html">See all sports →</a>
+      <div><h2>Upcoming matches</h2><p>Real, live ticket prices — same search as concerts.</p></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="matchesPrev" aria-label="Scroll left" onclick="scrollMatches(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="matchesNext" aria-label="Scroll right" onclick="scrollMatches(1)">›</button>
+      </div>
     </div>
-    <div class="card-grid">
-      <a href="/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html" class="card event-card" style="text-decoration:none;">
-        <div class="genre">Football · Rheinliga</div>
-        <h3>FC Bergkristall vs Rheingold United</h3>
-        <div class="meta">Kristallpark, Munich, Germany</div>
-        <div class="date">Sat, 12 Sep 2026 · 15:30</div>
-        <div class="card-foot">
-          <span class="from">from <b>$45</b></span>
-          <div class="card-actions">
-            <span class="cta">View tickets →</span>
-          </div>
-        </div>
-      </a>
+    <div class="suggested-scroll" id="matchesScroll">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading matches…</div>
     </div>
   </section>
 
@@ -510,7 +504,7 @@
     <div class="footer-col">
       <h4>Guides</h4>
       <ul>
-        <li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li>
+        
         <li><a href="/guides/hotels-near-venues.html">Hotels near venues</a></li>
         <li><a href="/guides/how-it-works.html">How it works</a></li>
       </ul>
@@ -1169,6 +1163,65 @@ function updateSuggestedArrowState(){
 // (trackpad, mobile swipe) instead of using the arrow buttons.
 document.getElementById('suggestedScroll').addEventListener('scroll', updateSuggestedArrowState);
 window.addEventListener('resize', updateSuggestedArrowState);
+
+/* ---- Upcoming matches carousel — real, live Ticketmaster Sports data
+   (/api/matches, routes/matches.js), same carousel pattern as Suggested
+   above. Replaces the single hardcoded fictional demo match. ---- */
+function matchCardHtml(m){
+  const href = '/events/' + encodeURIComponent(m.eventId) + '/' + encodeURIComponent(m.slug) + '/';
+  const priceLine = m.lowestPrice != null ? 'from <b>' + escapeAttr(m.currency || '') + m.lowestPrice + '</b>' : 'Price n/a';
+  const dateLine = formatMatchDate(m.date, m.time);
+  const metaLine = [m.venue, m.city].filter(Boolean).join(', ');
+  return '<a href="' + href + '" class="card event-card suggested-card" style="text-decoration:none;min-width:280px;">' +
+    (m.musicGenre ? '<div class="genre">' + escapeAttr(m.musicGenre) + '</div>' : '') +
+    '<h3>' + escapeAttr(m.name) + '</h3>' +
+    (metaLine ? '<div class="meta">' + escapeAttr(metaLine) + '</div>' : '') +
+    (dateLine ? '<div class="date">' + dateLine + '</div>' : '') +
+    '<div class="card-foot"><span class="from">' + priceLine + '</span><span class="cta">View tickets →</span></div>' +
+    '</a>';
+}
+function formatMatchDate(isoDate, time){
+  if(!isoDate) return '';
+  const d = new Date(isoDate + 'T00:00:00');
+  if(isNaN(d.getTime())) return isoDate;
+  const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  return time ? dateStr + ' · ' + time.slice(0, 5) : dateStr;
+}
+async function loadMatches(){
+  const scrollEl = document.getElementById('matchesScroll');
+  const section = document.getElementById('sports');
+  try{
+    const res = await fetch('/api/matches');
+    if(!res.ok) throw new Error('matches API error');
+    const data = await res.json();
+    if(!data.matches || data.matches.length === 0){
+      // No real matches currently available — hide the whole section
+      // rather than show an empty carousel or, worse, a fake one.
+      if(section) section.style.display = 'none';
+      return;
+    }
+    scrollEl.innerHTML = data.matches.map(matchCardHtml).join('');
+    updateMatchesArrowState();
+  } catch(err){
+    console.error(err);
+    if(section) section.style.display = 'none';
+  }
+}
+function scrollMatches(direction){
+  const el = document.getElementById('matchesScroll');
+  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
+}
+function updateMatchesArrowState(){
+  const el = document.getElementById('matchesScroll');
+  const prevBtn = document.getElementById('matchesPrev');
+  const nextBtn = document.getElementById('matchesNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+document.getElementById('matchesScroll').addEventListener('scroll', updateMatchesArrowState);
+window.addEventListener('resize', updateMatchesArrowState);
+loadMatches();
 
 /* ---- Auto-init first event ---- */
 // Sequenced deliberately: wait for the trending swap to fully finish
