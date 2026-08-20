@@ -20,13 +20,13 @@ const sportsRoutes = require('./routes/sports');
 const searchRoutes = require('./routes/search');
 const trendingRoutes = require('./routes/trending');
 const citiesRoutes = require('./routes/cities');
-const countryPageRoutes = require('./routes/countryPage');
 const eventPageRoutes = require('./routes/eventPage');
 const eventsSitemapRoutes = require('./routes/eventsSitemap');
 const artistVenueSitemapRoutes = require('./routes/artistVenueSitemap');
 const artistPageRoutes = require('./routes/artistPage');
 const venuePageRoutes = require('./routes/venuePage');
 const suggestedRoutes = require('./routes/suggested');
+const concertCategoriesRoutes = require('./routes/concertCategories');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -55,6 +55,18 @@ function sendJSON(res, statusCode, obj, extraHeaders) {
   res.writeHead(statusCode, Object.assign({
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
+    // Every JSON response from this server is dynamic and often
+    // IP/geolocation-personalized (e.g. /api/cities, /api/trending) —
+    // confirmed real bug: with no cache header at all, a browser (or any
+    // CDN in front of App Runner) was free to reuse an earlier response
+    // indefinitely, so one visitor's homepage kept showing US cities
+    // from a stale cached /api/cities response while a fresh request to
+    // the same endpoint (via a different page, no cache entry yet)
+    // correctly showed Germany. The routes that genuinely benefit from
+    // caching (trending.js, concertCategories.js) already implement
+    // their own explicit server-side cache with a real TTL — this only
+    // stops uncontrolled, invisible caching one layer further out.
+    'Cache-Control': 'no-store',
   }, extraHeaders || {}));
   res.end(body);
 }
@@ -254,22 +266,17 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
     }
-    if (pathname === '/api/cities' && req.method === 'GET') {
+    if (pathname === '/api/concerts/categories' && req.method === 'GET') {
       try {
-        const clientIp = getClientIp(req);
-        return sendJSON(res, 200, await citiesRoutes.getCitiesForVisitor(clientIp, query.country));
+        return sendJSON(res, 200, await concertCategoriesRoutes.getConcertCategories(registry.getMergedEnv()));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
     }
-    // Real, live per-country concert data — powers /cities/{country}/
-    // (see routes/countryPage.js's header for the fabricated-data
-    // problem this replaces). :countryCode is the 2-letter code, e.g.
-    // /api/country-concerts/DE.
-    if (pathname.match(/^\/api\/country-concerts\/[^/]+$/) && req.method === 'GET') {
-      const countryCode = decodeURIComponent(pathname.split('/')[3]).toUpperCase();
+    if (pathname === '/api/cities' && req.method === 'GET') {
       try {
-        return sendJSON(res, 200, await countryPageRoutes.getCountryConcerts(countryCode, registry.getMergedEnv()));
+        const clientIp = getClientIp(req);
+        return sendJSON(res, 200, await citiesRoutes.getCitiesForVisitor(clientIp, query.country));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
@@ -532,6 +539,7 @@ const server = http.createServer(async (req, res) => {
     // verification pipeline themselves. Started after listen() begins,
     // not awaited, so it never delays the server actually coming up.
     trendingRoutes.startBackgroundTrendingRefresh();
+    concertCategoriesRoutes.startBackgroundConcertCategoriesRefresh();
   });
 
   // Price-drop alert scheduler — re-checks every watched event once an hour.
