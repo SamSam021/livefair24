@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=20260819j">
+<link rel="stylesheet" href="../css/style.css?v=20260819k">
 <style>
 .search-page-hero{ padding:36px 0 28px; }
 .search-box-row{ display:flex; gap:10px; max-width:640px; margin-top:18px; }
@@ -35,12 +35,7 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-links" id="navLinks">
       <a href="/cities/">Browse cities</a>
-      <div class="nav-links-concerts-expand">
-        <button type="button" class="nav-links-concerts-btn" id="navConcertsBtn" aria-expanded="false" aria-controls="navConcertsSubmenu">Concerts <span class="nlc-chev">›</span></button>
-        <div class="nav-links-concerts-submenu" id="navConcertsSubmenu">
-          <div class="nlc-loading">Loading…</div>
-        </div>
-      </div>
+      <a href="/concerts/">Concerts</a>
       <a href="/artists/">Artists</a>
       <a href="/venues/">Venues</a>
       <a href="/guides/how-it-works.html">How it works</a>
@@ -48,30 +43,31 @@
     </div>
     <div class="nav-right">
       <a href="/search/" class="nav-cta">Search concerts</a>
-      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenuOverlay">
         <span></span><span></span><span></span>
       </button>
     </div>
   </div>
 </nav>
-<script>
-(function(){
-  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
-  if(!btn||!links) return;
-  btn.addEventListener('click', function(){
-    var open = links.classList.toggle('open');
-    btn.classList.toggle('open', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  links.querySelectorAll('a').forEach(function(a){
-    a.addEventListener('click', function(){
-      links.classList.remove('open');
-      btn.classList.remove('open');
-      btn.setAttribute('aria-expanded','false');
-    });
-  });
-})();
-</script>
+
+<div class="mobile-menu-overlay" id="mobileMenuOverlay">
+  <div class="mmo-header">
+    <button type="button" class="mmo-back-btn" id="mmoBackBtn">‹ Back</button>
+    <button type="button" class="mmo-close-btn" id="mmoCloseBtn" aria-label="Close menu">✕</button>
+  </div>
+  <div class="mmo-screens">
+    <div class="mmo-screen active" data-screen="main">
+      <a href="/cities/" class="mmo-row">Browse cities <span class="mmo-chev">›</span></a>
+      <button type="button" class="mmo-row" id="mmoConcertsRow">Concerts <span class="mmo-chev">›</span></button>
+      <a href="/artists/" class="mmo-row">Artists <span class="mmo-chev">›</span></a>
+      <a href="/venues/" class="mmo-row">Venues <span class="mmo-chev">›</span></a>
+      <a href="/guides/how-it-works.html" class="mmo-row">How it works <span class="mmo-chev">›</span></a>
+      <a href="/sports/index.html" class="mmo-row">Sports <span class="mmo-chev">›</span></a>
+    </div>
+    <div class="mmo-screen" data-screen="genres" id="mmoGenresScreen"></div>
+    <div class="mmo-screen" data-screen="artists" id="mmoArtistsScreen"></div>
+  </div>
+</div>
 
 <main>
 <div class="container">
@@ -294,25 +290,33 @@ window.addEventListener('load', function(){
   <div class="ccm-artists" id="ccmArtists"></div>
 </div>
 <script>
-// Powers the Concerts flyout menu — fetches real, current artists from
+// Powers the Concerts flyout menu (desktop) AND the mobile full-screen
+// drill-down menu — both fetch real, current artists from
 // /api/concerts/categories (routes/concertCategories.js), grouped by
 // Ticketmaster's own genre classification. Nothing here is hardcoded;
 // if the API returns no artists for a bucket, that bucket says so
-// rather than showing a placeholder name.
+// rather than showing a placeholder name. Desktop flyout markup/logic
+// is unchanged from before; the mobile menu (added below) replicates
+// TickPick's own real drill-down navigation pattern — main list -> tap
+// Concerts -> genre list -> tap a genre -> real artist list, each a
+// full screen with Back/Close — using our own real data, never theirs.
 (function(){
   var trigger = document.getElementById('ccmTrigger');
   var menu = document.getElementById('ccmMenu');
   var catsEl = document.getElementById('ccmCats');
   var artistsEl = document.getElementById('ccmArtists');
-  // Mobile hamburger-menu accordion — same real data, different
-  // rendering shape (a flat expandable list instead of a two-pane
-  // flyout), since the rail + flyout above are CSS-hidden on mobile
-  // (see .category-rail / .concert-category-menu mobile rules) and
-  // this replaces them there. Guarded independently below so a page
+  // Mobile full-screen menu elements — the rail + its flyout above are
+  // CSS-hidden on mobile (see .category-rail / .concert-category-menu
+  // mobile rules), and this overlay replaces all of their
+  // functionality there instead. Guarded independently below so a page
   // missing one piece doesn't break the other.
-  var mobileBtn = document.getElementById('navConcertsBtn');
-  var mobileSubmenu = document.getElementById('navConcertsSubmenu');
-  if(!trigger || !menu) return;
+  var burger = document.getElementById('navBurger');
+  var overlay = document.getElementById('mobileMenuOverlay');
+  var mmoBackBtn = document.getElementById('mmoBackBtn');
+  var mmoCloseBtn = document.getElementById('mmoCloseBtn');
+  var mmoConcertsRow = document.getElementById('mmoConcertsRow');
+  var mmoGenresScreen = document.getElementById('mmoGenresScreen');
+  var mmoArtistsScreen = document.getElementById('mmoArtistsScreen');
 
   var data = null;
   var activeKey = null;
@@ -322,30 +326,26 @@ window.addEventListener('load', function(){
     return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
   }
 
+  // ---- Desktop flyout (unchanged) ----
   function renderCats(){
+    if(!catsEl) return;
     catsEl.innerHTML = data.buckets.map(function(b){
       var active = b.key === activeKey ? ' active' : '';
       return '<button type="button" class="ccm-cat-btn' + active + '" data-key="' + b.key + '">' +
         '<span>' + escapeHtml(b.label) + '</span><span class="count">' + b.totalCount + '</span></button>';
     }).join('') + '<a href="/concerts/" class="ccm-cat-btn ccm-seeall" style="display:block;margin-top:8px;">Browse all concerts →</a>';
     catsEl.querySelectorAll('.ccm-cat-btn[data-key]').forEach(function(btn){
-      // stopPropagation is required, not cosmetic: setActive() below
-      // calls renderCats() synchronously, which replaces this exact
-      // button via catsEl.innerHTML — detaching it from the document
-      // mid-click. The document-level "click outside closes the menu"
-      // listener (attached below) runs after this one during bubbling
-      // and checks menu.contains(e.target); against a node that's
-      // already been removed from the DOM, that check wrongly returns
-      // false and closes the menu the instant a category is picked.
-      // Confirmed via direct testing — the menu really did close, and
-      // reopening it correctly showed the newly active category,
-      // proving setActive() itself worked fine and this was purely an
-      // event-bubbling ordering issue.
+      // stopPropagation is required, not cosmetic — see the long-form
+      // explanation still in git history/prior version of this file:
+      // setActive() re-renders catsEl mid-click, which detaches this
+      // exact button from the DOM before the document-level "click
+      // outside closes the menu" listener runs during bubbling.
       btn.addEventListener('click', function(e){ e.stopPropagation(); setActive(btn.dataset.key); });
     });
   }
 
   function renderArtists(){
+    if(!artistsEl) return;
     var bucket = data.buckets.find(function(b){ return b.key === activeKey; });
     if(!bucket){ artistsEl.innerHTML = ''; return; }
     if(bucket.artists.length === 0){
@@ -367,11 +367,8 @@ window.addEventListener('load', function(){
     renderArtists();
   }
 
+  // ---- Shared data fetch (desktop flyout + mobile menu both use this) ----
   async function loadData(){
-    // Returns the same in-flight promise to a caller that asks again
-    // before the first request finishes — specifically so the eager
-    // background prefetch (below) and a real click landing moments
-    // later never fire two separate fetches.
     if(loadPromise) return loadPromise;
     loadPromise = (async function(){
       try{
@@ -382,78 +379,126 @@ window.addEventListener('load', function(){
         activeKey = (firstWithArtists || data.buckets[0]).key;
         renderCats();
         renderArtists();
-        renderMobileConcertsMenu();
+        renderGenresScreen(); // safe to call even if the mobile menu isn't currently open — just refreshes its cached content
       } catch(err){
         console.error(err);
-        catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
-        artistsEl.innerHTML = '';
-        if(mobileSubmenu) mobileSubmenu.innerHTML = '<div class="nlc-empty">Could not load categories right now.</div>';
+        if(catsEl) catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
+        if(artistsEl) artistsEl.innerHTML = '';
+        if(mmoGenresScreen) mmoGenresScreen.innerHTML = '<div class="mmo-empty">Could not load categories right now.</div>';
       }
     })();
     return loadPromise;
   }
 
   function openMenu(){
-    // Panes start completely empty in the HTML (not pre-filled with
-    // "Loading…") specifically so there is nothing to render at all if
-    // this markup is ever painted before its CSS (e.g. a stale cached
-    // stylesheet) — the menu itself is display:none until .open is
-    // added, but this is a second, independent layer of safety, not a
-    // replacement for that. The loading text is only ever injected here,
-    // and only if the background prefetch below hasn't already finished
-    // by the time the visitor actually clicks — most real clicks land
-    // after the prefetch completes, so this rarely shows at all.
+    if(!trigger || !menu) return;
     if(!data){
-      catsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
-      artistsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
+      if(catsEl) catsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
+      if(artistsEl) artistsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
     }
     menu.classList.add('open');
     trigger.setAttribute('aria-expanded', 'true');
     loadData();
   }
   function closeMenu(){
+    if(!trigger || !menu) return;
     menu.classList.remove('open');
     trigger.setAttribute('aria-expanded', 'false');
   }
 
-  trigger.addEventListener('click', function(e){
-    e.stopPropagation();
-    if(menu.classList.contains('open')) closeMenu(); else openMenu();
-  });
-  document.addEventListener('click', function(e){
-    if(menu.classList.contains('open') && !menu.contains(e.target) && e.target !== trigger) closeMenu();
-  });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape') closeMenu();
-  });
-
-  // Renders the real categories/artists into the mobile hamburger
-  // menu's expandable "Concerts" accordion — grouped by genre, same
-  // buckets and same real Ticketmaster artists as the desktop flyout,
-  // just laid out as a flat list instead of a two-pane popup (fits a
-  // traditional dropdown menu, which is the whole point of this).
-  function renderMobileConcertsMenu(){
-    if(!mobileSubmenu || !data) return;
-    mobileSubmenu.innerHTML = data.buckets.map(function(b){
-      if(b.artists.length === 0) return '';
-      var links = b.artists.map(function(a){
-        var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
-        return '<a href="' + href + '">' + escapeHtml(a.name) + '</a>';
-      }).join('');
-      var seeAll = b.totalCount > b.artists.length
-        ? '<a href="/concerts/" class="nlc-seeall">See all ' + escapeHtml(b.label) + ' →</a>' : '';
-      return '<div class="nlc-group"><div class="nlc-group-label">' + escapeHtml(b.label) + '</div>' + links + seeAll + '</div>';
-    }).join('') || '<div class="nlc-empty">No current tour dates — check back soon.</div>';
-    mobileSubmenu.innerHTML += '<a href="/concerts/" class="nlc-seeall" style="display:block;margin-top:4px;">Browse all concerts →</a>';
+  if(trigger && menu){
+    trigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(menu.classList.contains('open')) closeMenu(); else openMenu();
+    });
+    document.addEventListener('click', function(e){
+      if(menu.classList.contains('open') && !menu.contains(e.target) && e.target !== trigger) closeMenu();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') closeMenu();
+    });
   }
 
-  if(mobileBtn && mobileSubmenu){
-    mobileBtn.addEventListener('click', function(e){
-      e.stopPropagation(); // same reasoning as the desktop category buttons above — this can re-render mobileSubmenu's own contents on later loads
-      var isOpen = mobileBtn.classList.toggle('open');
-      mobileSubmenu.classList.toggle('open', isOpen);
-      mobileBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      if(isOpen && !data) loadData(); // prefetch below usually already has this ready; only a real fetch if it somehow hasn't landed yet
+  // ---- Mobile full-screen drill-down menu ----
+  var screenStack = ['main'];
+
+  function showScreen(name){
+    if(!overlay) return;
+    overlay.querySelectorAll('.mmo-screen').forEach(function(s){ s.classList.remove('active'); });
+    var target = overlay.querySelector('.mmo-screen[data-screen="' + name + '"]');
+    if(target) target.classList.add('active');
+    if(mmoBackBtn) mmoBackBtn.classList.toggle('visible', name !== 'main');
+  }
+  function pushScreen(name){
+    screenStack.push(name);
+    showScreen(name);
+  }
+  function popScreen(){
+    if(screenStack.length > 1) screenStack.pop();
+    showScreen(screenStack[screenStack.length - 1]);
+  }
+  function resetOverlay(){
+    screenStack = ['main'];
+    showScreen('main');
+  }
+
+  function renderGenresScreen(){
+    if(!mmoGenresScreen) return;
+    if(!data){
+      mmoGenresScreen.innerHTML = '<div class="mmo-loading">Loading…</div>';
+      return;
+    }
+    var nonEmpty = data.buckets.filter(function(b){ return b.artists.length > 0; });
+    if(nonEmpty.length === 0){
+      mmoGenresScreen.innerHTML = '<div class="mmo-empty">No current tour dates — check back soon.</div>';
+      return;
+    }
+    mmoGenresScreen.innerHTML = nonEmpty.map(function(b){
+      return '<button type="button" class="mmo-row" data-key="' + b.key + '">' + escapeHtml(b.label) +
+        ' <span class="mmo-genre-count">' + b.totalCount + '</span><span class="mmo-chev">›</span></button>';
+    }).join('');
+    mmoGenresScreen.querySelectorAll('.mmo-row[data-key]').forEach(function(row){
+      row.addEventListener('click', function(){
+        var bucket = data.buckets.find(function(b){ return b.key === row.dataset.key; });
+        renderArtistsScreen(bucket);
+        pushScreen('artists');
+      });
+    });
+  }
+
+  function renderArtistsScreen(bucket){
+    if(!mmoArtistsScreen || !bucket) return;
+    var links = bucket.artists.map(function(a){
+      var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
+      return '<a href="' + href + '" class="mmo-artist-row">' + escapeHtml(a.name) + '</a>';
+    }).join('');
+    var seeAll = bucket.totalCount > bucket.artists.length
+      ? '<a href="/concerts/" class="mmo-artist-row mmo-seeall">See all ' + escapeHtml(bucket.label) + ' →</a>' : '';
+    mmoArtistsScreen.innerHTML = '<div class="mmo-screen-label">' + escapeHtml(bucket.label) + '</div>' +
+      (links || '<div class="mmo-empty">No current tour dates in this category.</div>') + seeAll;
+  }
+
+  if(burger && overlay){
+    burger.addEventListener('click', function(){
+      overlay.classList.add('open');
+      burger.setAttribute('aria-expanded', 'true');
+      resetOverlay();
+    });
+  }
+  if(mmoCloseBtn && overlay){
+    mmoCloseBtn.addEventListener('click', function(){
+      overlay.classList.remove('open');
+      if(burger) burger.setAttribute('aria-expanded', 'false');
+    });
+  }
+  if(mmoBackBtn){
+    mmoBackBtn.addEventListener('click', popScreen);
+  }
+  if(mmoConcertsRow){
+    mmoConcertsRow.addEventListener('click', function(){
+      renderGenresScreen();
+      pushScreen('genres');
+      if(!data) loadData(); // loadData's success path calls renderGenresScreen() again once ready
     });
   }
 
@@ -461,8 +506,9 @@ window.addEventListener('load', function(){
   // runs, without waiting for a click. The server-side cache
   // (routes/concertCategories.js) already makes this cheap; this just
   // removes the one remaining network round-trip from the moment the
-  // visitor actually opens the menu. Deferred slightly via setTimeout
-  // so it never competes with the hero/search bar's own initial render.
+  // visitor actually opens either menu. Deferred slightly via
+  // setTimeout so it never competes with the hero/search bar's own
+  // initial render.
   setTimeout(loadData, 400);
 })();
 </script>
