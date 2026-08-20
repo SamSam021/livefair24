@@ -783,12 +783,22 @@ img{max-width:100%;display:block;}
   /* Stays visible and usable on mobile rather than disappearing behind
      a hamburger menu — TickPick's own mobile nav doesn't hide controls
      behind a 3-line icon either, it keeps them directly reachable
-     (their persistent icon rail is the same idea we already built).
-     Lets the nav wrap to a second line if the logo + toggle don't fit
-     side by side on a narrow phone, and swaps "Event+Hotel" for the
-     shorter "Both" so the pill doesn't force that wrap unnecessarily. */
-  .nav-inner{ flex-wrap:wrap; row-gap:10px; }
-  .smt-btn{ padding:7px 14px; font-size:12.5px; }
+     (their persistent icon rail is the same idea we already built). */
+
+  /* Confirmed real problem with allowing this to wrap: on a narrow
+     phone the logo, toggle, and burger didn't all fit on one line, so
+     flex-wrap pushed part of the row onto a second line — but nav-inner
+     has a fixed row height assumption elsewhere, so the wrapped content
+     visually overlapped/clipped instead of cleanly reflowing (the logo
+     showed as "veFair24", the toggle got cut off mid-button). Forcing
+     everything onto one line and shrinking each piece to actually fit
+     is the real fix, not just allowing the wrap. */
+  .nav-inner{ flex-wrap:nowrap; padding:12px 14px; gap:8px; }
+  .nav-logo{ font-size:16px; gap:5px; flex-shrink:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nav-right{ gap:6px; flex-shrink:0; }
+  .search-mode-toggle{ padding:3px; gap:1px; flex-shrink:0; }
+  .smt-btn{ padding:5px 9px; font-size:11px; }
   .smt-full{ display:none; }
   .smt-short{ display:inline; }
+  .nav-burger{ width:34px; height:34px; }
 }
