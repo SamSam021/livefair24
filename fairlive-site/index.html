@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260819o">
+<link rel="stylesheet" href="css/style.css?v=20260819p">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -400,20 +400,30 @@
   <!-- Upcoming matches — real, live sports events from Ticketmaster's
        own Sports segment (routes/matches.js), replacing the single
        fictional demo match (FC Bergkristall vs Rheingold United) that
-       used to be hardcoded here. Same horizontal-carousel pattern as
-       the Suggested section above (arrow-scroll, not raw dragging).
-       Links out to each match's own real, indexable event page
-       (/events/{eventId}/{slug}/, routes/eventPage.js) rather than
-       duplicating the embedded selectEvent() panel system here. -->
+       used to be hardcoded here. Deliberately structured identically
+       to the real "Upcoming events" section above — same
+       card-grid-scroll container, same photo-card markup/classes/
+       spacing (renderTrendingEventCards' approach, mirrored below as
+       renderMatchCards) — the only real difference is the data source
+       (/api/matches vs /api/trending). One deliberate exception: cards
+       here link straight to the real event page instead of also
+       opening the embedded ticket/hotel selection panel further down
+       the homepage, since that panel (fetchTickets/fetchHotels/
+       selectEvent) is wired specifically to the concerts EVENTS array
+       — re-plumbing it for a second, parallel dataset was a much
+       bigger architectural change than "the filter is different." -->
   <section class="section" id="sports">
     <div class="section-header">
-      <div><h2>Upcoming matches</h2><p>Real, live ticket prices — same search as concerts.</p></div>
-      <div class="suggested-arrows">
-        <button type="button" class="suggested-arrow-btn" id="matchesPrev" aria-label="Scroll left" onclick="scrollMatches(-1)">‹</button>
-        <button type="button" class="suggested-arrow-btn" id="matchesNext" aria-label="Scroll right" onclick="scrollMatches(1)">›</button>
+      <div><h2>Upcoming matches</h2><p>Live ticket prices updated every 2 minutes.</p></div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="/sports/index.html">See all sports →</a>
+        <div class="suggested-arrows">
+          <button type="button" class="suggested-arrow-btn" id="matchesPrev" aria-label="Scroll left" onclick="scrollMatches(-1)">‹</button>
+          <button type="button" class="suggested-arrow-btn" id="matchesNext" aria-label="Scroll right" onclick="scrollMatches(1)">›</button>
+        </div>
       </div>
     </div>
-    <div class="suggested-scroll" id="matchesScroll">
+    <div class="card-grid-scroll" id="matchesCardGrid">
       <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading matches…</div>
     </div>
   </section>
@@ -1165,20 +1175,35 @@ document.getElementById('suggestedScroll').addEventListener('scroll', updateSugg
 window.addEventListener('resize', updateSuggestedArrowState);
 
 /* ---- Upcoming matches carousel — real, live Ticketmaster Sports data
-   (/api/matches, routes/matches.js), same carousel pattern as Suggested
-   above. Replaces the single hardcoded fictional demo match. ---- */
-function matchCardHtml(m){
-  const href = '/events/' + encodeURIComponent(m.eventId) + '/' + encodeURIComponent(m.slug) + '/';
-  const priceLine = m.lowestPrice != null ? 'from <b>' + escapeAttr(m.currency || '') + m.lowestPrice + '</b>' : 'Price n/a';
+   (/api/matches, routes/matches.js). Card markup and styling
+   deliberately copied line-for-line from renderTrendingEventCards
+   above (same photo-background technique, same classes, same
+   card-foot layout) — only the data source and the CTA target differ
+   (a direct link to the real event page, since matches aren't wired
+   into the concerts-specific selectEvent/EVENTS panel system). ---- */
+function matchCardHtml(m, i){
+  const fullPageHref = '/events/' + encodeURIComponent(m.eventId) + '/' + encodeURIComponent(m.slug) + '/';
+  const safeImageUrl = (m.imageUrl || '').replace(/'/g, '%27');
+  const cardStyle = m.imageUrl
+    ? `cursor:pointer;background-image:linear-gradient(rgba(10,14,25,.55),rgba(10,14,25,.82)),url('${safeImageUrl}');`
+    : 'cursor:pointer;';
+  const cardClass = `card event-card${m.imageUrl ? ' card-photo' : ''}`;
   const dateLine = formatMatchDate(m.date, m.time);
-  const metaLine = [m.venue, m.city].filter(Boolean).join(', ');
-  return '<a href="' + href + '" class="card event-card suggested-card" style="text-decoration:none;min-width:280px;">' +
-    (m.musicGenre ? '<div class="genre">' + escapeAttr(m.musicGenre) + '</div>' : '') +
-    '<h3>' + escapeAttr(m.name) + '</h3>' +
-    (metaLine ? '<div class="meta">' + escapeAttr(metaLine) + '</div>' : '') +
-    (dateLine ? '<div class="date">' + dateLine + '</div>' : '') +
-    '<div class="card-foot"><span class="from">' + priceLine + '</span><span class="cta">View tickets →</span></div>' +
-    '</a>';
+  const priceLine = m.lowestPrice != null ? escapeAttr(m.currency || '') + m.lowestPrice : 'n/a';
+  const metaLine = [m.venue, m.city, m.country].filter(Boolean).join(', ');
+  return `
+    <a href="${fullPageHref}" class="${cardClass}" style="${cardStyle}text-decoration:none;">
+      <div class="genre">${escapeAttr(m.musicGenre || 'Sports')}</div>
+      <h3>${escapeAttr(m.name)}</h3>
+      <div class="meta">${escapeAttr(metaLine)}</div>
+      <div class="date">${dateLine}</div>
+      <div class="card-foot">
+        <span class="from">from <b>${priceLine}</b></span>
+        <div class="card-actions">
+          <span class="cta">Tickets →</span>
+        </div>
+      </div>
+    </a>`;
 }
 function formatMatchDate(isoDate, time){
   if(!isoDate) return '';
@@ -1188,7 +1213,7 @@ function formatMatchDate(isoDate, time){
   return time ? dateStr + ' · ' + time.slice(0, 5) : dateStr;
 }
 async function loadMatches(){
-  const scrollEl = document.getElementById('matchesScroll');
+  const grid = document.getElementById('matchesCardGrid');
   const section = document.getElementById('sports');
   try{
     const res = await fetch('/api/matches');
@@ -1200,7 +1225,7 @@ async function loadMatches(){
       if(section) section.style.display = 'none';
       return;
     }
-    scrollEl.innerHTML = data.matches.map(matchCardHtml).join('');
+    grid.innerHTML = data.matches.map(matchCardHtml).join('');
     updateMatchesArrowState();
   } catch(err){
     console.error(err);
@@ -1208,18 +1233,18 @@ async function loadMatches(){
   }
 }
 function scrollMatches(direction){
-  const el = document.getElementById('matchesScroll');
-  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
+  const el = document.getElementById('matchesCardGrid');
+  el.scrollBy({ left: direction * 632, behavior: 'smooth' });
 }
 function updateMatchesArrowState(){
-  const el = document.getElementById('matchesScroll');
+  const el = document.getElementById('matchesCardGrid');
   const prevBtn = document.getElementById('matchesPrev');
   const nextBtn = document.getElementById('matchesNext');
   if(!el || !prevBtn || !nextBtn) return;
   prevBtn.disabled = el.scrollLeft <= 4;
   nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
 }
-document.getElementById('matchesScroll').addEventListener('scroll', updateMatchesArrowState);
+document.getElementById('matchesCardGrid').addEventListener('scroll', updateMatchesArrowState);
 window.addEventListener('resize', updateMatchesArrowState);
 loadMatches();
 

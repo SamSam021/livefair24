@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/sports/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=20260819o">
+<link rel="stylesheet" href="../css/style.css?v=20260819p">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -82,13 +82,13 @@
 
   <section class="section" style="padding-top:0;">
     <div class="section-header">
-      <div><h2>Upcoming matches</h2><p>Real, live ticket prices, updated every visit.</p></div>
+      <div><h2>Upcoming matches</h2><p>Live ticket prices updated every 2 minutes.</p></div>
       <div class="suggested-arrows">
         <button type="button" class="suggested-arrow-btn" id="matchesPrev" aria-label="Scroll left" onclick="scrollMatches(-1)">‹</button>
         <button type="button" class="suggested-arrow-btn" id="matchesNext" aria-label="Scroll right" onclick="scrollMatches(1)">›</button>
       </div>
     </div>
-    <div class="suggested-scroll" id="matchesScroll">
+    <div class="card-grid-scroll" id="matchesCardGrid">
       <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading matches…</div>
     </div>
   </section>
@@ -396,21 +396,32 @@
 <script>
 // Real, live "Upcoming matches" carousel — /api/matches
 // (routes/matches.js), sourced from Ticketmaster's real Sports segment.
-// Same rendering approach as the homepage's version of this carousel.
+// Card markup/classes/spacing deliberately copied line-for-line from
+// the homepage's renderTrendingEventCards (real "Upcoming events"),
+// same as index.html's version of this carousel — the only real
+// difference is the data source. See index.html's copy of this exact
+// script block for the fuller explanation of why the CTA links
+// straight to the real event page instead of an embedded panel.
 function escapeAttr(str){
   return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
 }
 function matchCardHtml(m){
-  var href = '/events/' + encodeURIComponent(m.eventId) + '/' + encodeURIComponent(m.slug) + '/';
-  var priceLine = m.lowestPrice != null ? 'from <b>' + escapeAttr(m.currency || '') + m.lowestPrice + '</b>' : 'Price n/a';
+  var fullPageHref = '/events/' + encodeURIComponent(m.eventId) + '/' + encodeURIComponent(m.slug) + '/';
+  var safeImageUrl = (m.imageUrl || '').replace(/'/g, '%27');
+  var cardStyle = m.imageUrl
+    ? 'cursor:pointer;background-image:linear-gradient(rgba(10,14,25,.55),rgba(10,14,25,.82)),url(\'' + safeImageUrl + '\');'
+    : 'cursor:pointer;';
+  var cardClass = 'card event-card' + (m.imageUrl ? ' card-photo' : '');
   var dateLine = formatMatchDate(m.date, m.time);
-  var metaLine = [m.venue, m.city].filter(Boolean).join(', ');
-  return '<a href="' + href + '" class="card event-card suggested-card" style="text-decoration:none;min-width:280px;">' +
-    (m.musicGenre ? '<div class="genre">' + escapeAttr(m.musicGenre) + '</div>' : '') +
+  var priceLine = m.lowestPrice != null ? escapeAttr(m.currency || '') + m.lowestPrice : 'n/a';
+  var metaLine = [m.venue, m.city, m.country].filter(Boolean).join(', ');
+  return '<a href="' + fullPageHref + '" class="' + cardClass + '" style="' + cardStyle + 'text-decoration:none;">' +
+    '<div class="genre">' + escapeAttr(m.musicGenre || 'Sports') + '</div>' +
     '<h3>' + escapeAttr(m.name) + '</h3>' +
-    (metaLine ? '<div class="meta">' + escapeAttr(metaLine) + '</div>' : '') +
-    (dateLine ? '<div class="date">' + dateLine + '</div>' : '') +
-    '<div class="card-foot"><span class="from">' + priceLine + '</span><span class="cta">View tickets →</span></div>' +
+    '<div class="meta">' + escapeAttr(metaLine) + '</div>' +
+    '<div class="date">' + dateLine + '</div>' +
+    '<div class="card-foot"><span class="from">from <b>' + priceLine + '</b></span>' +
+    '<div class="card-actions"><span class="cta">Tickets →</span></div></div>' +
     '</a>';
 }
 function formatMatchDate(isoDate, time){
@@ -421,35 +432,35 @@ function formatMatchDate(isoDate, time){
   return time ? dateStr + ' · ' + time.slice(0, 5) : dateStr;
 }
 async function loadMatches(){
-  var scrollEl = document.getElementById('matchesScroll');
+  var grid = document.getElementById('matchesCardGrid');
   try{
     var res = await fetch('/api/matches');
     if(!res.ok) throw new Error('matches API error');
     var data = await res.json();
     if(!data.matches || data.matches.length === 0){
-      scrollEl.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No current listings — check back soon.</div>';
+      grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No current listings — check back soon.</div>';
       return;
     }
-    scrollEl.innerHTML = data.matches.map(matchCardHtml).join('');
+    grid.innerHTML = data.matches.map(matchCardHtml).join('');
     updateMatchesArrowState();
   } catch(err){
     console.error(err);
-    scrollEl.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load matches right now.</div>';
+    grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load matches right now.</div>';
   }
 }
 function scrollMatches(direction){
-  var el = document.getElementById('matchesScroll');
-  el.scrollBy({ left: direction * 440, behavior: 'smooth' });
+  var el = document.getElementById('matchesCardGrid');
+  el.scrollBy({ left: direction * 632, behavior: 'smooth' });
 }
 function updateMatchesArrowState(){
-  var el = document.getElementById('matchesScroll');
+  var el = document.getElementById('matchesCardGrid');
   var prevBtn = document.getElementById('matchesPrev');
   var nextBtn = document.getElementById('matchesNext');
   if(!el || !prevBtn || !nextBtn) return;
   prevBtn.disabled = el.scrollLeft <= 4;
   nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
 }
-document.getElementById('matchesScroll').addEventListener('scroll', updateMatchesArrowState);
+document.getElementById('matchesCardGrid').addEventListener('scroll', updateMatchesArrowState);
 window.addEventListener('resize', updateMatchesArrowState);
 loadMatches();
 </script>
