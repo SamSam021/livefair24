@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/concerts/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819l">
+<link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -64,39 +64,33 @@
 <nav class="site-nav">
   <div class="nav-inner">
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
-    <div class="nav-right">
-      <div class="search-mode-toggle" role="group" aria-label="What to search for">
-        <button type="button" class="smt-btn active" data-mode="both" onclick="setSearchMode('both')"><span class="smt-full">Event+Hotel</span><span class="smt-short">Both</span></button>
-        <button type="button" class="smt-btn" data-mode="event" onclick="setSearchMode('event')">Event</button>
-        <button type="button" class="smt-btn" data-mode="hotel" onclick="setSearchMode('hotel')">Hotel</button>
-      </div>
-      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenuOverlay">
-        <span></span><span></span><span></span>
-      </button>
+    <div class="search-mode-toggle" role="group" aria-label="What to search for">
+      <button type="button" class="smt-btn active" data-mode="both" onclick="setSearchMode('both')"><span class="smt-full">Event+Hotel</span><span class="smt-short">Both</span></button>
+      <button type="button" class="smt-btn" data-mode="event" onclick="setSearchMode('event')">Event</button>
+      <button type="button" class="smt-btn" data-mode="hotel" onclick="setSearchMode('hotel')">Hotel</button>
     </div>
   </div>
 </nav>
+<script>
+(function(){
+  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
+  if(!btn||!links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    });
+  });
+})();
+</script>
 
-<div class="mobile-menu-overlay" id="mobileMenuOverlay">
-  <div class="mmo-header">
-    <button type="button" class="mmo-back-btn" id="mmoBackBtn">‹ Back</button>
-    <button type="button" class="mmo-close-btn" id="mmoCloseBtn" aria-label="Close menu">✕</button>
-  </div>
-  <div class="mmo-screens">
-    <div class="mmo-screen active" data-screen="main">
-      <a href="/cities/" class="mmo-row">Browse cities <span class="mmo-chev">›</span></a>
-      <button type="button" class="mmo-row" id="mmoConcertsRow">Concerts <span class="mmo-chev">›</span></button>
-      <a href="/artists/" class="mmo-row">Artists <span class="mmo-chev">›</span></a>
-      <a href="/venues/" class="mmo-row">Venues <span class="mmo-chev">›</span></a>
-      <a href="/guides/how-it-works.html" class="mmo-row">How it works <span class="mmo-chev">›</span></a>
-      <a href="/sports/index.html" class="mmo-row">Sports <span class="mmo-chev">›</span></a>
-    </div>
-    <div class="mmo-screen" data-screen="genres" id="mmoGenresScreen"></div>
-    <div class="mmo-screen" data-screen="artists" id="mmoArtistsScreen"></div>
-  </div>
-</div>
-
-<header class="hero hero-light hero-centered">
+<header class="hero hero-light">
   <div class="hero-inner">
     <span class="badge badge-live" style="margin-bottom:20px;">● Live prices — updated every 2 minutes</span>
     <h1>Live happens once.<br>Don't miss it.</h1>
@@ -189,29 +183,6 @@
       </div>
     </div>
     <div class="suggested-scroll" id="suggestedScroll"></div>
-  </section>
-
-  <!-- Browse by city — 12 major cities for the visitor's detected
-       country, via /api/cities (unchanged IP-based country detection —
-       only the card design and city count changed). Replaces the old
-       static "browse by country" grid, which pointed to
-       /cities/<country>/ pages that mostly didn't exist. Same
-       card-size/arrow-color convention as the Suggested carousel above
-       (both modeled on eventim.de's own Highlights row), and a real
-       carousel now that there are enough cities per country to
-       actually be worth scrolling through. Positioned right after
-       Suggested and before Upcoming concerts. -->
-  <section class="section">
-    <div class="section-header">
-      <div><h2 id="cityBrowseHeading">Browse concerts by city</h2><p id="cityBrowseSubtext">Popular cities near you.</p></div>
-      <div class="suggested-arrows">
-        <button type="button" class="suggested-arrow-btn" id="cityPrev" aria-label="Scroll left" onclick="scrollCities(-1)">‹</button>
-        <button type="button" class="suggested-arrow-btn" id="cityNext" aria-label="Scroll right" onclick="scrollCities(1)">›</button>
-      </div>
-    </div>
-    <div class="city-scroll" id="homeCityGrid">
-      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading cities…</div>
-    </div>
   </section>
 
   <!-- Featured events + live hotel panel -->
@@ -394,6 +365,28 @@
         </div>
 
       </div>
+    </div>
+  </section>
+
+  <!-- Browse by city — 12 major cities for the visitor's detected
+       country, via /api/cities (unchanged IP-based country detection —
+       only the card design and city count changed). Replaces the old
+       static "browse by country" grid, which pointed to
+       /cities/<country>/ pages that mostly didn't exist. Same
+       card-size/arrow-color convention as the Suggested carousel above
+       (both modeled on eventim.de's own Highlights row), and a real
+       carousel now that there are enough cities per country to
+       actually be worth scrolling through. -->
+  <section class="section">
+    <div class="section-header">
+      <div><h2 id="cityBrowseHeading">Browse concerts by city</h2><p id="cityBrowseSubtext">Popular cities near you.</p></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="cityPrev" aria-label="Scroll left" onclick="scrollCities(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="cityNext" aria-label="Scroll right" onclick="scrollCities(1)">›</button>
+      </div>
+    </div>
+    <div class="city-scroll" id="homeCityGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading cities…</div>
     </div>
   </section>
 
@@ -1189,10 +1182,10 @@ updateEventCardArrowState();
      anywhere — hovering shows "Coming soon" rather than linking to a
      page with nothing real behind it. -->
 <div class="category-rail" aria-label="Browse by category">
-  <button type="button" class="category-rail-item" aria-label="Concerts" id="ccmTrigger" aria-expanded="false" aria-controls="ccmMenu">
+  <a href="/concerts/" class="category-rail-item" aria-label="Concerts">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     <span class="category-rail-tooltip">Concerts</span>
-  </button>
+  </a>
   <button type="button" class="category-rail-item disabled" aria-label="Football / Soccer (coming soon)">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.4h-4.8l-1.4-4.4z"/><path d="M12 7.5V4M15.8 10.3l3-2M8.2 10.3l-3-2M9.6 14.7l-1.5 3.4M14.4 14.7l1.5 3.4"/></svg>
     <span class="category-rail-tooltip">Football / Soccer — coming soon</span>
@@ -1220,233 +1213,6 @@ updateEventCardArrowState();
     <span class="category-rail-tooltip">Browse all</span>
   </a>
 </div>
-<div class="concert-category-menu" id="ccmMenu" role="dialog" aria-label="Browse concerts by category">
-  <div class="ccm-cats" id="ccmCats"></div>
-  <div class="ccm-artists" id="ccmArtists"></div>
-</div>
-<script>
-// Powers the Concerts flyout menu (desktop) AND the mobile full-screen
-// drill-down menu — both fetch real, current artists from
-// /api/concerts/categories (routes/concertCategories.js), grouped by
-// Ticketmaster's own genre classification. Nothing here is hardcoded;
-// if the API returns no artists for a bucket, that bucket says so
-// rather than showing a placeholder name. Desktop flyout markup/logic
-// is unchanged from before; the mobile menu (added below) replicates
-// TickPick's own real drill-down navigation pattern — main list -> tap
-// Concerts -> genre list -> tap a genre -> real artist list, each a
-// full screen with Back/Close — using our own real data, never theirs.
-(function(){
-  var trigger = document.getElementById('ccmTrigger');
-  var menu = document.getElementById('ccmMenu');
-  var catsEl = document.getElementById('ccmCats');
-  var artistsEl = document.getElementById('ccmArtists');
-  // Mobile full-screen menu elements — the rail + its flyout above are
-  // CSS-hidden on mobile (see .category-rail / .concert-category-menu
-  // mobile rules), and this overlay replaces all of their
-  // functionality there instead. Guarded independently below so a page
-  // missing one piece doesn't break the other.
-  var burger = document.getElementById('navBurger');
-  var overlay = document.getElementById('mobileMenuOverlay');
-  var mmoBackBtn = document.getElementById('mmoBackBtn');
-  var mmoCloseBtn = document.getElementById('mmoCloseBtn');
-  var mmoConcertsRow = document.getElementById('mmoConcertsRow');
-  var mmoGenresScreen = document.getElementById('mmoGenresScreen');
-  var mmoArtistsScreen = document.getElementById('mmoArtistsScreen');
-
-  var data = null;
-  var activeKey = null;
-  var loadPromise = null; // guards against duplicate concurrent fetches (prefetch + a click racing each other)
-
-  function escapeHtml(str){
-    return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
-  }
-
-  // ---- Desktop flyout (unchanged) ----
-  function renderCats(){
-    if(!catsEl) return;
-    catsEl.innerHTML = data.buckets.map(function(b){
-      var active = b.key === activeKey ? ' active' : '';
-      return '<button type="button" class="ccm-cat-btn' + active + '" data-key="' + b.key + '">' +
-        '<span>' + escapeHtml(b.label) + '</span><span class="count">' + b.totalCount + '</span></button>';
-    }).join('') + '<a href="/concerts/" class="ccm-cat-btn ccm-seeall" style="display:block;margin-top:8px;">Browse all concerts →</a>';
-    catsEl.querySelectorAll('.ccm-cat-btn[data-key]').forEach(function(btn){
-      // stopPropagation is required, not cosmetic — see the long-form
-      // explanation still in git history/prior version of this file:
-      // setActive() re-renders catsEl mid-click, which detaches this
-      // exact button from the DOM before the document-level "click
-      // outside closes the menu" listener runs during bubbling.
-      btn.addEventListener('click', function(e){ e.stopPropagation(); setActive(btn.dataset.key); });
-    });
-  }
-
-  function renderArtists(){
-    if(!artistsEl) return;
-    var bucket = data.buckets.find(function(b){ return b.key === activeKey; });
-    if(!bucket){ artistsEl.innerHTML = ''; return; }
-    if(bucket.artists.length === 0){
-      artistsEl.innerHTML = '<h4>' + escapeHtml(bucket.label) + '</h4><div class="ccm-empty">No current tour dates in this category — check back soon.</div>';
-      return;
-    }
-    var links = bucket.artists.map(function(a){
-      var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
-      return '<a href="' + href + '" class="ccm-artist-link">' + escapeHtml(a.name) + '</a>';
-    }).join('');
-    var seeAll = bucket.totalCount > bucket.artists.length
-      ? '<a href="/concerts/" class="ccm-artist-link ccm-seeall">See all ' + escapeHtml(bucket.label) + ' →</a>' : '';
-    artistsEl.innerHTML = '<h4>' + escapeHtml(bucket.label) + '</h4><div class="ccm-artist-grid">' + links + seeAll + '</div>';
-  }
-
-  function setActive(key){
-    activeKey = key;
-    renderCats();
-    renderArtists();
-  }
-
-  // ---- Shared data fetch (desktop flyout + mobile menu both use this) ----
-  async function loadData(){
-    if(loadPromise) return loadPromise;
-    loadPromise = (async function(){
-      try{
-        var res = await fetch('/api/concerts/categories');
-        if(!res.ok) throw new Error('categories API error');
-        data = await res.json();
-        var firstWithArtists = data.buckets.find(function(b){ return b.artists.length > 0; });
-        activeKey = (firstWithArtists || data.buckets[0]).key;
-        renderCats();
-        renderArtists();
-        renderGenresScreen(); // safe to call even if the mobile menu isn't currently open — just refreshes its cached content
-      } catch(err){
-        console.error(err);
-        if(catsEl) catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
-        if(artistsEl) artistsEl.innerHTML = '';
-        if(mmoGenresScreen) mmoGenresScreen.innerHTML = '<div class="mmo-empty">Could not load categories right now.</div>';
-      }
-    })();
-    return loadPromise;
-  }
-
-  function openMenu(){
-    if(!trigger || !menu) return;
-    if(!data){
-      if(catsEl) catsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
-      if(artistsEl) artistsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
-    }
-    menu.classList.add('open');
-    trigger.setAttribute('aria-expanded', 'true');
-    loadData();
-  }
-  function closeMenu(){
-    if(!trigger || !menu) return;
-    menu.classList.remove('open');
-    trigger.setAttribute('aria-expanded', 'false');
-  }
-
-  if(trigger && menu){
-    trigger.addEventListener('click', function(e){
-      e.stopPropagation();
-      if(menu.classList.contains('open')) closeMenu(); else openMenu();
-    });
-    document.addEventListener('click', function(e){
-      if(menu.classList.contains('open') && !menu.contains(e.target) && e.target !== trigger) closeMenu();
-    });
-    document.addEventListener('keydown', function(e){
-      if(e.key === 'Escape') closeMenu();
-    });
-  }
-
-  // ---- Mobile full-screen drill-down menu ----
-  var screenStack = ['main'];
-
-  function showScreen(name){
-    if(!overlay) return;
-    overlay.querySelectorAll('.mmo-screen').forEach(function(s){ s.classList.remove('active'); });
-    var target = overlay.querySelector('.mmo-screen[data-screen="' + name + '"]');
-    if(target) target.classList.add('active');
-    if(mmoBackBtn) mmoBackBtn.classList.toggle('visible', name !== 'main');
-  }
-  function pushScreen(name){
-    screenStack.push(name);
-    showScreen(name);
-  }
-  function popScreen(){
-    if(screenStack.length > 1) screenStack.pop();
-    showScreen(screenStack[screenStack.length - 1]);
-  }
-  function resetOverlay(){
-    screenStack = ['main'];
-    showScreen('main');
-  }
-
-  function renderGenresScreen(){
-    if(!mmoGenresScreen) return;
-    if(!data){
-      mmoGenresScreen.innerHTML = '<div class="mmo-loading">Loading…</div>';
-      return;
-    }
-    var nonEmpty = data.buckets.filter(function(b){ return b.artists.length > 0; });
-    if(nonEmpty.length === 0){
-      mmoGenresScreen.innerHTML = '<div class="mmo-empty">No current tour dates — check back soon.</div>';
-      return;
-    }
-    mmoGenresScreen.innerHTML = nonEmpty.map(function(b){
-      return '<button type="button" class="mmo-row" data-key="' + b.key + '">' + escapeHtml(b.label) +
-        ' <span class="mmo-genre-count">' + b.totalCount + '</span><span class="mmo-chev">›</span></button>';
-    }).join('');
-    mmoGenresScreen.querySelectorAll('.mmo-row[data-key]').forEach(function(row){
-      row.addEventListener('click', function(){
-        var bucket = data.buckets.find(function(b){ return b.key === row.dataset.key; });
-        renderArtistsScreen(bucket);
-        pushScreen('artists');
-      });
-    });
-  }
-
-  function renderArtistsScreen(bucket){
-    if(!mmoArtistsScreen || !bucket) return;
-    var links = bucket.artists.map(function(a){
-      var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
-      return '<a href="' + href + '" class="mmo-artist-row">' + escapeHtml(a.name) + '</a>';
-    }).join('');
-    var seeAll = bucket.totalCount > bucket.artists.length
-      ? '<a href="/concerts/" class="mmo-artist-row mmo-seeall">See all ' + escapeHtml(bucket.label) + ' →</a>' : '';
-    mmoArtistsScreen.innerHTML = '<div class="mmo-screen-label">' + escapeHtml(bucket.label) + '</div>' +
-      (links || '<div class="mmo-empty">No current tour dates in this category.</div>') + seeAll;
-  }
-
-  if(burger && overlay){
-    burger.addEventListener('click', function(){
-      overlay.classList.add('open');
-      burger.setAttribute('aria-expanded', 'true');
-      resetOverlay();
-    });
-  }
-  if(mmoCloseBtn && overlay){
-    mmoCloseBtn.addEventListener('click', function(){
-      overlay.classList.remove('open');
-      if(burger) burger.setAttribute('aria-expanded', 'false');
-    });
-  }
-  if(mmoBackBtn){
-    mmoBackBtn.addEventListener('click', popScreen);
-  }
-  if(mmoConcertsRow){
-    mmoConcertsRow.addEventListener('click', function(){
-      renderGenresScreen();
-      pushScreen('genres');
-      if(!data) loadData(); // loadData's success path calls renderGenresScreen() again once ready
-    });
-  }
-
-  // Eager background prefetch — fires once, shortly after this script
-  // runs, without waiting for a click. The server-side cache
-  // (routes/concertCategories.js) already makes this cheap; this just
-  // removes the one remaining network round-trip from the moment the
-  // visitor actually opens either menu. Deferred slightly via
-  // setTimeout so it never competes with the hero/search bar's own
-  // initial render.
-  setTimeout(loadData, 400);
-})();
-</script>
 
 </body>
 </html>
