@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/artists/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/style.css?v=20260819l">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -29,6 +29,7 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-links" id="navLinks">
       <a href="/cities/">Browse cities</a>
+      <a href="/concerts/">Concerts</a>
       <a href="/artists/">Artists</a>
       <a href="/venues/">Venues</a>
       <a href="/guides/how-it-works.html">How it works</a>
@@ -80,15 +81,10 @@
   </section>
 
   <section class="section" style="padding-top:0;">
-    <div class="card-grid">
-      <a href="/artists/nova-wren.html" class="card">
-        <div class="genre">Pop / Rock</div>
-        <h3>Nova Wren</h3>
-        <div class="meta">World Tour · 2026</div>
-        <div class="card-foot"><span class="from">from <b>$38</b></span><span class="cta">2 tour dates →</span></div>
-      </a>
+    <div class="card-grid" id="artistCardGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Loading artists…</div>
     </div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More artists are added as tour dates are confirmed.</p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">Artists update automatically as real tour dates are confirmed.</p>
   </section>
 
 </div>
@@ -103,6 +99,46 @@
   </div>
   <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
 </footer>
+<script>
+// Populates this hub from the same real, live artist data the homepage's
+// Suggested carousel already uses (/api/suggested?category=music) —
+// every card here links to a real Ticketmaster attractionId hub page
+// (routes/artistPage.js), never a hardcoded/fictional entry. If the
+// endpoint fails or returns nothing, we say so rather than silently
+// showing a stale hardcoded artist.
+function escapeAttr(str){
+  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function loadArtistHub(){
+  const grid = document.getElementById('artistCardGrid');
+  try{
+    const res = await fetch('/api/suggested?category=music');
+    if(!res.ok) throw new Error('Suggested API error');
+    const data = await res.json();
+    const artists = data.artists || [];
+    if(artists.length === 0){
+      grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">No artists to show right now — check back soon.</div>';
+      return;
+    }
+    grid.innerHTML = artists.map(a => {
+      const href = `/artists/${encodeURIComponent(a.id)}/${encodeURIComponent(a.slug)}/`;
+      const genre = escapeAttr(a.category || 'Music');
+      const name = escapeAttr(a.name);
+      const count = a.count || 0;
+      return `<a href="${href}" class="card">
+        <div class="genre">${genre}</div>
+        <h3>${name}</h3>
+        <div class="meta">${count} upcoming date${count === 1 ? '' : 's'}</div>
+        <div class="card-foot"><span class="cta">View tickets →</span></div>
+      </a>`;
+    }).join('');
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Could not load artists right now.</div>';
+  }
+}
+loadArtistHub();
+</script>
 <script src="../js/cookie-banner.js" defer></script>
 </body>
 </html>
