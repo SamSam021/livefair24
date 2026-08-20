@@ -42,17 +42,25 @@ function buildEventSlug(ev) {
 
 async function collectSportsEventsAcrossMarkets(tm, env) {
   const all = [];
+  const searchErrors = [];
   await Promise.all(
     SITEMAP_MARKETS.map(async (countryCode) => {
       try {
         const results = await tm.searchEvents({ query: '', city: '', countryCode, limit: 100, classificationName: 'Sports' }, env);
         if (Array.isArray(results)) all.push(...results);
+        // See ticketmaster.js's searchEvents catch block — a caught
+        // fetch failure (rate limit, bad key, network error) resolves
+        // to an empty array carrying this non-enumerable property
+        // instead of throwing, so it's visible here rather than only
+        // in server logs.
+        if (results.searchError) searchErrors.push(`${countryCode}: ${results.searchError}`);
       } catch (err) {
         console.warn('[matches]', countryCode, err.message);
+        searchErrors.push(`${countryCode}: ${err.message}`);
       }
     })
   );
-  return all;
+  return { events: all, searchErrors };
 }
 
 async function computeMatches(env) {
@@ -62,7 +70,7 @@ async function computeMatches(env) {
     return { matches: [], demoMode: true };
   }
 
-  const rawEvents = await collectSportsEventsAcrossMarkets(tm, env);
+  const { events: rawEvents, searchErrors } = await collectSportsEventsAcrossMarkets(tm, env);
 
   const seen = new Set();
   const matches = [];
@@ -75,7 +83,9 @@ async function computeMatches(env) {
 
   matches.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-  return { matches: matches.slice(0, MAX_MATCHES), demoMode: false };
+  const result = { matches: matches.slice(0, MAX_MATCHES), demoMode: false };
+  if (searchErrors.length > 0) result.searchErrors = searchErrors;
+  return result;
 }
 
 async function getMatches(env) {

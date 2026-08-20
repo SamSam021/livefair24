@@ -228,7 +228,23 @@ module.exports = {
       return events.map(mapEventToResult);
     } catch (err) {
       console.warn('[ticketmaster provider] searchEvents', err.message);
-      return [];
+      // Confirmed real diagnostic gap: this catch previously swallowed
+      // EVERY failure type (rate limit, expired/invalid API key, network
+      // error, Ticketmaster outage) into a bare empty array — completely
+      // indistinguishable from "genuinely zero real events found" to any
+      // caller. routes/trending.js's own debug object has a
+      // discoveryErrors field specifically for capturing this, but it
+      // only ever populated when a promise actually REJECTED — an
+      // array resolving normally (even an empty one) never triggered
+      // it. Attaching the real error message as a non-enumerable
+      // property here lets a caller that wants to know (trending.js
+      // does, below) surface the ACTUAL cause without needing server
+      // log access, while every existing caller that just checks
+      // .length or iterates the array is completely unaffected — it's
+      // still a plain empty array by every normal measure.
+      const emptyResult = [];
+      Object.defineProperty(emptyResult, 'searchError', { value: err.message, enumerable: false });
+      return emptyResult;
     }
   },
 

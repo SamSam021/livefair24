@@ -438,8 +438,16 @@ async function runTrendingPipeline(countryCode, demoMode, usedPricingFallback, r
   let discovered = [];
   const discoveryErrors = [];
   discoverySettled.forEach((outcome) => {
-    if (outcome.status === 'fulfilled') discovered = discovered.concat(outcome.value);
-    else discoveryErrors.push(String(outcome.reason && outcome.reason.message || outcome.reason));
+    if (outcome.status === 'fulfilled') {
+      discovered = discovered.concat(outcome.value);
+      // See ticketmaster.js's searchEvents catch block — a caught
+      // fetch failure resolves to an empty array carrying this
+      // non-enumerable property instead of rejecting, specifically so
+      // it's visible here rather than only in server logs.
+      if (outcome.value.searchError) discoveryErrors.push(outcome.value.searchError);
+    } else {
+      discoveryErrors.push(String(outcome.reason && outcome.reason.message || outcome.reason));
+    }
   });
   debug.discoveredCount = discovered.length;
   if (discoveryErrors.length) debug.discoveryErrors = discoveryErrors;
