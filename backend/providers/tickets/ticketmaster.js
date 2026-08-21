@@ -34,6 +34,38 @@ function httpGet(url) {
   });
 }
 
+// Global request throttle — respects Ticketmaster's own real, confirmed
+// rate limit, captured directly from a real production 429 response:
+// "Spike arrest violation... MessageRate{messagesPerPeriod=5,
+// periodInMicroseconds=1000000, maxBurstMessageCount=1.0}".
+// maxBurstMessageCount=1.0 means essentially NO concurrent requests are
+// allowed — only one in flight at a time, spaced at least 1000ms/5 =
+// 200ms apart. This serializes EVERY real request this provider makes,
+// process-wide, regardless of which route triggered it —
+// trending.js, concertCategories.js, countryEvents.js, matches.js,
+// cityPage.js, search.js, artistPage.js, venuePage.js, and eventPage.js
+// all funnel through here. A per-route fix wouldn't have been enough:
+// two different routes each firing their own internally-well-behaved
+// Promise.all() batch at the same real-world moment would still burst
+// past this limit unless the throttle is shared across the whole
+// process, not scoped to one route's own logic.
+let requestQueue = Promise.resolve();
+const MIN_REQUEST_SPACING_MS = 220; // 5/sec = 200ms floor; small safety margin added
+function throttledHttpGet(url) {
+  const result = requestQueue.then(() => httpGet(url));
+  // Chains the next request's earliest start time after this one
+  // finishes, whether it succeeded or failed — a failed/rate-limited
+  // request still counts against Ticketmaster's own limit, so the
+  // delay applies regardless. .catch(() => {}) here only prevents a
+  // rejected request from breaking the shared queue for requests
+  // behind it; the real error is still returned to this call's own
+  // caller via `result` below, untouched.
+  requestQueue = result.catch(() => {}).then(
+    () => new Promise((resolve) => setTimeout(resolve, MIN_REQUEST_SPACING_MS))
+  );
+  return result;
+}
+
 module.exports = {
   id: 'ticketmaster',
   name: 'Ticketmaster',
@@ -106,7 +138,7 @@ module.exports = {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&keyword=${keyword}${city}&size=5`;
 
     try {
-      const data = await httpGet(url);
+      const data = await throttledHttpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
       const results = [];
       for (const ev of events) {
@@ -223,7 +255,7 @@ module.exports = {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?${parts.join('&')}`;
 
     try {
-      const data = await httpGet(url);
+      const data = await throttledHttpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
       return events.map(mapEventToResult);
     } catch (err) {
@@ -262,7 +294,7 @@ module.exports = {
     const key = env.TICKETMASTER_API_KEY;
     const url = `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
     try {
-      const ev = await httpGet(url);
+      const ev = await throttledHttpGet(url);
       return mapEventToResult(ev);
     } catch (err) {
       console.warn('[ticketmaster provider] getEventDetails', err.message);
