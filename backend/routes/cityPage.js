@@ -20,7 +20,7 @@
 // rendering an empty shell.
 
 const registry = require('../providers/registry');
-const { getSeoCityBySlug } = require('../data/seo-cities');
+const { SEO_CITIES, getSeoCityBySlug } = require('../data/seo-cities');
 
 const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours — same reasoning as countryEvents.js
 const cache = new Map(); // slug -> { html, expiresAt }
@@ -141,39 +141,44 @@ function dedupeUnderlyingEvents(events) {
 // heading is a real mismatch between promise and content. Ticketmaster's
 // broad city/country search reliably omits priceRanges (documented
 // extensively in routes/trending.js) — a per-event detail-by-ID lookup
-// is the only reliable way to get a real price. Verifies only the
-// FIRST page's worth of canonical events (not every event in the
-// city), batched and throttled the same conservative way
-// trending.js's verification step already is, to stay well under
-// Ticketmaster's real rate limit. Mutates lowestPrice/currency in
-// place only when a real value comes back — never invents one, and an
-// event this can't verify just keeps showing "Tickets available"
-// rather than a wrong or fabricated number.
+// is the only reliable way to get a real price. Verifies only the FIRST
+// PRICE_VERIFY_LIMIT events (not every event in the city) — the display
+// list itself is unbounded, so this cap exists independently to avoid
+// firing a real verification call for every single one when there are
+// many. Mutates lowestPrice/currency in place only when a real value
+// comes back — never invents one, and an event this can't verify just
+// keeps showing "Tickets available" rather than a wrong or fabricated
+// number.
+//
+// No manual batching/delay here (previously PRICE_VERIFY_BATCH_SIZE=4
+// with a 1100ms wait between batches) — confirmed real regression once
+// providers/tickets/ticketmaster.js got its own global, process-wide
+// request throttle (a hard 220ms floor between every real HTTP call,
+// respecting Ticketmaster's actual "maxBurstMessageCount=1.0" limit
+// from a real captured 429 response). That per-route delay was
+// designed before the global one existed and started stacking on top
+// of it — e.g. 12 events took ~5.9s (3 manual batches x (880ms of
+// now-serialized "concurrent" calls + a redundant 1100ms wait)) instead
+// of the ~2.6-3.3s a single correctly-paced queue actually needs.
+// Firing every verification call at once here and trusting the shared
+// queue to space them is both simpler and faster.
 const PRICE_VERIFY_LIMIT = 12;
-const PRICE_VERIFY_BATCH_SIZE = 4;
-const PRICE_VERIFY_BATCH_DELAY_MS = 1100;
 async function verifyRealPrices(events, tm, env) {
   const toVerify = events.slice(0, PRICE_VERIFY_LIMIT);
-  for (let i = 0; i < toVerify.length; i += PRICE_VERIFY_BATCH_SIZE) {
-    const batch = toVerify.slice(i, i + PRICE_VERIFY_BATCH_SIZE);
-    await Promise.allSettled(
-      batch.map(async (ev) => {
-        if (typeof tm.getEventDetails !== 'function') return;
-        try {
-          const detail = await tm.getEventDetails(ev.eventId, env);
-          if (detail && detail.lowestPrice != null) {
-            ev.lowestPrice = detail.lowestPrice;
-            ev.currency = detail.currency;
-          }
-        } catch (err) {
-          console.warn('[cityPage] price verify', ev.eventId, err.message);
+  await Promise.allSettled(
+    toVerify.map(async (ev) => {
+      if (typeof tm.getEventDetails !== 'function') return;
+      try {
+        const detail = await tm.getEventDetails(ev.eventId, env);
+        if (detail && detail.lowestPrice != null) {
+          ev.lowestPrice = detail.lowestPrice;
+          ev.currency = detail.currency;
         }
-      })
-    );
-    if (i + PRICE_VERIFY_BATCH_SIZE < toVerify.length) {
-      await new Promise((resolve) => setTimeout(resolve, PRICE_VERIFY_BATCH_DELAY_MS));
-    }
-  }
+      } catch (err) {
+        console.warn('[cityPage] price verify', ev.eventId, err.message);
+      }
+    })
+  );
 }
 
 function buildVenueSection(events) {
@@ -338,7 +343,7 @@ async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
   const itemListJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    itemListElement: events.slice(0, 20).map((ev, i) => ({
+    itemListElement: events.map((ev, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       url: `${siteOrigin}/events/${encodeURIComponent(ev.eventId)}/${encodeURIComponent(ev.slug)}`,
@@ -502,4 +507,42 @@ async function renderCityConcertsPage(slug, env, siteOrigin) {
   return renderCityPageInternal(slug, true, env, siteOrigin);
 }
 
-module.exports = { renderCityAllEventsPage, renderCityConcertsPage };
+// Background pre-warming — the actual fix for the "Eventim's equivalent
+// page is much faster" question: Eventim reads from their own
+// pre-ingested database at request time (fast, no external dependency).
+// This route instead makes real, live Ticketmaster calls as part of
+// rendering — one broad search plus up to 12 individual per-event price
+// verifications, each correctly spaced ~220ms apart by the global
+// throttle (providers/tickets/ticketmaster.js) to respect Ticketmaster's
+// own confirmed rate limit. That live-fetch cost is unavoidable in
+// itself, but it doesn't have to sit in a real visitor's critical path
+// — trending.js, concertCategories.js, and matches.js all solved this
+// the same way already; this route just never had the same treatment.
+// Fires immediately on startup, then on a fixed interval comfortably
+// inside CACHE_TTL_MS, so under normal operation a real request almost
+// always hits an already-warm cache instead of triggering the live
+// fetch chain itself.
+const BACKGROUND_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour — half of CACHE_TTL_MS, same margin concertCategories.js uses
+const SITE_ORIGIN_FOR_BACKGROUND_REFRESH = 'https://www.livefair24.com'; // no incoming request to derive this from in a background job
+
+async function backgroundRefreshCityPages() {
+  const env = registry.getMergedEnv(); // re-read fresh each cycle — picks up an admin-panel key change without a restart, same reasoning as the other background jobs
+  for (const cityRecord of SEO_CITIES) {
+    for (const concertsOnly of [false, true]) {
+      try {
+        await renderCityPageInternal(cityRecord.slug, concertsOnly, env, SITE_ORIGIN_FOR_BACKGROUND_REFRESH);
+      } catch (err) {
+        console.warn('[cityPage background refresh]', cityRecord.slug, concertsOnly ? 'concerts' : 'all', err.message);
+      }
+    }
+  }
+}
+
+function startBackgroundCityPagesRefresh() {
+  backgroundRefreshCityPages().catch((err) => console.warn('[cityPage background refresh]', err.message));
+  setInterval(() => {
+    backgroundRefreshCityPages().catch((err) => console.warn('[cityPage background refresh]', err.message));
+  }, BACKGROUND_REFRESH_INTERVAL_MS);
+}
+
+module.exports = { renderCityAllEventsPage, renderCityConcertsPage, startBackgroundCityPagesRefresh };

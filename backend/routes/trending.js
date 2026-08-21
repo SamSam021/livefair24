@@ -231,27 +231,21 @@ function candidateKey(ev) {
   return ev.eventId || `${ev.name || ''}|${ev.date || ''}|${ev.venue || ''}`;
 }
 
-// Ticketmaster's documented rate limit is 5 requests/second. Firing all
-// CANDIDATES_TO_VERIFY requests simultaneously (the previous behavior)
-// risked silently exceeding that — a 429 gets caught inside
-// getEventDetails and just resolves to an empty result, not a visible
-// error, so rate-limiting could have been quietly suppressing results
-// without ever showing up in verifyErrors. Batching at a conservative
-// size with a pause between batches keeps this safely under the limit.
-const VERIFY_BATCH_SIZE = 4;
-const VERIFY_BATCH_DELAY_MS = 1100;
-
-async function runInBatches(items, batchSize, delayMs, fn) {
-  const settled = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    const batchSettled = await Promise.allSettled(batch.map(fn));
-    settled.push(...batchSettled);
-    if (i + batchSize < items.length) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-  return settled;
+// Ticketmaster's real, confirmed rate limit (captured directly from a
+// production 429 response body: a "spike arrest" violation reporting
+// maxBurstMessageCount of 1) is now enforced globally, at the request
+// level, inside providers/tickets/ticketmaster.js itself — every real
+// HTTP call this app makes to Ticketmaster funnels through one shared,
+// process-wide queue with a 220ms floor between calls, regardless of
+// which route triggered it. This manual per-route batching+delay
+// predates that global throttle and, once it existed, started stacking
+// an extra, redundant wait on top of it — confirmed real regression:
+// verifying CANDIDATES_TO_VERIFY events took roughly double what either
+// mechanism alone needs. Firing every verification call at once here
+// and trusting the shared queue to space them correctly is both
+// simpler and faster.
+async function runInBatches(items, fn) {
+  return Promise.allSettled(items.map(fn));
 }
 
 // Determines which country to actually query. If any enabled provider
@@ -496,7 +490,7 @@ async function runTrendingPipeline(countryCode, demoMode, usedPricingFallback, r
   // keyword re-search for any provider without a detail-by-ID method
   // (demo mode, and any future provider that doesn't offer one).
   async function verifyCandidates(candList) {
-    const settled = await runInBatches(candList, VERIFY_BATCH_SIZE, VERIFY_BATCH_DELAY_MS, async (cand) => {
+    const settled = await runInBatches(candList, async (cand) => {
       const sourceProvider = providers.find((p) => p.id === cand.source);
       if (sourceProvider && typeof sourceProvider.getEventDetails === 'function' && cand.eventId) {
         const detail = await sourceProvider.getEventDetails(cand.eventId, env);

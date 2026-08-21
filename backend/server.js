@@ -609,6 +609,7 @@ const server = http.createServer(async (req, res) => {
     trendingRoutes.startBackgroundTrendingRefresh();
     concertCategoriesRoutes.startBackgroundConcertCategoriesRefresh();
     matchesRoutes.startBackgroundMatchesRefresh();
+    cityPageRoutes.startBackgroundCityPagesRefresh();
   });
 
   // Price-drop alert scheduler — re-checks every watched event once an hour.
