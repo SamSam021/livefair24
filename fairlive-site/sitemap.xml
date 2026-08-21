@@ -64,15 +64,12 @@
 
   <!-- Deterministic, IP-independent SEO city landing pages —
        /events/{city-slug}/ (routes/cityPage.js, data/seo-cities.js).
-       Scaled from the original 3-city pilot (Berlin, Essen, Dresden —
-       spec section 35's own staged-rollout instruction) to all 12
-       German cities already established elsewhere on the site (same
-       list as data/major-cities.js's DE entry), after the pilot was
-       independently verified live. These are DIFFERENT from
+       Pilot scope only per the SEO architecture spec section 35:
+       Berlin, Essen, Dresden. These are DIFFERENT from
        /cities/germany/ above — that page (and /api/cities generally)
        is IP/country-driven, correct for the interactive browse
        experience but explicitly NOT meant to be what determines
-       indexability. Every one of these always renders the same city
+       indexability. These three always render the same city
        regardless of who/what requests them.
 
        Each city also has a /concerts/ sub-page — same city record,
@@ -80,154 +77,40 @@
        segment only (routes/cityPage.js's renderCityConcertsPage).
        Deliberately a separate URL/canonical from the general page
        above, not a query-string filter, per the explicit instruction
-       that search/filter URLs must never be the canonical SEO page.
-
-       Only page 1 of each is listed here — deeper pagination pages
-       (/page/2/, etc.) are real and indexable but discovered via
-       rel=next/prev and internal pagination links rather than being
-       enumerated in the static sitemap, consistent with standard
-       practice for paginated listings. -->
+       that search/filter URLs must never be the canonical SEO page. -->
   <url>
     <loc>https://livefair24.com/events/berlin/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://livefair24.com/events/berlin/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/hamburg/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/hamburg/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/munich/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/munich/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/cologne/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/cologne/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/frankfurt/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/frankfurt/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dusseldorf/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dusseldorf/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/stuttgart/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/stuttgart/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/leipzig/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/leipzig/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dortmund/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dortmund/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://livefair24.com/events/essen/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://livefair24.com/events/essen/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/bremen/</loc>
-    <lastmod>2026-08-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/bremen/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://livefair24.com/events/dresden/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://livefair24.com/events/dresden/concerts/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
