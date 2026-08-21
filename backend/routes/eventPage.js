@@ -178,7 +178,16 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
   if (realEvent.venue || realEvent.city || realEvent.country) {
     const venueLink = realEvent.venue
       ? `<a href="/venues/" style="color:var(--blue);font-weight:700;">${escapeHtml(realEvent.venue)}</a>` : '';
-    const rest = [realEvent.city, realEvent.country].filter(Boolean).map(escapeHtml).join(', ');
+    // Cities with a real, indexable SEO landing page (data/seo-cities.js
+    // pilot — Berlin, Essen, Dresden) get a real link back to it here —
+    // completes the City <-> Event linking the SEO audit asked for.
+    // Every other city stays plain text, same as before.
+    const citySlugMap = { berlin: 'berlin', essen: 'essen', dresden: 'dresden' };
+    const citySlug = realEvent.city ? citySlugMap[realEvent.city.trim().toLowerCase()] : null;
+    const cityPart = citySlug
+      ? `<a href="/events/${citySlug}/concerts/" style="color:var(--blue);font-weight:700;">${escapeHtml(realEvent.city)}</a>`
+      : escapeHtml(realEvent.city || '');
+    const rest = [cityPart, escapeHtml(realEvent.country)].filter(Boolean).join(', ');
     metaRowParts.push(`<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${venueLink}${venueLink && rest ? ', ' : ''}${rest}</span></div>`);
   }
   if (realEvent.artist) {
