@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<title>Concerts in Germany 2026 — Tickets &amp; Prices | LiveFair24</title>
+<title>Events in Germany — Tickets & Prices | LiveFair24</title>
 <meta name="description" content="All upcoming concerts in Germany. Real, live ticket prices updated every 2 minutes. Find hotels near venues. Berlin, Hamburg, Munich, Bremen and more.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://livefair24.com/cities/germany/">
@@ -76,7 +76,7 @@
 
   <section style="padding:40px 0 24px;">
     <span class="badge badge-blue" style="margin-bottom:16px;">🇩🇪 Germany</span>
-    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Concerts in Germany 2026</h1>
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Events in Germany</h1>
     <p style="font-size:16px;color:var(--ink-dim);margin-top:12px;max-width:54ch;line-height:1.6;">
       Search ticket prices for all upcoming concerts in Germany, and find the nearest hotels.
     </p>
@@ -90,16 +90,6 @@
     <div class="section-header"><div><h2>Browse by city</h2></div></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="germanyCityGrid">
       <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Loading cities…</div>
-    </div>
-  </section>
-
-  <!-- All events -->
-  <section class="section">
-    <div class="section-header">
-      <div><h2>All upcoming Germany concerts</h2><p>Sorted by date · prices updated every 2 minutes</p></div>
-    </div>
-    <div class="card-grid" id="germanyEventGrid">
-      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Loading events…</div>
     </div>
   </section>
 
@@ -118,16 +108,9 @@
 function escapeHtml(str){
   return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
 }
-function formatDate(isoDate){
-  if(!isoDate) return '';
-  var d = new Date(isoDate + 'T00:00:00');
-  if(isNaN(d.getTime())) return isoDate;
-  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-}
 async function loadGermanyData(){
   var statsEl = document.getElementById('germanyStats');
   var cityGrid = document.getElementById('germanyCityGrid');
-  var eventGrid = document.getElementById('germanyEventGrid');
   try{
     var res = await fetch('/api/country-events?country=DE');
     if(!res.ok) throw new Error('country-events API error');
@@ -163,31 +146,10 @@ async function loadGermanyData(){
           '</a>';
       }).join('');
     }
-
-    // Event cards — real artist/event name, real venue+city, real date,
-    // real price, linking to the real indexable event page
-    // (/events/{eventId}/{slug}/, routes/eventPage.js) which pulls the
-    // same live Ticketmaster data again at that page itself.
-    if(data.events.length === 0){
-      eventGrid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">No current listings — check back soon.</div>';
-    } else {
-      eventGrid.innerHTML = data.events.slice(0, 24).map(function(ev){
-        var href = '/events/' + encodeURIComponent(ev.eventId) + '/' + encodeURIComponent(ev.slug) + '/';
-        var priceLine = ev.lowestPrice != null ? 'from <b>' + escapeHtml(ev.currency || '') + ev.lowestPrice + '</b>' : 'Price n/a';
-        return '<a href="' + href + '" class="card">' +
-          (ev.musicGenre ? '<div class="genre">' + escapeHtml(ev.musicGenre) + '</div>' : '') +
-          '<h3>' + escapeHtml(ev.name) + '</h3>' +
-          '<div class="meta">' + escapeHtml(ev.venue || '') + (ev.venue && ev.city ? ', ' : '') + escapeHtml(ev.city || '') + '</div>' +
-          '<div class="date">' + formatDate(ev.date) + '</div>' +
-          '<div class="card-foot"><span class="from">' + priceLine + '</span><span class="cta">View tickets →</span></div>' +
-          '</a>';
-      }).join('');
-    }
   } catch(err){
     console.error(err);
     statsEl.innerHTML = '';
     cityGrid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Could not load current listings right now.</div>';
-    eventGrid.innerHTML = '';
   }
 }
 loadGermanyData();
