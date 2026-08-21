@@ -62,34 +62,6 @@
     <priority>0.80</priority>
   </url>
 
-  <!-- Deterministic, IP-independent SEO city landing pages —
-       /events/{city-slug}/ (routes/cityPage.js, data/seo-cities.js).
-       Pilot scope only per the SEO architecture spec section 35:
-       Berlin, Essen, Dresden. These are DIFFERENT from
-       /cities/germany/ above — that page (and /api/cities generally)
-       is IP/country-driven, correct for the interactive browse
-       experience but explicitly NOT meant to be what determines
-       indexability. These three always render the same city
-       regardless of who/what requests them. -->
-  <url>
-    <loc>https://livefair24.com/events/berlin/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/essen/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dresden/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-
   <!-- Guide pages -->
   <url>
     <loc>https://livefair24.com/guides/how-it-works.html</loc>
