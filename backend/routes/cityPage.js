@@ -73,6 +73,19 @@ async function fetchRealEventsForCity(cityRecord, env) {
   const events = [];
   for (const ev of results) {
     if (!ev.eventId || seen.has(ev.eventId) || !ev.name || !ev.date) continue;
+    // Confirmed real gap: the query-level classificationName=music
+    // param (see ticketmaster.js's searchEvents default) is not fully
+    // reliable on its own — a real comedy show ("ZARNA GARG: MILLION
+    // DOLLAR EXCUSES") came back from this exact call and rendered on
+    // this page despite that filter. This page's whole purpose is
+    // concerts specifically, so this checks Ticketmaster's own real
+    // segment classification (ev.genre — their documented segment
+    // field, "Music" vs "Comedy"/"Sports"/"Arts & Theatre"/etc.) as an
+    // explicit second layer, not just trusting the query param.
+    // Missing genre data (rare) is excluded rather than assumed music,
+    // since showing a wrongly-included non-concert is worse than
+    // omitting one genuinely-music event with incomplete data.
+    if ((ev.genre || '').toLowerCase() !== 'music') continue;
     seen.add(ev.eventId);
     events.push({ ...ev, slug: buildEventSlug(ev) });
   }
@@ -334,7 +347,7 @@ async function renderCityPage(slug, env, siteOrigin) {
 <link rel="canonical" href="${canonicalUrl}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819s">
+<link rel="stylesheet" href="/css/style.css?v=20260819t">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(cityRecord.seoDescription)}">
 <meta property="og:type" content="website">
