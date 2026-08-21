@@ -212,6 +212,22 @@ img{max-width:100%;display:block;}
   .event-row{ flex-direction:column; align-items:flex-start; gap:10px; }
   .event-row-side{ align-self:stretch; justify-content:space-between; }
 }
+
+/* Pagination nav (city pages) — real <a href> pills to real
+   /events/{slug}/page/{n}/ URLs, matching the reference UI: rounded
+   pill buttons, gold text/border on the active page, prev/next arrows,
+   ellipsis once there are many pages. */
+.pagination-nav{ display:flex; align-items:center; justify-content:center; gap:8px; padding:22px 0 4px; flex-wrap:wrap; }
+.pgn-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:38px; height:38px; padding:0 10px; border-radius:10px;
+  background:var(--surface-2); color:var(--gold); font-family:'JetBrains Mono',monospace;
+  font-weight:700; font-size:14px; text-decoration:none; transition:background .15s, color .15s;
+}
+.pgn-btn:hover{ background:var(--surface); }
+.pgn-btn.active{ background:#fff; color:var(--gold); border:1.5px solid var(--gold); }
+.pgn-btn.disabled{ color:var(--ink-faint); opacity:.45; cursor:default; }
+.pgn-ellipsis{ color:var(--ink-faint); font-family:'JetBrains Mono',monospace; padding:0 2px; }
 .card-grid-scroll .card{flex:0 0 300px;}
 /* display:flex + flex-direction:column here, combined with
    margin-top:auto on .card-foot below, is what actually aligns the
