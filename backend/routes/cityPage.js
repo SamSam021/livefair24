@@ -99,7 +99,7 @@ function eventCardHtml(ev) {
     : 'Tickets available';
   return `
     <a href="${href}" class="card event-card" style="text-decoration:none;display:block;padding:20px;">
-      <h3 style="margin-bottom:4px;"><a href="${href}" style="color:inherit;text-decoration:none;">${escapeHtml(ev.name)}</a></h3>
+      <h3 style="margin-bottom:4px;">${escapeHtml(ev.name)}</h3>
       <div class="meta">${metaLine}</div>
       <div class="date">${escapeHtml(dateLine)}</div>
       <div class="card-foot"><span class="from">${priceLine}</span><span class="cta">View tickets \u2192</span></div>
@@ -173,7 +173,7 @@ async function renderCityPage(slug, env, siteOrigin) {
 <link rel="canonical" href="${canonicalUrl}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819p">
+<link rel="stylesheet" href="/css/style.css?v=20260819q">
 <meta property="og:title" content="${escapeHtml(cityRecord.seoTitle)}">
 <meta property="og:description" content="${escapeHtml(cityRecord.seoDescription)}">
 <meta property="og:type" content="website">
