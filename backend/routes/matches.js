@@ -99,7 +99,10 @@ async function getMatches(env) {
 }
 
 async function backgroundRefreshMatches() {
-  const env = registry.getMergedEnv();
+  // lowPriority:true marks every real Ticketmaster call this job makes
+  // as background-triggered — see providers/tickets/ticketmaster.js's
+  // two-lane priority queue.
+  const env = { ...registry.getMergedEnv(), lowPriority: true };
   try {
     const fresh = await computeMatches(env);
     cachedResult = fresh;
