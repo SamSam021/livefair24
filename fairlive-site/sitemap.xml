@@ -10,36 +10,48 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- Concerts hub -->
+  <!-- Concerts hub — real, live page, was missing entirely before. -->
   <url>
     <loc>https://livefair24.com/concerts/</loc>
     <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.80</priority>
+    <priority>0.95</priority>
   </url>
 
-  <!-- Artist hub — individual artist pages are dynamic, real-data pages
-       at /artists/{attractionId}/{slug}/ (routes/artistPage.js) and are
-       listed in the separate, live-generated /sitemap-artists.xml, not
-       here. The nova-wren.html / waldbuhne-berlin.html static files
-       still in this repo are pre-launch fictional demo content — now
-       that real ticket data is live, they've been set to noindex and
-       intentionally dropped from this sitemap so they don't compete
-       with or duplicate the real hub pages. -->
+  <!-- Event pages — highest-value SEO pages -->
+  <url>
+    <loc>https://livefair24.com/events/nova-wren-berlin-2026-08-16.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Artist pages -->
   <url>
     <loc>https://livefair24.com/artists/</loc>
     <lastmod>2026-08-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.70</priority>
   </url>
+  <url>
+    <loc>https://livefair24.com/artists/nova-wren.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
 
-  <!-- Venue pages — same real/dynamic split as artists above; see
-       /sitemap-venues.xml for individual venue URLs. -->
+  <!-- Venue pages -->
   <url>
     <loc>https://livefair24.com/venues/</loc>
     <lastmod>2026-08-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/venues/waldbuhne-berlin.html</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
 
   <!-- City / country hubs -->
@@ -62,59 +74,6 @@
     <priority>0.80</priority>
   </url>
 
-  <!-- Deterministic, IP-independent SEO city landing pages —
-       /events/{city-slug}/ (routes/cityPage.js, data/seo-cities.js).
-       Pilot scope only per the SEO architecture spec section 35:
-       Berlin, Essen, Dresden. These are DIFFERENT from
-       /cities/germany/ above — that page (and /api/cities generally)
-       is IP/country-driven, correct for the interactive browse
-       experience but explicitly NOT meant to be what determines
-       indexability. These three always render the same city
-       regardless of who/what requests them.
-
-       Each city also has a /concerts/ sub-page — same city record,
-       same SSR architecture, filtered to Ticketmaster's real Music
-       segment only (routes/cityPage.js's renderCityConcertsPage).
-       Deliberately a separate URL/canonical from the general page
-       above, not a query-string filter, per the explicit instruction
-       that search/filter URLs must never be the canonical SEO page. -->
-  <url>
-    <loc>https://livefair24.com/events/berlin/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/berlin/concerts/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/essen/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/essen/concerts/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dresden/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/events/dresden/concerts/</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-
   <!-- Guide pages -->
   <url>
     <loc>https://livefair24.com/guides/how-it-works.html</loc>
@@ -123,10 +82,10 @@
     <priority>0.70</priority>
   </url>
   <url>
-    <loc>https://livefair24.com/guides/hotels-near-venues.html</loc>
-    <lastmod>2026-08-19</lastmod>
+    <loc>https://livefair24.com/guides/concert-ticket-fees.html</loc>
+    <lastmod>2026-08-10</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
+    <priority>0.65</priority>
   </url>
 
   <!-- Legal / trust pages -->
@@ -139,24 +98,6 @@
   <url>
     <loc>https://livefair24.com/impressum.html</loc>
     <lastmod>2026-08-16</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.30</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/about.html</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.40</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/contact.html</loc>
-    <lastmod>2026-08-19</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.30</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/affiliate-disclosure.html</loc>
-    <lastmod>2026-08-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
@@ -179,6 +120,18 @@
     across US/DE/GB, so it can never go stale the way a hand-maintained
     list of individual events would the moment one sells out. Both
     sitemaps are declared in robots.txt.
+
+    Deliberately NOT listed: /matches/fc-bergkristall-vs-rheingold-united-
+    2026-09-12.html. It's fictional demo data for the sports feature
+    (currently rolled back to "coming soon" stub pages) and is currently
+    set to index,follow, and still linked from several live pages (the
+    homepage's "Try:" pill, its own Upcoming matches section, concerts.html's
+    pill, and /sports/) — all leftover references from before that rollback.
+    Adding it here would make Google more likely to index fabricated
+    content as if it were real, which is the opposite of what this file
+    is for. Flagged for a real decision (noindex the page, or clean up
+    the leftover links) rather than fixed here, since it touches multiple
+    pages beyond this file.
   -->
 
 </urlset>
