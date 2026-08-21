@@ -228,7 +228,7 @@ function eventCardHtml(ev) {
   const dateLine = formatDate(ev.date, ev.time);
   const metaLine = [ev.venue, ev.city].filter(Boolean).map(escapeHtml).join(', ');
   const priceLine = ev.lowestPrice != null
-    ? `From ${escapeHtml(ev.currency || '')}${ev.lowestPrice}`
+    ? `from ${escapeHtml(ev.currency || '')}${ev.lowestPrice}`
     : 'Tickets available';
   // Real count of other real ticket products at this same show (see
   // dedupeUnderlyingEvents above) — links to a real pre-filtered search
@@ -236,15 +236,24 @@ function eventCardHtml(ev) {
   // one properly needs a real underlying-event/product-ID split at the
   // data layer, not just a display-time grouping.
   const variantLine = ev.variantCount > 0
-    ? `<div style="font-size:12px;color:var(--ink-faint);margin-top:2px;">+${ev.variantCount} other ticket option${ev.variantCount === 1 ? '' : 's'} for this show</div>`
+    ? `<div style="font-size:12px;color:var(--ink-faint);margin-top:3px;">+${ev.variantCount} other ticket option${ev.variantCount === 1 ? '' : 's'} for this show</div>`
     : '';
+  // Horizontal row layout — same fields as before (name, venue/city,
+  // date, price, variant note, ticket link), no image, no new
+  // information added — just restructured left (title+meta+date) /
+  // right (price+CTA) instead of the previous stacked card.
   return `
-    <a href="${href}" class="card event-card" style="text-decoration:none;display:block;padding:20px;">
-      <h3 style="margin-bottom:4px;">${escapeHtml(ev.name)}</h3>
-      <div class="meta">${metaLine}</div>
-      <div class="date">${escapeHtml(dateLine)}</div>
-      ${variantLine}
-      <div class="card-foot"><span class="from">${priceLine}</span><span class="cta">View tickets \u2192</span></div>
+    <a href="${href}" class="event-row" style="text-decoration:none;">
+      <div class="event-row-main">
+        <h3>${escapeHtml(ev.name)}</h3>
+        <div class="meta">${metaLine}</div>
+        <div class="date">${escapeHtml(dateLine)}</div>
+        ${variantLine}
+      </div>
+      <div class="event-row-side">
+        <span class="from">${priceLine}</span>
+        <span class="cta">Tickets \u2192</span>
+      </div>
     </a>`;
 }
 
@@ -314,7 +323,7 @@ async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
 
   const eventListHtml = events.length > 0
     ? events.map(eventCardHtml).join('')
-    : `<div style="padding:24px;color:var(--ink-faint);font-size:14.5px;grid-column:1/-1;">No current ${concertsOnly ? 'concert ' : ''}listings for ${escapeHtml(cityRecord.name)} \u2014 check back soon.</div>`;
+    : `<div style="padding:24px;color:var(--ink-faint);font-size:14.5px;">No current ${concertsOnly ? 'concert ' : ''}listings for ${escapeHtml(cityRecord.name)} \u2014 check back soon.</div>`;
 
   const venueSectionHtml = venues.length > 0 ? `
   <section class="section">
@@ -379,7 +388,7 @@ async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
 <link rel="canonical" href="${canonicalUrl}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819u">
+<link rel="stylesheet" href="/css/style.css?v=20260819v">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(pageDescription)}">
 <meta property="og:type" content="website">
@@ -445,7 +454,7 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
 
   <section class="section" style="padding-top:0;">
     <div class="section-header"><div><h2>Upcoming ${concertsOnly ? 'concerts' : 'events'} in ${escapeHtml(cityRecord.name)}</h2><p>Real ticket listings, sorted by date.</p></div></div>
-    <div class="card-grid">
+    <div class="event-row-list">
       ${eventListHtml}
     </div>
   </section>
