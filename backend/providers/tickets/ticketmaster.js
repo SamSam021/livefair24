@@ -34,38 +34,6 @@ function httpGet(url) {
   });
 }
 
-// Global request throttle — respects Ticketmaster's own real, confirmed
-// rate limit, captured directly from a real production 429 response:
-// "Spike arrest violation... MessageRate{messagesPerPeriod=5,
-// periodInMicroseconds=1000000, maxBurstMessageCount=1.0}".
-// maxBurstMessageCount=1.0 means essentially NO concurrent requests are
-// allowed — only one in flight at a time, spaced at least 1000ms/5 =
-// 200ms apart. This serializes EVERY real request this provider makes,
-// process-wide, regardless of which route triggered it —
-// trending.js, concertCategories.js, countryEvents.js, matches.js,
-// cityPage.js, search.js, artistPage.js, venuePage.js, and eventPage.js
-// all funnel through here. A per-route fix wouldn't have been enough:
-// two different routes each firing their own internally-well-behaved
-// Promise.all() batch at the same real-world moment would still burst
-// past this limit unless the throttle is shared across the whole
-// process, not scoped to one route's own logic.
-let requestQueue = Promise.resolve();
-const MIN_REQUEST_SPACING_MS = 220; // 5/sec = 200ms floor; small safety margin added
-function throttledHttpGet(url) {
-  const result = requestQueue.then(() => httpGet(url));
-  // Chains the next request's earliest start time after this one
-  // finishes, whether it succeeded or failed — a failed/rate-limited
-  // request still counts against Ticketmaster's own limit, so the
-  // delay applies regardless. .catch(() => {}) here only prevents a
-  // rejected request from breaking the shared queue for requests
-  // behind it; the real error is still returned to this call's own
-  // caller via `result` below, untouched.
-  requestQueue = result.catch(() => {}).then(
-    () => new Promise((resolve) => setTimeout(resolve, MIN_REQUEST_SPACING_MS))
-  );
-  return result;
-}
-
 module.exports = {
   id: 'ticketmaster',
   name: 'Ticketmaster',
@@ -138,7 +106,7 @@ module.exports = {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&keyword=${keyword}${city}&size=5`;
 
     try {
-      const data = await throttledHttpGet(url);
+      const data = await httpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
       const results = [];
       for (const ev of events) {
@@ -178,13 +146,6 @@ module.exports = {
     const key = env.TICKETMASTER_API_KEY;
     const size = params.limit || 10;
     const parts = [`apikey=${key}`, `size=${size}`];
-    // Optional pagination — Ticketmaster's own `page` query param (0-indexed).
-    // Added for routes/concertCategories.js, which needs a wider pool of
-    // real events than one 150-200-result page gives per market to have a
-    // real chance of surfacing every genre bucket (e.g. festival-tagged
-    // events are comparatively rare) — every other existing call site
-    // that doesn't pass params.page is completely unaffected.
-    if (params.page != null) parts.push(`page=${encodeURIComponent(params.page)}`);
     if (params.query) parts.push(`keyword=${encodeURIComponent(params.query)}`);
     if (params.city) parts.push(`city=${encodeURIComponent(params.city)}`);
     if (params.countryCode) parts.push(`countryCode=${encodeURIComponent(params.countryCode)}`);
@@ -222,18 +183,7 @@ module.exports = {
     // a confirmed Sports or Music genre) — restricting to
     // classificationName=music here would wrongly return zero events for
     // a real Sports attraction being looked up by ID.
-    //
-    // params.classificationName — explicit override, added for
-    // routes/matches.js's real "Upcoming matches" carousel. Ticketmaster's
-    // real Discovery API has a genuine, separate "Sports" segment
-    // (confirmed via their own documented classification hierarchy, same
-    // one lib/concertGenreBuckets.js's comment already cites) — this
-    // lets a caller ask for classificationName=Sports specifically,
-    // instead of only ever getting the hardcoded 'music' default below
-    // or the fully-unfiltered allCategories:true. Takes priority over
-    // both when supplied.
-    if (params.classificationName) parts.push(`classificationName=${encodeURIComponent(params.classificationName)}`);
-    else if (!params.allCategories && !params.attractionId) parts.push('classificationName=music');
+    if (!params.allCategories && !params.attractionId) parts.push('classificationName=music');
     // "Trending" here means Ticketmaster's own relevance sort — UNVERIFIED
     // exactly what signals that uses (likely some mix of popularity and
     // date proximity per their docs), not independently confirmed against
@@ -255,28 +205,12 @@ module.exports = {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?${parts.join('&')}`;
 
     try {
-      const data = await throttledHttpGet(url);
+      const data = await httpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
       return events.map(mapEventToResult);
     } catch (err) {
       console.warn('[ticketmaster provider] searchEvents', err.message);
-      // Confirmed real diagnostic gap: this catch previously swallowed
-      // EVERY failure type (rate limit, expired/invalid API key, network
-      // error, Ticketmaster outage) into a bare empty array — completely
-      // indistinguishable from "genuinely zero real events found" to any
-      // caller. routes/trending.js's own debug object has a
-      // discoveryErrors field specifically for capturing this, but it
-      // only ever populated when a promise actually REJECTED — an
-      // array resolving normally (even an empty one) never triggered
-      // it. Attaching the real error message as a non-enumerable
-      // property here lets a caller that wants to know (trending.js
-      // does, below) surface the ACTUAL cause without needing server
-      // log access, while every existing caller that just checks
-      // .length or iterates the array is completely unaffected — it's
-      // still a plain empty array by every normal measure.
-      const emptyResult = [];
-      Object.defineProperty(emptyResult, 'searchError', { value: err.message, enumerable: false });
-      return emptyResult;
+      return [];
     }
   },
 
@@ -294,7 +228,7 @@ module.exports = {
     const key = env.TICKETMASTER_API_KEY;
     const url = `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
     try {
-      const ev = await throttledHttpGet(url);
+      const ev = await httpGet(url);
       return mapEventToResult(ev);
     } catch (err) {
       console.warn('[ticketmaster provider] getEventDetails', err.message);
@@ -327,17 +261,6 @@ function mapEventToResult(ev) {
   const venue = (ev._embedded && ev._embedded.venues && ev._embedded.venues[0]) || null;
   const attraction = (ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0]) || null;
   const genre = (ev.classifications && ev.classifications[0] && ev.classifications[0].segment) || null;
-  // Ticketmaster's finer classification level (their own documented
-  // hierarchy: segment -> genre -> subGenre — e.g. segment "Music",
-  // genre "Rock" or "Hip-Hop/Rap", subGenre "Alternative Rock"). Kept
-  // as a separate field from `genre` above (which is actually the
-  // *segment*, Music vs Sports — an existing naming choice this file
-  // already had before this field was added, not changed here to avoid
-  // breaking every call site already reading `.genre`). Used by
-  // routes/concertCategories.js to bucket real artists into music
-  // sub-categories (Rap/Hip-Hop, Pop/Rock, etc.) — never fabricated,
-  // null when Ticketmaster doesn't provide one for this event.
-  const musicGenre = (ev.classifications && ev.classifications[0] && ev.classifications[0].genre) || null;
   return {
     source: 'ticketmaster',
     sourceLabel: 'Ticketmaster',
@@ -361,7 +284,6 @@ function mapEventToResult(ev) {
     // this directly instead of guessing at more query parameters.
     saleStatus: ev.dates && ev.dates.status ? ev.dates.status.code : null,
     genre: genre ? genre.name : null,
-    musicGenre: musicGenre ? musicGenre.name : null,
     venue: venue ? venue.name : null,
     city: venue && venue.city ? venue.city.name : null,
     // Confirmed real field on Ticketmaster's venue object (e.g.

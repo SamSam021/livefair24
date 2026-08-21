@@ -52,9 +52,22 @@ function slugify(str) {
     .slice(0, 80);
 }
 
+const { createCache } = require('../lib/simpleCache');
+const suggestedCache = createCache();
+const SUGGESTED_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes, matching trending.js's own cache window
+
 async function getSuggested(clientIp, env, overrideCountry, category) {
   const detectedCountry = await ipapi.getCountryCodeForIp(clientIp);
   const countryCode = overrideCountry || detectedCountry || FALLBACK_COUNTRY;
+
+  // Confirmed real problem this fixes: this whole function — including
+  // a size=150 Ticketmaster search — ran fresh on every single request
+  // with no caching at all, even though the Suggested carousel loads on
+  // every homepage/concerts-page visit. Cached by country+category since
+  // those are the only two things that change the output.
+  const cacheKey = `${countryCode}:${category || 'mixed'}`;
+  const cached = suggestedCache.get(cacheKey);
+  if (cached) return cached;
 
   const providers = registry.getEnabledTicketProviders(env);
   const tm = providers.find((p) => p.id === 'ticketmaster');
@@ -67,7 +80,15 @@ async function getSuggested(clientIp, env, overrideCountry, category) {
     results = await tm.searchEvents({ query: '', city: '', countryCode, limit: 150, allCategories: true }, env);
   } catch (err) {
     console.warn('[suggested]', err.message);
-    return { countryUsed: countryCode, artists: [], venues: [] };
+    // Short TTL specifically for this failure path — a 429 here
+    // shouldn't cache for the full 5 minutes (needlessly long once the
+    // rate limit clears), but should still stop this endpoint from
+    // hammering an already-rate-limited Ticketmaster on every single
+    // request during an active incident. Same reasoning as
+    // providers/geo/ipapi.js's failure-caching.
+    const failureResult = { countryUsed: countryCode, artists: [], venues: [] };
+    suggestedCache.set(cacheKey, failureResult, 60 * 1000);
+    return failureResult;
   }
   if (!Array.isArray(results)) results = [];
 
@@ -191,11 +212,13 @@ async function getSuggested(clientIp, env, overrideCountry, category) {
     })
   );
 
-  return {
+  const finalResult = {
     countryUsed: countryCode,
     artists,
     venues,
   };
+  suggestedCache.set(cacheKey, finalResult, SUGGESTED_CACHE_TTL_MS);
+  return finalResult;
 }
 
 module.exports = { getSuggested };

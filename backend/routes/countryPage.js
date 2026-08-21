@@ -23,8 +23,20 @@
 // appears if it genuinely has a real, current event.
 
 const registry = require('../providers/registry');
+const { createCache } = require('../lib/simpleCache');
+
+const countryCache = createCache();
+const SUCCESS_TTL_MS = 5 * 60 * 1000; // 5 minutes, matching trending.js's/suggested.js's own window
+const FAILURE_TTL_MS = 60 * 1000; // short — avoid hammering an already-rate-limited API
 
 async function getCountryConcerts(countryCode, env) {
+  // Confirmed real problem this fixes: this endpoint made a fresh
+  // size=150 Ticketmaster search on every single request with zero
+  // caching, contributing directly to the rate-limit incident that
+  // motivated adding caching across every endpoint that lacked it.
+  const cached = countryCache.get(countryCode);
+  if (cached) return cached;
+
   const providers = registry.getEnabledTicketProviders(env);
   const tm = providers.find((p) => p.id === 'ticketmaster');
   if (!tm || typeof tm.searchEvents !== 'function') {
@@ -36,7 +48,9 @@ async function getCountryConcerts(countryCode, env) {
     results = await tm.searchEvents({ query: '', city: '', countryCode, limit: 150 }, env);
   } catch (err) {
     console.warn('[country page]', err.message);
-    return { countryCode, count: 0, cheapestPrice: null, cities: [], events: [] };
+    const failureResult = { countryCode, count: 0, cheapestPrice: null, cities: [], events: [] };
+    countryCache.set(countryCode, failureResult, FAILURE_TTL_MS);
+    return failureResult;
   }
 
   const realEvents = (results || []).filter((ev) => ev.city && ev.venue && ev.date);
@@ -63,13 +77,15 @@ async function getCountryConcerts(countryCode, env) {
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
     .slice(0, 20);
 
-  return {
+  const finalResult = {
     countryCode,
     count: realEvents.length,
     cheapestPrice: cheapestOverall,
     cities,
     events,
   };
+  countryCache.set(countryCode, finalResult, SUCCESS_TTL_MS);
+  return finalResult;
 }
 
 module.exports = { getCountryConcerts };
