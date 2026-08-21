@@ -188,6 +188,30 @@ img{max-width:100%;display:block;}
    that loading/selection logic needed to change either. */
 .card-grid-scroll{display:flex;overflow-x:auto;gap:16px;padding:4px 2px 12px;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;}
 .card-grid-scroll::-webkit-scrollbar{display:none;}
+
+/* Horizontal event row (city pages /events/{slug}/ and
+   /events/{slug}/concerts/) — same fields as the .event-card grid
+   style elsewhere (title, venue/city, date, price, ticket link), just
+   laid out as a stacked list of rows instead of a grid of boxes, no
+   image. Left side: title/meta/date. Right side: price + CTA. */
+.event-row-list{ display:flex; flex-direction:column; background:var(--surface); border-radius:16px; overflow:hidden; border:1px solid var(--line); }
+.event-row{
+  display:flex; align-items:center; justify-content:space-between; gap:20px;
+  padding:18px 22px; border-bottom:1px solid var(--line); color:inherit;
+  transition:background .15s;
+}
+.event-row:last-child{ border-bottom:none; }
+.event-row:hover{ background:var(--surface-2); }
+.event-row-main h3{ font-family:'Sora',sans-serif; font-size:16px; font-weight:700; margin-bottom:4px; }
+.event-row-main .meta{ font-size:13px; color:var(--ink-dim); }
+.event-row-main .date{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink-faint); margin-top:2px; }
+.event-row-side{ display:flex; align-items:center; gap:18px; flex-shrink:0; white-space:nowrap; }
+.event-row-side .from{ font-family:'Sora',sans-serif; font-weight:800; font-size:15px; color:var(--gold); }
+.event-row-side .cta{ font-family:'Manrope',sans-serif; font-weight:700; font-size:14px; color:var(--blue); }
+@media(max-width:640px){
+  .event-row{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .event-row-side{ align-self:stretch; justify-content:space-between; }
+}
 .card-grid-scroll .card{flex:0 0 300px;}
 /* display:flex + flex-direction:column here, combined with
    margin-top:auto on .card-foot below, is what actually aligns the
