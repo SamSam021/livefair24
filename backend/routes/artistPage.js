@@ -60,43 +60,17 @@ function escapeHtml(str) {
   return (str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const { createCache } = require('./../lib/simpleCache');
-const artistEventsCache = createCache();
-const SUCCESS_TTL_MS = 5 * 60 * 1000; // 5 minutes, matching every other endpoint's window
-const FAILURE_TTL_MS = 60 * 1000;
-
 async function fetchArtistEventsById(attractionId, env) {
-  // Confirmed real problem this fixes: no caching at all (every page
-  // view re-fetched fresh), and no try/catch around the Ticketmaster
-  // call — a 429 here would previously surface as an uncaught error
-  // (a 500 from server.js's route handler) instead of the graceful
-  // "no upcoming events" 404 this page is supposed to show when
-  // Ticketmaster genuinely has nothing. Caching needed a failure path
-  // anyway, which fixes both at once.
-  const cached = artistEventsCache.get(attractionId);
-  if (cached) return cached;
-
   const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
   if (!tm || !tm.isEnabled(env) || typeof tm.searchEvents !== 'function') return [];
-
-  let results;
-  try {
-    // allCategories: true — this is a direct ID lookup for one specific,
-    // already-validated attraction (routes/suggested.js only ever
-    // suggests attractions with a confirmed Sports or Music genre), so
-    // the classificationName=music restriction the provider applies to
-    // broad keyword/browse searches would wrongly zero out a real Sports
-    // attraction's events here. See ticketmaster.js's searchEvents.
-    results = await tm.searchEvents({ attractionId, limit: 50, allCategories: true }, env);
-  } catch (err) {
-    console.warn('[artist page]', err.message);
-    artistEventsCache.set(attractionId, [], FAILURE_TTL_MS);
-    return [];
-  }
-  if (!Array.isArray(results) || results.length === 0) {
-    artistEventsCache.set(attractionId, [], FAILURE_TTL_MS);
-    return [];
-  }
+  // allCategories: true — this is a direct ID lookup for one specific,
+  // already-validated attraction (routes/suggested.js only ever
+  // suggests attractions with a confirmed Sports or Music genre), so
+  // the classificationName=music restriction the provider applies to
+  // broad keyword/browse searches would wrongly zero out a real Sports
+  // attraction's events here. See ticketmaster.js's searchEvents.
+  const results = await tm.searchEvents({ attractionId, limit: 50, allCategories: true }, env);
+  if (!Array.isArray(results) || results.length === 0) return [];
 
   // Dedupe by eventId (pagination can occasionally return the same show
   // twice) and sort soonest-first. No attractionKey grouping/largest-
@@ -110,7 +84,6 @@ async function fetchArtistEventsById(attractionId, env) {
     return true;
   });
   deduped.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  artistEventsCache.set(attractionId, deduped, SUCCESS_TTL_MS);
   return deduped;
 }
 

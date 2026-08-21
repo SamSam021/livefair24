@@ -20,13 +20,17 @@ const sportsRoutes = require('./routes/sports');
 const searchRoutes = require('./routes/search');
 const trendingRoutes = require('./routes/trending');
 const citiesRoutes = require('./routes/cities');
-const countryPageRoutes = require('./routes/countryPage');
 const eventPageRoutes = require('./routes/eventPage');
+const cityPageRoutes = require('./routes/cityPage');
+const { getSeoCityBySlug } = require('./data/seo-cities');
 const eventsSitemapRoutes = require('./routes/eventsSitemap');
 const artistVenueSitemapRoutes = require('./routes/artistVenueSitemap');
 const artistPageRoutes = require('./routes/artistPage');
 const venuePageRoutes = require('./routes/venuePage');
 const suggestedRoutes = require('./routes/suggested');
+const concertCategoriesRoutes = require('./routes/concertCategories');
+const countryEventsRoutes = require('./routes/countryEvents');
+const matchesRoutes = require('./routes/matches');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
@@ -55,6 +59,18 @@ function sendJSON(res, statusCode, obj, extraHeaders) {
   res.writeHead(statusCode, Object.assign({
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
+    // Every JSON response from this server is dynamic and often
+    // IP/geolocation-personalized (e.g. /api/cities, /api/trending) —
+    // confirmed real bug: with no cache header at all, a browser (or any
+    // CDN in front of App Runner) was free to reuse an earlier response
+    // indefinitely, so one visitor's homepage kept showing US cities
+    // from a stale cached /api/cities response while a fresh request to
+    // the same endpoint (via a different page, no cache entry yet)
+    // correctly showed Germany. The routes that genuinely benefit from
+    // caching (trending.js, concertCategories.js) already implement
+    // their own explicit server-side cache with a real TTL — this only
+    // stops uncontrolled, invisible caching one layer further out.
+    'Cache-Control': 'no-store',
   }, extraHeaders || {}));
   res.end(body);
 }
@@ -254,22 +270,31 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
     }
-    if (pathname === '/api/cities' && req.method === 'GET') {
+    if (pathname === '/api/concerts/categories' && req.method === 'GET') {
       try {
-        const clientIp = getClientIp(req);
-        return sendJSON(res, 200, await citiesRoutes.getCitiesForVisitor(clientIp, query.country));
+        return sendJSON(res, 200, await concertCategoriesRoutes.getConcertCategories(registry.getMergedEnv()));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
     }
-    // Real, live per-country concert data — powers /cities/{country}/
-    // (see routes/countryPage.js's header for the fabricated-data
-    // problem this replaces). :countryCode is the 2-letter code, e.g.
-    // /api/country-concerts/DE.
-    if (pathname.match(/^\/api\/country-concerts\/[^/]+$/) && req.method === 'GET') {
-      const countryCode = decodeURIComponent(pathname.split('/')[3]).toUpperCase();
+    if (pathname === '/api/country-events' && req.method === 'GET') {
       try {
-        return sendJSON(res, 200, await countryPageRoutes.getCountryConcerts(countryCode, registry.getMergedEnv()));
+        return sendJSON(res, 200, await countryEventsRoutes.getCountryEvents(registry.getMergedEnv(), query.country));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/matches' && req.method === 'GET') {
+      try {
+        return sendJSON(res, 200, await matchesRoutes.getMatches(registry.getMergedEnv()));
+      } catch (err) {
+        return sendJSON(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+    if (pathname === '/api/cities' && req.method === 'GET') {
+      try {
+        const clientIp = getClientIp(req);
+        return sendJSON(res, 200, await citiesRoutes.getCitiesForVisitor(clientIp, query.country));
       } catch (err) {
         return sendJSON(res, err.statusCode || 500, { error: err.message });
       }
@@ -415,10 +440,100 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/admin' || pathname === '/admin/') {
       return serveFile(res, ADMIN_ROOT, 'admin.html');
     }
+    // Real, indexable, deterministic city landing pages —
+    // /events/{city-slug}/concerts/page/{n}/ and
+    // /events/{city-slug}/page/{n}/ FIRST (real pagination URLs, not
+    // query params — each page is genuinely different real content, so
+    // each gets its own indexable URL per the spec's "search/filter
+    // URLs should not become separate canonical SEO pages" rule not
+    // actually applying here — this isn't a filter, it's real content
+    // pagination), then /events/{city-slug}/concerts/ and
+    // /events/{city-slug}/ (page 1, implicit) — all checked BEFORE the
+    // generic two-segment /events/{eventId}/{slug} route below, since
+    // otherwise "/events/berlin/concerts/" would incorrectly attempt an
+    // event lookup with eventId="berlin" (confirmed by direct testing
+    // of the route order below before this fix — the two-segment event
+    // match's regex genuinely does match "berlin"/"concerts" too, and
+    // being checked first meant it always won). All four routes are
+    // gated on the known SEO city list (data/seo-cities.js); an
+    // unrecognized slug falls through unchanged (matches existing
+    // single-segment static files like /events/view.html continuing to
+    // work exactly as before). The city itself comes only from the URL
+    // match, never from IP/geolocation — see routes/cityPage.js's
+    // header comment.
+    const cityConcertsPageNumMatch = pathname.match(/^\/events\/([^/.]+)\/concerts\/page\/(\d+)\/?$/);
+    if (cityConcertsPageNumMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityConcertsPageNumMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityConcertsPage(decodeURIComponent(cityConcertsPageNumMatch[1]), registry.getMergedEnv(), siteOrigin, parseInt(cityConcertsPageNumMatch[2], 10));
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('Page not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city concerts page - paginated]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    const cityPageNumMatch = pathname.match(/^\/events\/([^/.]+)\/page\/(\d+)\/?$/);
+    if (cityPageNumMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityPageNumMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityAllEventsPage(decodeURIComponent(cityPageNumMatch[1]), registry.getMergedEnv(), siteOrigin, parseInt(cityPageNumMatch[2], 10));
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('Page not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city page - paginated]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    const cityConcertsMatch = pathname.match(/^\/events\/([^/.]+)\/concerts\/?$/);
+    if (cityConcertsMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityConcertsMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityConcertsPage(decodeURIComponent(cityConcertsMatch[1]), registry.getMergedEnv(), siteOrigin);
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('City not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city concerts page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    const cityPageMatch = pathname.match(/^\/events\/([^/.]+)\/?$/);
+    if (cityPageMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityPageMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityAllEventsPage(decodeURIComponent(cityPageMatch[1]), registry.getMergedEnv(), siteOrigin);
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('City not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
     // Real, indexable event pages — /events/{eventId}/{slug}. Two path
     // segments after /events/ specifically, so this never collides with
     // existing single-segment static files like /events/view.html or
-    // /events/nova-wren-berlin-2026-08-16.html.
+    // /events/nova-wren-berlin-2026-08-16.html. Checked AFTER the city
+    // routes above — see their comment for why the order matters here.
     const eventPageMatch = pathname.match(/^\/events\/([^/]+)\/([^/]+)\/?$/);
     if (eventPageMatch && req.method === 'GET') {
       const [, eventId, requestedSlug] = eventPageMatch;
@@ -532,6 +647,9 @@ const server = http.createServer(async (req, res) => {
     // verification pipeline themselves. Started after listen() begins,
     // not awaited, so it never delays the server actually coming up.
     trendingRoutes.startBackgroundTrendingRefresh();
+    concertCategoriesRoutes.startBackgroundConcertCategoriesRefresh();
+    matchesRoutes.startBackgroundMatchesRefresh();
+    cityPageRoutes.startBackgroundCityPagesRefresh();
   });
 
   // Price-drop alert scheduler — re-checks every watched event once an hour.

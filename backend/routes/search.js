@@ -13,12 +13,6 @@
 // weekend" with no artist keyword at all, not just "keyword only."
 
 const registry = require('../providers/registry');
-const { createCache } = require('../lib/simpleCache');
-
-const searchCache = createCache();
-const SEARCH_CACHE_TTL_MS = 3 * 60 * 1000; // shorter than other endpoints — user-driven queries are far
-// more varied (query+city+date combinations), so a hit here is more likely to be a genuinely repeated
-// popular search than an internal re-fetch of the same fixed data; keeping it short limits staleness risk.
 
 async function searchEvents(params, env) {
   const query = (params.q || '').trim();
@@ -35,14 +29,6 @@ async function searchEvents(params, env) {
   if (!query && !city && !dateFrom) {
     return { query, city, dateFrom, dateTo, demoMode: true, count: 0, results: [] };
   }
-
-  // Confirmed real problem this fixes: every search request re-hit every
-  // enabled provider fresh, even for an identical query moments apart —
-  // a direct contributor to the Ticketmaster rate-limit incident that
-  // motivated adding caching across every endpoint that lacked it.
-  const cacheKey = `${query}|${city}|${dateFrom || ''}|${dateTo || ''}|${allCategories}`;
-  const cached = searchCache.get(cacheKey);
-  if (cached) return cached;
 
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
@@ -67,7 +53,7 @@ async function searchEvents(params, env) {
     return a.lowestPrice - b.lowestPrice;
   });
 
-  const finalResult = {
+  return {
     query,
     city,
     dateFrom,
@@ -77,8 +63,6 @@ async function searchEvents(params, env) {
     count: results.length,
     results,
   };
-  searchCache.set(cacheKey, finalResult, SEARCH_CACHE_TTL_MS);
-  return finalResult;
 }
 
 module.exports = { searchEvents };

@@ -12,17 +12,6 @@
 // adapter before it was tested — this sandbox has no outbound network
 // access. Confirm the response shape below with a real request before
 // relying on it in production.
-//
-// Caching added after a confirmed real incident: this had no caching at
-// all, so every single page load needing country detection (homepage,
-// suggested, cities) made a fresh ipapi.co call — burning through the
-// free tier's daily quota far faster than necessary, since a given IP's
-// country is stable for hours, not seconds. Successful lookups cache for
-// 6 hours; failures (including 429s) cache for 15 minutes specifically
-// so a burst of requests during a rate-limit window doesn't keep hitting
-// ipapi.co and making the situation worse — better to fall back to the
-// caller's default country for a little while than to keep hammering an
-// API that just told us to stop.
 
 const https = require('https');
 
@@ -58,38 +47,19 @@ function isPrivateOrLocalIp(ip) {
   );
 }
 
-const SUCCESS_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const FAILURE_TTL_MS = 15 * 60 * 1000; // 15 minutes
-const cache = new Map(); // ip -> { countryCode, expiresAt }
-
 // Returns an ISO 3166-1 alpha-2 country code (e.g. 'US', 'DE'), or null
 // if it couldn't be determined — callers must have a sensible fallback,
 // not treat null as an error to surface to the visitor.
 async function getCountryCodeForIp(ip) {
   if (isPrivateOrLocalIp(ip)) return null;
-
-  const cached = cache.get(ip);
-  if (cached && cached.expiresAt > Date.now()) return cached.countryCode;
-
-  let result = null;
   try {
     const data = await httpGet(`https://ipapi.co/${encodeURIComponent(ip)}/json/`);
-    if (data.error) {
-      result = null; // ipapi.co returns {"error":true,"reason":"..."} on failure, not an HTTP error code
-    } else {
-      result = data.country_code || null;
-    }
-    cache.set(ip, { countryCode: result, expiresAt: Date.now() + SUCCESS_TTL_MS });
+    if (data.error) return null; // ipapi.co returns {"error":true,"reason":"..."} on failure, not an HTTP error code
+    return data.country_code || null;
   } catch (err) {
     console.warn('[ipapi.co geo lookup]', err.message);
-    result = null;
-    // Shorter TTL specifically for failures — see header comment. A 429
-    // here shouldn't cache for the full 6 hours (that's needlessly long
-    // once the rate limit clears), but also shouldn't retry on every
-    // single request during an active rate-limit window.
-    cache.set(ip, { countryCode: null, expiresAt: Date.now() + FAILURE_TTL_MS });
+    return null;
   }
-  return result;
 }
 
 module.exports = { getCountryCodeForIp, isPrivateOrLocalIp };

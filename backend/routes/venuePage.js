@@ -53,36 +53,11 @@ function deslugify(slug) {
   return slug.replace(/-/g, ' ').trim();
 }
 
-const { createCache } = require('./../lib/simpleCache');
-const venueEventsCache = createCache();
-const SUCCESS_TTL_MS = 5 * 60 * 1000;
-const FAILURE_TTL_MS = 60 * 1000;
-
 async function fetchVenueEvents(searchName, env) {
-  // Same fix as routes/artistPage.js's fetchArtistEventsById: no
-  // caching at all before, and no try/catch around the Ticketmaster
-  // call — a 429 would have surfaced as an uncaught error (500)
-  // instead of the graceful "no upcoming events" 404 this page shows
-  // when Ticketmaster genuinely has nothing.
-  const cacheKey = searchName;
-  const cached = venueEventsCache.get(cacheKey);
-  if (cached) return cached;
-
   const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
   if (!tm || !tm.isEnabled(env) || typeof tm.searchEvents !== 'function') return [];
-
-  let results;
-  try {
-    results = await tm.searchEvents({ query: searchName, limit: 50 }, env);
-  } catch (err) {
-    console.warn('[venue page]', err.message);
-    venueEventsCache.set(cacheKey, [], FAILURE_TTL_MS);
-    return [];
-  }
-  if (!Array.isArray(results) || results.length === 0) {
-    venueEventsCache.set(cacheKey, [], FAILURE_TTL_MS);
-    return [];
-  }
+  const results = await tm.searchEvents({ query: searchName, limit: 50 }, env);
+  if (!Array.isArray(results) || results.length === 0) return [];
 
   const normalizedSearch = normalize(searchName);
   // Only keep results whose OWN venue field genuinely matches what was
@@ -101,7 +76,6 @@ async function fetchVenueEvents(searchName, env) {
     return true;
   });
   deduped.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  venueEventsCache.set(cacheKey, deduped, SUCCESS_TTL_MS);
   return deduped;
 }
 

@@ -13,6 +13,12 @@
 // under /cities/<country>/<slug>.html — routes/cities.js falls back to
 // linking a city without one straight to a pre-filtered search instead
 // of a dead link.
+//
+// `wikiTitle` is only set where the plain `name` is confirmed NOT to
+// resolve to the city's own Wikipedia article (e.g. "New York" alone is
+// the STATE article, not the city) — see providers/geo/cityImage.js's
+// getCityImageUrl for how it's used. Omit it for every city where the
+// bare name already works.
 
 const MAJOR_CITIES = {
   DE: {
@@ -37,7 +43,7 @@ const MAJOR_CITIES = {
     countryName: 'United States',
     flag: '🇺🇸',
     cities: [
-      { name: 'New York' },
+      { name: 'New York', wikiTitle: 'New York City' },
       { name: 'Los Angeles' },
       { name: 'Chicago' },
       { name: 'Houston' },
