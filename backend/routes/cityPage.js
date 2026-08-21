@@ -435,7 +435,7 @@ ${page > 1 ? `<link rel="prev" href="${pageUrl(page - 1)}">` : ''}
 ${page < totalPages ? `<link rel="next" href="${pageUrl(page + 1)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819y">
+<link rel="stylesheet" href="/css/style.css?v=20260819x">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(pageDescription)}">
 <meta property="og:type" content="website">
@@ -592,13 +592,7 @@ const BACKGROUND_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour — half of CAC
 const SITE_ORIGIN_FOR_BACKGROUND_REFRESH = 'https://www.livefair24.com'; // no incoming request to derive this from in a background job
 
 async function backgroundRefreshCityPages() {
-  // lowPriority:true marks every real Ticketmaster call this job makes
-  // as background-triggered — see providers/tickets/ticketmaster.js's
-  // two-lane priority queue. Confirmed real regression this fixes: with
-  // 12 cities now pre-warmed, this job alone can queue well over a
-  // hundred real calls; without this flag those calls would compete
-  // equally with a real visitor's own request instead of yielding to it.
-  const env = { ...registry.getMergedEnv(), lowPriority: true }; // re-read fresh each cycle — picks up an admin-panel key change without a restart, same reasoning as the other background jobs
+  const env = registry.getMergedEnv(); // re-read fresh each cycle — picks up an admin-panel key change without a restart, same reasoning as the other background jobs
   for (const cityRecord of SEO_CITIES) {
     for (const concertsOnly of [false, true]) {
       let page = 1;

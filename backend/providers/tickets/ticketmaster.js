@@ -49,52 +49,21 @@ function httpGet(url) {
 // Promise.all() batch at the same real-world moment would still burst
 // past this limit unless the throttle is shared across the whole
 // process, not scoped to one route's own logic.
-// Two-lane priority queue — confirmed real regression once background
-// pre-warming scaled from 3 to 12 cities: a real visitor's request
-// (e.g. an individual event page's own live ticket-price check) could
-// get queued behind a large backlog of background-job calls sharing
-// this same throttle, sitting stuck for many seconds with no priority
-// given to real traffic. High-priority (real request-triggered) calls
-// now always jump ahead of low-priority (background-job-triggered)
-// calls — checked fresh before every single dispatch, so even a
-// deep low-priority backlog never blocks a real request for more than
-// one MIN_REQUEST_SPACING_MS cycle. Background jobs still get every
-// slot the moment there's nothing higher-priority waiting; nothing
-// about their own eventual completion changes, only their priority
-// relative to real traffic.
-const highPriorityQueue = [];
-const lowPriorityQueue = [];
-let pumping = false;
+let requestQueue = Promise.resolve();
 const MIN_REQUEST_SPACING_MS = 220; // 5/sec = 200ms floor; small safety margin added
-
-function processNextQueued() {
-  const queue = highPriorityQueue.length > 0 ? highPriorityQueue : lowPriorityQueue;
-  if (queue.length === 0) {
-    pumping = false;
-    return;
-  }
-  const { url, resolve, reject } = queue.shift();
-  httpGet(url).then(resolve, reject).finally(() => {
-    setTimeout(processNextQueued, MIN_REQUEST_SPACING_MS);
-  });
-}
-
-// lowPriority: true marks this call as background-job-triggered — see
-// the background refresh functions in trending.js, concertCategories.js,
-// matches.js, and cityPage.js, which thread this through via
-// env.lowPriority (env is already passed down the entire call chain
-// from every route into this provider, so it's the natural place to
-// carry this flag without changing every function signature).
-function throttledHttpGet(url, lowPriority) {
-  return new Promise((resolve, reject) => {
-    const item = { url, resolve, reject };
-    if (lowPriority) lowPriorityQueue.push(item);
-    else highPriorityQueue.push(item);
-    if (!pumping) {
-      pumping = true;
-      processNextQueued();
-    }
-  });
+function throttledHttpGet(url) {
+  const result = requestQueue.then(() => httpGet(url));
+  // Chains the next request's earliest start time after this one
+  // finishes, whether it succeeded or failed — a failed/rate-limited
+  // request still counts against Ticketmaster's own limit, so the
+  // delay applies regardless. .catch(() => {}) here only prevents a
+  // rejected request from breaking the shared queue for requests
+  // behind it; the real error is still returned to this call's own
+  // caller via `result` below, untouched.
+  requestQueue = result.catch(() => {}).then(
+    () => new Promise((resolve) => setTimeout(resolve, MIN_REQUEST_SPACING_MS))
+  );
+  return result;
 }
 
 module.exports = {
@@ -169,7 +138,7 @@ module.exports = {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&keyword=${keyword}${city}&size=5`;
 
     try {
-      const data = await throttledHttpGet(url, !!env.lowPriority);
+      const data = await throttledHttpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
       const results = [];
       for (const ev of events) {
@@ -286,7 +255,7 @@ module.exports = {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?${parts.join('&')}`;
 
     try {
-      const data = await throttledHttpGet(url, !!env.lowPriority);
+      const data = await throttledHttpGet(url);
       const events = (data._embedded && data._embedded.events) || [];
       return events.map(mapEventToResult);
     } catch (err) {
@@ -325,7 +294,7 @@ module.exports = {
     const key = env.TICKETMASTER_API_KEY;
     const url = `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
     try {
-      const ev = await throttledHttpGet(url, !!env.lowPriority);
+      const ev = await throttledHttpGet(url);
       return mapEventToResult(ev);
     } catch (err) {
       console.warn('[ticketmaster provider] getEventDetails', err.message);
