@@ -60,12 +60,22 @@ function formatDate(dateStr, timeStr) {
 // just called server-side so the results land in the initial HTML
 // instead of requiring client-side JS to fetch and render them (spec
 // sections 6, 12, 29).
-async function fetchRealEventsForCity(cityRecord, env) {
+//
+// concertsOnly controls both the query itself (allCategories:true lifts
+// the provider's default music-only restriction, for the general
+// "all events" page) and an explicit post-filter using Ticketmaster's
+// own real segment field (ev.genre) when concerts-only IS wanted —
+// confirmed real gap: the query-level classificationName=music param
+// alone isn't fully reliable (a real comedy show, "ZARNA GARG: MILLION
+// DOLLAR EXCUSES", came back and rendered despite that filter), so the
+// concerts page checks the real returned classification explicitly
+// rather than trusting the query alone.
+async function fetchRealEventsForCity(cityRecord, env, concertsOnly) {
   const providers = registry.getEnabledTicketProviders(env);
   const tm = providers.find((p) => p.id === 'ticketmaster');
   if (!tm || typeof tm.searchEvents !== 'function') return [];
   const results = await tm.searchEvents(
-    { query: '', city: cityRecord.name, countryCode: cityRecord.countryCode, limit: 50 },
+    { query: '', city: cityRecord.name, countryCode: cityRecord.countryCode, limit: 50, allCategories: !concertsOnly },
     env
   );
   if (!Array.isArray(results)) return [];
@@ -73,19 +83,7 @@ async function fetchRealEventsForCity(cityRecord, env) {
   const events = [];
   for (const ev of results) {
     if (!ev.eventId || seen.has(ev.eventId) || !ev.name || !ev.date) continue;
-    // Confirmed real gap: the query-level classificationName=music
-    // param (see ticketmaster.js's searchEvents default) is not fully
-    // reliable on its own — a real comedy show ("ZARNA GARG: MILLION
-    // DOLLAR EXCUSES") came back from this exact call and rendered on
-    // this page despite that filter. This page's whole purpose is
-    // concerts specifically, so this checks Ticketmaster's own real
-    // segment classification (ev.genre — their documented segment
-    // field, "Music" vs "Comedy"/"Sports"/"Arts & Theatre"/etc.) as an
-    // explicit second layer, not just trusting the query param.
-    // Missing genre data (rare) is excluded rather than assumed music,
-    // since showing a wrongly-included non-concert is worse than
-    // omitting one genuinely-music event with incomplete data.
-    if ((ev.genre || '').toLowerCase() !== 'music') continue;
+    if (concertsOnly && (ev.genre || '').toLowerCase() !== 'music') continue;
     seen.add(ev.eventId);
     events.push({ ...ev, slug: buildEventSlug(ev) });
   }
@@ -261,20 +259,27 @@ function venueRowHtml(venue, citySlug) {
 
 // Returns { html } on success, or null if the slug isn't a known SEO
 // city (caller should respond 404) — never renders an empty shell for
-// an unrecognized slug.
-async function renderCityPage(slug, env, siteOrigin) {
+// an unrecognized slug. concertsOnly=false renders the general "all
+// events" page (/events/{slug}/); concertsOnly=true renders the
+// concerts-specific page (/events/{slug}/concerts/) — same underlying
+// data-fetching, dedup, price-verification, and template logic either
+// way, per the instruction to extend rather than duplicate the
+// existing architecture.
+async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
   const cityRecord = getSeoCityBySlug(slug);
   if (!cityRecord) return null;
 
-  const cached = cache.get(slug);
+  const cacheKey = `${slug}:${concertsOnly ? 'concerts' : 'all'}`;
+  const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return { html: cached.html };
 
-  const allEvents = await fetchRealEventsForCity(cityRecord, env);
-  // Venues and artists are counted from the FULL real event list (every
-  // real ticket product still represents a real upcoming show at that
-  // venue/by that artist) — only the primary "Upcoming events" list
-  // itself gets deduplicated to one canonical listing per underlying
-  // show, per the audit's #1 priority finding.
+  const allEvents = await fetchRealEventsForCity(cityRecord, env, concertsOnly);
+  // Venues and artists are counted from the FULL real event list for
+  // this page's own category scope (every real ticket product still
+  // represents a real upcoming show at that venue/by that artist) —
+  // only the primary "Upcoming events" list itself gets deduplicated
+  // to one canonical listing per underlying show, per the audit's #1
+  // priority finding.
   const venues = buildVenueSection(allEvents);
   const artists = buildArtistSection(allEvents);
   const events = dedupeUnderlyingEvents(allEvents);
@@ -283,19 +288,28 @@ async function renderCityPage(slug, env, siteOrigin) {
   const tm = providers.find((p) => p.id === 'ticketmaster');
   if (tm) await verifyRealPrices(events, tm, env);
 
-  const canonicalUrl = `${siteOrigin}/events/${cityRecord.slug}/`;
+  const generalUrl = `${siteOrigin}/events/${cityRecord.slug}/`;
+  const concertsUrl = `${siteOrigin}/events/${cityRecord.slug}/concerts/`;
+  const canonicalUrl = concertsOnly ? concertsUrl : generalUrl;
+
   // Computed at render time, not hardcoded in data/seo-cities.js —
-  // confirmed real issue from the audit: a static "2026" in the title
-  // silently goes stale the moment the calendar rolls over. H1 stays
-  // timeless ("Events in Berlin", no year) per the audit's own
-  // preference — only the <title> carries a year, and it's always the
-  // real current one.
+  // confirmed real issue from the audit: a static year in the title
+  // silently goes stale the moment the calendar rolls over.
   const currentYear = new Date().getFullYear();
-  const seoTitle = `Concerts in ${cityRecord.name} ${currentYear} \u2014 Concerts & Tickets | LiveFair24`;
+  const pageLabel = concertsOnly ? 'Concerts' : 'Events';
+  const seoTitle = concertsOnly
+    ? `Concerts in ${cityRecord.name} ${currentYear} \u2014 Concert Tickets | LiveFair24`
+    : `Events in ${cityRecord.name} ${currentYear} \u2014 Events & Tickets | LiveFair24`;
+  const pageDescription = concertsOnly
+    ? `Upcoming concerts in ${cityRecord.name}. Browse concert dates, venues, and find tickets on LiveFair24.`
+    : cityRecord.seoDescription;
+  const pageIntro = concertsOnly
+    ? `Upcoming concerts in ${cityRecord.name}, real listings sourced live from Ticketmaster. Browse dates, venues, and find tickets below.`
+    : cityRecord.seoIntro;
 
   const eventListHtml = events.length > 0
     ? events.map(eventCardHtml).join('')
-    : `<div style="padding:24px;color:var(--ink-faint);font-size:14.5px;grid-column:1/-1;">No current listings for ${escapeHtml(cityRecord.name)} \u2014 check back soon.</div>`;
+    : `<div style="padding:24px;color:var(--ink-faint);font-size:14.5px;grid-column:1/-1;">No current ${concertsOnly ? 'concert ' : ''}listings for ${escapeHtml(cityRecord.name)} \u2014 check back soon.</div>`;
 
   const venueSectionHtml = venues.length > 0 ? `
   <section class="section">
@@ -313,6 +327,12 @@ async function renderCityPage(slug, env, siteOrigin) {
     </div>
   </section>` : '';
 
+  // Real crawlable cross-link between the two pages (audit's internal
+  // linking requirement) — plain <a href>, not JS-driven.
+  const crossLinkHtml = concertsOnly
+    ? `<p style="font-size:13.5px;margin-top:16px;"><a href="${generalUrl}" style="color:var(--blue);">\u2190 All events in ${escapeHtml(cityRecord.name)}</a></p>`
+    : `<p style="font-size:13.5px;margin-top:16px;"><a href="${concertsUrl}" style="color:var(--blue);">Concerts in ${escapeHtml(cityRecord.name)} \u2192</a></p>`;
+
   // Real ItemList structured data — only the events actually returned
   // above, real names/dates/URLs, no invented items to pad the list.
   const itemListJsonLd = {
@@ -325,15 +345,22 @@ async function renderCityPage(slug, env, siteOrigin) {
       name: ev.name,
     })),
   };
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteOrigin}/` },
-      { '@type': 'ListItem', position: 2, name: 'Events', item: `${siteOrigin}/concerts/` },
-      { '@type': 'ListItem', position: 3, name: cityRecord.name },
-    ],
-  };
+  const breadcrumbItems = [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteOrigin}/` },
+    { '@type': 'ListItem', position: 2, name: 'Events', item: `${siteOrigin}/concerts/` },
+    { '@type': 'ListItem', position: 3, name: cityRecord.name, item: generalUrl },
+  ];
+  if (concertsOnly) breadcrumbItems.push({ '@type': 'ListItem', position: 4, name: 'Concerts' });
+  const breadcrumbJsonLd = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbItems };
+
+  const breadcrumbHtml = concertsOnly
+    ? `<a href="/">Home</a><span class="sep">\u203a</span>
+    <a href="/concerts/">Events</a><span class="sep">\u203a</span>
+    <a href="${generalUrl}">${escapeHtml(cityRecord.name)}</a><span class="sep">\u203a</span>
+    <span>Concerts</span>`
+    : `<a href="/">Home</a><span class="sep">\u203a</span>
+    <a href="/concerts/">Events</a><span class="sep">\u203a</span>
+    <span>${escapeHtml(cityRecord.name)}</span>`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -342,14 +369,14 @@ async function renderCityPage(slug, env, siteOrigin) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>${escapeHtml(seoTitle)}</title>
-<meta name="description" content="${escapeHtml(cityRecord.seoDescription)}">
+<meta name="description" content="${escapeHtml(pageDescription)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${canonicalUrl}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css?v=20260819t">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
-<meta property="og:description" content="${escapeHtml(cityRecord.seoDescription)}">
+<meta property="og:description" content="${escapeHtml(pageDescription)}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${canonicalUrl}">
 <script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd)}</script>
@@ -397,9 +424,7 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
 
 <div class="breadcrumb">
   <div class="breadcrumb-inner">
-    <a href="/">Home</a><span class="sep">\u203a</span>
-    <a href="/concerts/">Events</a><span class="sep">\u203a</span>
-    <span>${escapeHtml(cityRecord.name)}</span>
+    ${breadcrumbHtml}
   </div>
 </div>
 
@@ -408,12 +433,13 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
 
   <section style="padding:40px 0 24px;max-width:74ch;">
     <span class="badge badge-blue" style="margin-bottom:16px;">${escapeHtml(cityRecord.country)}</span>
-    <h1 class="display" style="font-size:clamp(28px,4.5vw,48px);">Concerts in ${escapeHtml(cityRecord.name)} ${currentYear}</h1>
-    <p style="font-size:16px;color:var(--ink-dim);margin-top:14px;line-height:1.7;">${escapeHtml(cityRecord.seoIntro)}</p>
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,48px);">${pageLabel} in ${escapeHtml(cityRecord.name)} ${currentYear}</h1>
+    <p style="font-size:16px;color:var(--ink-dim);margin-top:14px;line-height:1.7;">${escapeHtml(pageIntro)}</p>
+    ${crossLinkHtml}
   </section>
 
   <section class="section" style="padding-top:0;">
-    <div class="section-header"><div><h2>Upcoming events in ${escapeHtml(cityRecord.name)}</h2><p>Real ticket listings, sorted by date.</p></div></div>
+    <div class="section-header"><div><h2>Upcoming ${concertsOnly ? 'concerts' : 'events'} in ${escapeHtml(cityRecord.name)}</h2><p>Real ticket listings, sorted by date.</p></div></div>
     <div class="card-grid">
       ${eventListHtml}
     </div>
@@ -465,8 +491,15 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
 </body>
 </html>`;
 
-  cache.set(slug, { html, expiresAt: Date.now() + CACHE_TTL_MS });
+  cache.set(cacheKey, { html, expiresAt: Date.now() + CACHE_TTL_MS });
   return { html };
 }
 
-module.exports = { renderCityPage };
+async function renderCityAllEventsPage(slug, env, siteOrigin) {
+  return renderCityPageInternal(slug, false, env, siteOrigin);
+}
+async function renderCityConcertsPage(slug, env, siteOrigin) {
+  return renderCityPageInternal(slug, true, env, siteOrigin);
+}
+
+module.exports = { renderCityAllEventsPage, renderCityConcertsPage };

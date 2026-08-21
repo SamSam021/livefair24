@@ -440,10 +440,60 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/admin' || pathname === '/admin/') {
       return serveFile(res, ADMIN_ROOT, 'admin.html');
     }
+    // Real, indexable, deterministic city landing pages —
+    // /events/{city-slug}/concerts/ FIRST (two segments, but the second
+    // is the literal word "concerts", never an eventId), then
+    // /events/{city-slug}/ (one segment) — both checked BEFORE the
+    // generic two-segment /events/{eventId}/{slug} route below, since
+    // otherwise "/events/berlin/concerts/" would incorrectly attempt an
+    // event lookup with eventId="berlin" (confirmed by direct testing
+    // of the route order below before this fix — the two-segment event
+    // match's regex genuinely does match "berlin"/"concerts" too, and
+    // being checked first meant it always won). Both routes are gated
+    // on the known SEO city list (data/seo-cities.js); an unrecognized
+    // slug falls through unchanged (matches existing single-segment
+    // static files like /events/view.html continuing to work exactly
+    // as before). The city itself comes only from the URL match, never
+    // from IP/geolocation — see routes/cityPage.js's header comment.
+    const cityConcertsMatch = pathname.match(/^\/events\/([^/.]+)\/concerts\/?$/);
+    if (cityConcertsMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityConcertsMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityConcertsPage(decodeURIComponent(cityConcertsMatch[1]), registry.getMergedEnv(), siteOrigin);
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('City not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city concerts page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    const cityPageMatch = pathname.match(/^\/events\/([^/.]+)\/?$/);
+    if (cityPageMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityPageMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityAllEventsPage(decodeURIComponent(cityPageMatch[1]), registry.getMergedEnv(), siteOrigin);
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('City not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city page]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
     // Real, indexable event pages — /events/{eventId}/{slug}. Two path
     // segments after /events/ specifically, so this never collides with
     // existing single-segment static files like /events/view.html or
-    // /events/nova-wren-berlin-2026-08-16.html.
+    // /events/nova-wren-berlin-2026-08-16.html. Checked AFTER the city
+    // routes above — see their comment for why the order matters here.
     const eventPageMatch = pathname.match(/^\/events\/([^/]+)\/([^/]+)\/?$/);
     if (eventPageMatch && req.method === 'GET') {
       const [, eventId, requestedSlug] = eventPageMatch;
@@ -469,34 +519,6 @@ const server = http.createServer(async (req, res) => {
         return res.end(result.html);
       } catch (err) {
         console.error('[event page]', err.message);
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        return res.end('Server error');
-      }
-    }
-    // Real, indexable, deterministic city landing pages —
-    // /events/{city-slug}/. Single path segment specifically, so this
-    // never collides with the two-segment /events/{eventId}/{slug}
-    // route above. Deliberately checked against the known SEO city list
-    // (data/seo-cities.js) BEFORE attempting to render anything — an
-    // unrecognized single-segment path under /events/ falls through to
-    // the static file server below unchanged (matches existing
-    // single-segment static files like /events/view.html continuing to
-    // work exactly as before). The city itself comes only from this
-    // URL match, never from IP/geolocation — see routes/cityPage.js's
-    // header comment for the full reasoning.
-    const cityPageMatch = pathname.match(/^\/events\/([^/.]+)\/?$/);
-    if (cityPageMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityPageMatch[1]))) {
-      try {
-        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
-        const result = await cityPageRoutes.renderCityPage(decodeURIComponent(cityPageMatch[1]), registry.getMergedEnv(), siteOrigin);
-        if (!result) {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          return res.end('City not found');
-        }
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        return res.end(result.html);
-      } catch (err) {
-        console.error('[city page]', err.message);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         return res.end('Server error');
       }
