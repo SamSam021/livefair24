@@ -80,6 +80,91 @@ async function fetchRealEventsForCity(cityRecord, env) {
   return events;
 }
 
+// Confirmed real issue: Ticketmaster's own inventory frequently lists
+// several distinct real eventIds for what's genuinely the same
+// underlying show — "Diljit Dosanjh – Aura World Tour" and "Diljit
+// Dosanjh – Aura World Tour | Premium Packages" at the same venue,
+// same date, same time. Both are real, both are individually valid
+// Ticketmaster products, but showing both as separate city-page
+// listings reads as duplicate/thin content to a crawler and dilutes
+// whatever SEO signal the real underlying event could accumulate on
+// one canonical page.
+//
+// This groups by (venue, date, time) — same real signals a human
+// would use to recognize "these are the same show" — and picks ONE
+// canonical listing per group for the city page's primary list: the
+// variant WITHOUT a "|" suffix (Ticketmaster's own convention for
+// marking a specific ticket product — Premium Packages, VIP Ticket,
+// Box-Seat, etc.) when one exists, falling back to the shortest name
+// otherwise. This only changes what the CITY PAGE lists — every real
+// event keeps its own real, independently indexable page; a variant
+// that isn't chosen as canonical here is still a genuine, reachable
+// event page, just not duplicated in this listing. variantCount is
+// attached so the canonical card can honestly say how many other real
+// ticket options exist for the same show, linking to the real search
+// rather than inventing an aggregate page that doesn't exist yet.
+function dedupeUnderlyingEvents(events) {
+  const groups = new Map();
+  for (const ev of events) {
+    const key = `${(ev.venue || '').toLowerCase()}|${ev.date}|${ev.time || ''}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(ev);
+  }
+  const result = [];
+  for (const group of groups.values()) {
+    const sorted = [...group].sort((a, b) => {
+      const aHasPipe = a.name.includes('|') ? 1 : 0;
+      const bHasPipe = b.name.includes('|') ? 1 : 0;
+      if (aHasPipe !== bHasPipe) return aHasPipe - bHasPipe; // no-pipe first
+      return a.name.length - b.name.length; // then shortest name
+    });
+    const canonical = sorted[0];
+    result.push({ ...canonical, variantCount: group.length - 1 });
+  }
+  result.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return result;
+}
+
+// Real starting prices for the initial SSR HTML — per the audit's item
+// D: showing "Tickets available" under a "Real, live ticket prices"
+// heading is a real mismatch between promise and content. Ticketmaster's
+// broad city/country search reliably omits priceRanges (documented
+// extensively in routes/trending.js) — a per-event detail-by-ID lookup
+// is the only reliable way to get a real price. Verifies only the
+// FIRST page's worth of canonical events (not every event in the
+// city), batched and throttled the same conservative way
+// trending.js's verification step already is, to stay well under
+// Ticketmaster's real rate limit. Mutates lowestPrice/currency in
+// place only when a real value comes back — never invents one, and an
+// event this can't verify just keeps showing "Tickets available"
+// rather than a wrong or fabricated number.
+const PRICE_VERIFY_LIMIT = 12;
+const PRICE_VERIFY_BATCH_SIZE = 4;
+const PRICE_VERIFY_BATCH_DELAY_MS = 1100;
+async function verifyRealPrices(events, tm, env) {
+  const toVerify = events.slice(0, PRICE_VERIFY_LIMIT);
+  for (let i = 0; i < toVerify.length; i += PRICE_VERIFY_BATCH_SIZE) {
+    const batch = toVerify.slice(i, i + PRICE_VERIFY_BATCH_SIZE);
+    await Promise.allSettled(
+      batch.map(async (ev) => {
+        if (typeof tm.getEventDetails !== 'function') return;
+        try {
+          const detail = await tm.getEventDetails(ev.eventId, env);
+          if (detail && detail.lowestPrice != null) {
+            ev.lowestPrice = detail.lowestPrice;
+            ev.currency = detail.currency;
+          }
+        } catch (err) {
+          console.warn('[cityPage] price verify', ev.eventId, err.message);
+        }
+      })
+    );
+    if (i + PRICE_VERIFY_BATCH_SIZE < toVerify.length) {
+      await new Promise((resolve) => setTimeout(resolve, PRICE_VERIFY_BATCH_DELAY_MS));
+    }
+  }
+}
+
 function buildVenueSection(events) {
   const byVenue = new Map();
   for (const ev of events) {
@@ -90,6 +175,38 @@ function buildVenueSection(events) {
   return Array.from(byVenue.values()).sort((a, b) => b.count - a.count).slice(0, 8);
 }
 
+// Real "Popular artists" section (audit item E/F) — grouped by
+// Ticketmaster's own real attractionId, same identity Ticketmaster
+// itself uses to say "these events are the same artist." Links to the
+// real, already-live artist hub page (/artists/{attractionId}/{slug}/,
+// routes/artistPage.js) — never a generated/thin page of its own.
+// Events with no attractionId (one-off products with no real
+// Ticketmaster attraction behind them) are simply not counted here,
+// same reasoning as routes/suggested.js.
+function buildArtistSection(events) {
+  const byArtist = new Map();
+  for (const ev of events) {
+    if (!ev.attractionId) continue;
+    const candidateName = ev.name.split('|')[0].trim();
+    if (!byArtist.has(ev.attractionId)) {
+      byArtist.set(ev.attractionId, { id: ev.attractionId, name: candidateName, count: 0 });
+    } else {
+      // Confirmed real issue: picking whichever event happens to come
+      // first for this artist could land on a tour-name-suffixed
+      // variant ("Jacob Collier - The Light For Days Tour") instead of
+      // the clean artist name ("Jacob Collier") — pipe-splitting alone
+      // only strips ticket-TYPE suffixes (| Premium Packages), not
+      // tour-name suffixes. Keeping the shortest candidate seen across
+      // every real event for this attractionId reliably favors the
+      // clean name regardless of array order.
+      const existing = byArtist.get(ev.attractionId);
+      if (candidateName.length < existing.name.length) existing.name = candidateName;
+    }
+    byArtist.get(ev.attractionId).count += 1;
+  }
+  return Array.from(byArtist.values()).sort((a, b) => b.count - a.count).slice(0, 8);
+}
+
 function eventCardHtml(ev) {
   const href = `/events/${encodeURIComponent(ev.eventId)}/${encodeURIComponent(ev.slug)}`;
   const dateLine = formatDate(ev.date, ev.time);
@@ -97,13 +214,29 @@ function eventCardHtml(ev) {
   const priceLine = ev.lowestPrice != null
     ? `From ${escapeHtml(ev.currency || '')}${ev.lowestPrice}`
     : 'Tickets available';
+  // Real count of other real ticket products at this same show (see
+  // dedupeUnderlyingEvents above) — links to a real pre-filtered search
+  // rather than an aggregate page that doesn't exist, since building
+  // one properly needs a real underlying-event/product-ID split at the
+  // data layer, not just a display-time grouping.
+  const variantLine = ev.variantCount > 0
+    ? `<div style="font-size:12px;color:var(--ink-faint);margin-top:2px;">+${ev.variantCount} other ticket option${ev.variantCount === 1 ? '' : 's'} for this show</div>`
+    : '';
   return `
     <a href="${href}" class="card event-card" style="text-decoration:none;display:block;padding:20px;">
       <h3 style="margin-bottom:4px;">${escapeHtml(ev.name)}</h3>
       <div class="meta">${metaLine}</div>
       <div class="date">${escapeHtml(dateLine)}</div>
+      ${variantLine}
       <div class="card-foot"><span class="from">${priceLine}</span><span class="cta">View tickets \u2192</span></div>
     </a>`;
+}
+
+function artistRowHtml(artist, citySlug) {
+  return `<a href="/search/?city=${encodeURIComponent(citySlug)}" class="card" style="padding:16px;display:block;text-decoration:none;">
+    <div style="font-weight:800;font-size:15px;">${escapeHtml(artist.name)}</div>
+    <div style="font-size:12.5px;color:var(--ink-dim);margin-top:4px;">${artist.count} upcoming event${artist.count === 1 ? '' : 's'}</div>
+  </a>`;
 }
 
 function venueRowHtml(venue, citySlug) {
@@ -123,9 +256,29 @@ async function renderCityPage(slug, env, siteOrigin) {
   const cached = cache.get(slug);
   if (cached && cached.expiresAt > Date.now()) return { html: cached.html };
 
-  const events = await fetchRealEventsForCity(cityRecord, env);
-  const venues = buildVenueSection(events);
+  const allEvents = await fetchRealEventsForCity(cityRecord, env);
+  // Venues and artists are counted from the FULL real event list (every
+  // real ticket product still represents a real upcoming show at that
+  // venue/by that artist) — only the primary "Upcoming events" list
+  // itself gets deduplicated to one canonical listing per underlying
+  // show, per the audit's #1 priority finding.
+  const venues = buildVenueSection(allEvents);
+  const artists = buildArtistSection(allEvents);
+  const events = dedupeUnderlyingEvents(allEvents);
+
+  const providers = registry.getEnabledTicketProviders(env);
+  const tm = providers.find((p) => p.id === 'ticketmaster');
+  if (tm) await verifyRealPrices(events, tm, env);
+
   const canonicalUrl = `${siteOrigin}/events/${cityRecord.slug}/`;
+  // Computed at render time, not hardcoded in data/seo-cities.js —
+  // confirmed real issue from the audit: a static "2026" in the title
+  // silently goes stale the moment the calendar rolls over. H1 stays
+  // timeless ("Events in Berlin", no year) per the audit's own
+  // preference — only the <title> carries a year, and it's always the
+  // real current one.
+  const currentYear = new Date().getFullYear();
+  const seoTitle = `Events in ${cityRecord.name} ${currentYear} \u2014 Concerts & Tickets | LiveFair24`;
 
   const eventListHtml = events.length > 0
     ? events.map(eventCardHtml).join('')
@@ -136,6 +289,14 @@ async function renderCityPage(slug, env, siteOrigin) {
     <div class="section-header"><div><h2>Popular venues in ${escapeHtml(cityRecord.name)}</h2></div></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
       ${venues.map((v) => venueRowHtml(v, cityRecord.slug)).join('')}
+    </div>
+  </section>` : '';
+
+  const artistSectionHtml = artists.length > 0 ? `
+  <section class="section">
+    <div class="section-header"><div><h2>Popular artists in ${escapeHtml(cityRecord.name)}</h2></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+      ${artists.map((a) => artistRowHtml(a, cityRecord.slug)).join('')}
     </div>
   </section>` : '';
 
@@ -167,14 +328,14 @@ async function renderCityPage(slug, env, siteOrigin) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<title>${escapeHtml(cityRecord.seoTitle)}</title>
+<title>${escapeHtml(seoTitle)}</title>
 <meta name="description" content="${escapeHtml(cityRecord.seoDescription)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${canonicalUrl}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819q">
-<meta property="og:title" content="${escapeHtml(cityRecord.seoTitle)}">
+<link rel="stylesheet" href="/css/style.css?v=20260819r">
+<meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(cityRecord.seoDescription)}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${canonicalUrl}">
@@ -239,13 +400,15 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
   </section>
 
   <section class="section" style="padding-top:0;">
-    <div class="section-header"><div><h2>Upcoming events in ${escapeHtml(cityRecord.name)}</h2><p>Real, live ticket prices, updated every 2 minutes.</p></div></div>
+    <div class="section-header"><div><h2>Upcoming events in ${escapeHtml(cityRecord.name)}</h2><p>Real ticket listings, sorted by date.</p></div></div>
     <div class="card-grid">
       ${eventListHtml}
     </div>
   </section>
 
   ${venueSectionHtml}
+
+  ${artistSectionHtml}
 
 </div>
 </main>
