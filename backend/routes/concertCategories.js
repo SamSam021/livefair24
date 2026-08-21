@@ -155,8 +155,10 @@ async function backgroundRefreshConcertCategories() {
   // Re-reads env fresh on every cycle (not captured once at startup) —
   // same reasoning as trending.js's background refresh: a Ticketmaster
   // key added later via the admin panel gets picked up without needing
-  // a server restart.
-  const env = registry.getMergedEnv();
+  // a server restart. lowPriority:true marks every real Ticketmaster
+  // call this job makes as background-triggered — see providers/
+  // tickets/ticketmaster.js's two-lane priority queue.
+  const env = { ...registry.getMergedEnv(), lowPriority: true };
   try {
     const fresh = await computeConcertCategories(env);
     cachedResult = fresh;

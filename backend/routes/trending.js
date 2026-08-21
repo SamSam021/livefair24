@@ -309,8 +309,12 @@ let backgroundRefreshRotationIndex = 0;
 async function backgroundRefreshTrending() {
   // Re-reads env fresh on every cycle (not captured once at startup) so
   // a Ticketmaster key added later via the admin panel gets picked up
-  // without needing a server restart.
-  const env = registry.getMergedEnv();
+  // without needing a server restart. lowPriority:true marks every real
+  // Ticketmaster call this job makes as background-triggered — see
+  // providers/tickets/ticketmaster.js's two-lane priority queue, added
+  // after a real user's own request got stuck queued behind background
+  // job traffic once pre-warming scaled up significantly.
+  const env = { ...registry.getMergedEnv(), lowPriority: true };
   const providers = registry.getEnabledTicketProviders(env);
   const demoMode = providers.every((p) => p.id === 'demo');
   if (demoMode) return; // nothing slow to pre-warm — demo mode is always instant, no real API calls involved
