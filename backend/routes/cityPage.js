@@ -278,7 +278,7 @@ async function renderCityPage(slug, env, siteOrigin) {
   // preference — only the <title> carries a year, and it's always the
   // real current one.
   const currentYear = new Date().getFullYear();
-  const seoTitle = `Events in ${cityRecord.name} ${currentYear} \u2014 Concerts & Tickets | LiveFair24`;
+  const seoTitle = `Concerts in ${cityRecord.name} ${currentYear} \u2014 Concerts & Tickets | LiveFair24`;
 
   const eventListHtml = events.length > 0
     ? events.map(eventCardHtml).join('')
@@ -334,7 +334,7 @@ async function renderCityPage(slug, env, siteOrigin) {
 <link rel="canonical" href="${canonicalUrl}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819r">
+<link rel="stylesheet" href="/css/style.css?v=20260819s">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(cityRecord.seoDescription)}">
 <meta property="og:type" content="website">
@@ -395,7 +395,7 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
 
   <section style="padding:40px 0 24px;max-width:74ch;">
     <span class="badge badge-blue" style="margin-bottom:16px;">${escapeHtml(cityRecord.country)}</span>
-    <h1 class="display" style="font-size:clamp(28px,4.5vw,48px);">Events in ${escapeHtml(cityRecord.name)}</h1>
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,48px);">Concerts in ${escapeHtml(cityRecord.name)} ${currentYear}</h1>
     <p style="font-size:16px;color:var(--ink-dim);margin-top:14px;line-height:1.7;">${escapeHtml(cityRecord.seoIntro)}</p>
   </section>
 
