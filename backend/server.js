@@ -441,20 +441,60 @@ const server = http.createServer(async (req, res) => {
       return serveFile(res, ADMIN_ROOT, 'admin.html');
     }
     // Real, indexable, deterministic city landing pages —
-    // /events/{city-slug}/concerts/ FIRST (two segments, but the second
-    // is the literal word "concerts", never an eventId), then
-    // /events/{city-slug}/ (one segment) — both checked BEFORE the
+    // /events/{city-slug}/concerts/page/{n}/ and
+    // /events/{city-slug}/page/{n}/ FIRST (real pagination URLs, not
+    // query params — each page is genuinely different real content, so
+    // each gets its own indexable URL per the spec's "search/filter
+    // URLs should not become separate canonical SEO pages" rule not
+    // actually applying here — this isn't a filter, it's real content
+    // pagination), then /events/{city-slug}/concerts/ and
+    // /events/{city-slug}/ (page 1, implicit) — all checked BEFORE the
     // generic two-segment /events/{eventId}/{slug} route below, since
     // otherwise "/events/berlin/concerts/" would incorrectly attempt an
     // event lookup with eventId="berlin" (confirmed by direct testing
     // of the route order below before this fix — the two-segment event
     // match's regex genuinely does match "berlin"/"concerts" too, and
-    // being checked first meant it always won). Both routes are gated
-    // on the known SEO city list (data/seo-cities.js); an unrecognized
-    // slug falls through unchanged (matches existing single-segment
-    // static files like /events/view.html continuing to work exactly
-    // as before). The city itself comes only from the URL match, never
-    // from IP/geolocation — see routes/cityPage.js's header comment.
+    // being checked first meant it always won). All four routes are
+    // gated on the known SEO city list (data/seo-cities.js); an
+    // unrecognized slug falls through unchanged (matches existing
+    // single-segment static files like /events/view.html continuing to
+    // work exactly as before). The city itself comes only from the URL
+    // match, never from IP/geolocation — see routes/cityPage.js's
+    // header comment.
+    const cityConcertsPageNumMatch = pathname.match(/^\/events\/([^/.]+)\/concerts\/page\/(\d+)\/?$/);
+    if (cityConcertsPageNumMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityConcertsPageNumMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityConcertsPage(decodeURIComponent(cityConcertsPageNumMatch[1]), registry.getMergedEnv(), siteOrigin, parseInt(cityConcertsPageNumMatch[2], 10));
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('Page not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city concerts page - paginated]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
+    const cityPageNumMatch = pathname.match(/^\/events\/([^/.]+)\/page\/(\d+)\/?$/);
+    if (cityPageNumMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityPageNumMatch[1]))) {
+      try {
+        const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
+        const result = await cityPageRoutes.renderCityAllEventsPage(decodeURIComponent(cityPageNumMatch[1]), registry.getMergedEnv(), siteOrigin, parseInt(cityPageNumMatch[2], 10));
+        if (!result) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          return res.end('Page not found');
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(result.html);
+      } catch (err) {
+        console.error('[city page - paginated]', err.message);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Server error');
+      }
+    }
     const cityConcertsMatch = pathname.match(/^\/events\/([^/.]+)\/concerts\/?$/);
     if (cityConcertsMatch && req.method === 'GET' && getSeoCityBySlug(decodeURIComponent(cityConcertsMatch[1]))) {
       try {

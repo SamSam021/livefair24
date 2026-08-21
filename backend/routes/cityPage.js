@@ -279,11 +279,12 @@ function venueRowHtml(venue, citySlug) {
 // data-fetching, dedup, price-verification, and template logic either
 // way, per the instruction to extend rather than duplicate the
 // existing architecture.
-async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
+async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin, pageNum) {
   const cityRecord = getSeoCityBySlug(slug);
   if (!cityRecord) return null;
 
-  const cacheKey = `${slug}:${concertsOnly ? 'concerts' : 'all'}`;
+  const page = pageNum || 1;
+  const cacheKey = `${slug}:${concertsOnly ? 'concerts' : 'all'}:page${page}`;
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return { html: cached.html };
 
@@ -293,30 +294,49 @@ async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
   // represents a real upcoming show at that venue/by that artist) —
   // only the primary "Upcoming events" list itself gets deduplicated
   // to one canonical listing per underlying show, per the audit's #1
-  // priority finding.
+  // priority finding. These sections stay the same across every
+  // pagination page — only the "Upcoming events" list itself paginates.
   const venues = buildVenueSection(allEvents);
   const artists = buildArtistSection(allEvents);
-  const events = dedupeUnderlyingEvents(allEvents);
+  const allDedupedEvents = dedupeUnderlyingEvents(allEvents);
+
+  // Real pagination — 10 events per page, matching the reference UI
+  // (numbered pills + prev/next). Each page is its own real, crawlable
+  // URL (/events/{slug}/page/{n}/), not a query param, so every page's
+  // content is genuinely indexable rather than treated as a filter
+  // variant. An out-of-range page number 404s (returns null) rather
+  // than silently clamping or showing an empty shell.
+  const PAGE_SIZE = 10;
+  const totalEvents = allDedupedEvents.length;
+  const totalPages = Math.max(1, Math.ceil(totalEvents / PAGE_SIZE));
+  if (!Number.isInteger(page) || page < 1 || page > totalPages) return null;
+  const events = allDedupedEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const providers = registry.getEnabledTicketProviders(env);
   const tm = providers.find((p) => p.id === 'ticketmaster');
+  // Only the current page's 10 events get verified — the actual point
+  // of pagination beyond display: a real visitor's request only ever
+  // waits on ~10 throttled Ticketmaster calls, not the full city list.
   if (tm) await verifyRealPrices(events, tm, env);
 
   const generalUrl = `${siteOrigin}/events/${cityRecord.slug}/`;
   const concertsUrl = `${siteOrigin}/events/${cityRecord.slug}/concerts/`;
-  const canonicalUrl = concertsOnly ? concertsUrl : generalUrl;
+  const baseUrl = concertsOnly ? concertsUrl : generalUrl;
+  const pageUrl = (n) => (n === 1 ? baseUrl : `${baseUrl}page/${n}/`);
+  const canonicalUrl = pageUrl(page);
 
   // Computed at render time, not hardcoded in data/seo-cities.js —
   // confirmed real issue from the audit: a static year in the title
   // silently goes stale the moment the calendar rolls over.
   const currentYear = new Date().getFullYear();
   const pageLabel = concertsOnly ? 'Concerts' : 'Events';
+  const pageSuffix = page > 1 ? ` \u2014 Page ${page}` : '';
   const seoTitle = concertsOnly
-    ? `Concerts in ${cityRecord.name} ${currentYear} \u2014 Concert Tickets | LiveFair24`
-    : `Events in ${cityRecord.name} ${currentYear} \u2014 Events & Tickets | LiveFair24`;
+    ? `Concerts in ${cityRecord.name} ${currentYear}${pageSuffix} \u2014 Concert Tickets | LiveFair24`
+    : `Events in ${cityRecord.name} ${currentYear}${pageSuffix} \u2014 Events & Tickets | LiveFair24`;
   const pageDescription = concertsOnly
-    ? `Upcoming concerts in ${cityRecord.name}. Browse concert dates, venues, and find tickets on LiveFair24.`
-    : cityRecord.seoDescription;
+    ? `Upcoming concerts in ${cityRecord.name}${pageSuffix}. Browse concert dates, venues, and find tickets on LiveFair24.`
+    : `${cityRecord.seoDescription}${pageSuffix}`;
   const pageIntro = concertsOnly
     ? `Upcoming concerts in ${cityRecord.name}, real listings sourced live from Ticketmaster. Browse dates, venues, and find tickets below.`
     : cityRecord.seoIntro;
@@ -324,6 +344,31 @@ async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
   const eventListHtml = events.length > 0
     ? events.map(eventCardHtml).join('')
     : `<div style="padding:24px;color:var(--ink-faint);font-size:14.5px;">No current ${concertsOnly ? 'concert ' : ''}listings for ${escapeHtml(cityRecord.name)} \u2014 check back soon.</div>`;
+
+  // Pagination nav — numbered pills + prev/next, real <a href> links to
+  // real paginated URLs. Truncates with an ellipsis once there are many
+  // pages, matching the reference UI (1, 2, 3 ... 11).
+  function pageBtnHtml(n, label, active) {
+    const disabled = n == null;
+    const cls = 'pgn-btn' + (active ? ' active' : '') + (disabled ? ' disabled' : '');
+    if (disabled) return `<span class="${cls}">${label}</span>`;
+    return `<a href="${pageUrl(n)}" class="${cls}">${label}</a>`;
+  }
+  let paginationHtml = '';
+  if (totalPages > 1) {
+    const pageNumbers = [];
+    const window = 1; // how many neighbors on each side of the current page to always show
+    for (let n = 1; n <= totalPages; n++) {
+      if (n === 1 || n === totalPages || Math.abs(n - page) <= window) pageNumbers.push(n);
+      else if (pageNumbers[pageNumbers.length - 1] !== '...') pageNumbers.push('...');
+    }
+    paginationHtml = `
+  <div class="pagination-nav">
+    ${pageBtnHtml(page > 1 ? page - 1 : null, '\u2190', false)}
+    ${pageNumbers.map((n) => (n === '...' ? '<span class="pgn-ellipsis">\u2026</span>' : pageBtnHtml(n, String(n), n === page))).join('')}
+    ${pageBtnHtml(page < totalPages ? page + 1 : null, '\u2192', false)}
+  </div>`;
+  }
 
   const venueSectionHtml = venues.length > 0 ? `
   <section class="section">
@@ -386,9 +431,11 @@ async function renderCityPageInternal(slug, concertsOnly, env, siteOrigin) {
 <meta name="description" content="${escapeHtml(pageDescription)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${canonicalUrl}">
+${page > 1 ? `<link rel="prev" href="${pageUrl(page - 1)}">` : ''}
+${page < totalPages ? `<link rel="next" href="${pageUrl(page + 1)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819v">
+<link rel="stylesheet" href="/css/style.css?v=20260819w">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(pageDescription)}">
 <meta property="og:type" content="website">
@@ -457,6 +504,7 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
     <div class="event-row-list">
       ${eventListHtml}
     </div>
+    ${paginationHtml}
   </section>
 
   ${venueSectionHtml}
@@ -509,11 +557,11 @@ ${events.length > 0 ? `<script type="application/ld+json">${JSON.stringify(itemL
   return { html };
 }
 
-async function renderCityAllEventsPage(slug, env, siteOrigin) {
-  return renderCityPageInternal(slug, false, env, siteOrigin);
+async function renderCityAllEventsPage(slug, env, siteOrigin, pageNum) {
+  return renderCityPageInternal(slug, false, env, siteOrigin, pageNum);
 }
-async function renderCityConcertsPage(slug, env, siteOrigin) {
-  return renderCityPageInternal(slug, true, env, siteOrigin);
+async function renderCityConcertsPage(slug, env, siteOrigin, pageNum) {
+  return renderCityPageInternal(slug, true, env, siteOrigin, pageNum);
 }
 
 // Background pre-warming — the actual fix for the "Eventim's equivalent
