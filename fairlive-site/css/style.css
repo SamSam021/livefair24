@@ -51,6 +51,57 @@ img{max-width:100%;display:block;}
   .nav-links a:last-child{border-bottom:none;}
 }
 
+/* Full-screen drill-down mobile menu — mirrors TickPick's own mobile
+   menu structure (main list -> tap "Concerts" -> genre list -> tap a
+   genre -> real artist list, each its own full screen with Back/Close
+   controls) rather than an in-place accordion. Every artist shown still
+   comes from the exact same /api/concerts/categories data the desktop
+   flyout uses (see the shared script below) — only the navigation
+   pattern is modeled on TickPick's, never their specific content.
+   Only ever reachable via .nav-burger, which is itself display:none
+   above the mobile breakpoint, so this never needs its own separate
+   desktop guard. */
+.mobile-menu-overlay{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:#fff; flex-direction:column;
+}
+.mobile-menu-overlay.open{ display:flex; }
+.mmo-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px; border-bottom:1px solid var(--line); flex-shrink:0;
+}
+.mmo-back-btn{
+  background:none; border:none; display:flex; align-items:center; gap:4px;
+  font-size:15px; font-weight:700; color:var(--ink); cursor:pointer; padding:6px 4px;
+  font-family:'Sora',sans-serif; visibility:hidden;
+}
+.mmo-back-btn.visible{ visibility:visible; }
+.mmo-close-btn{
+  background:none; border:none; font-size:22px; line-height:1; color:var(--ink);
+  cursor:pointer; padding:4px 8px;
+}
+.mmo-screens{ flex:1; overflow:hidden; position:relative; }
+.mmo-screen{
+  position:absolute; inset:0; overflow-y:auto; background:#fff;
+  display:none;
+}
+.mmo-screen.active{ display:block; }
+.mmo-row{
+  display:flex; align-items:center; justify-content:space-between; width:100%;
+  padding:17px 20px; border-bottom:1px solid var(--line); background:none; border-left:none; border-right:none; border-top:none;
+  text-decoration:none; color:var(--ink); font-family:'Sora',sans-serif; font-weight:700; font-size:16px;
+  text-align:left; cursor:pointer;
+}
+.mmo-row .mmo-chev{ color:var(--ink-faint); font-size:17px; flex-shrink:0; }
+.mmo-genre-count{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:12.5px; color:var(--ink-faint); }
+.mmo-artist-row{
+  display:block; padding:17px 20px; border-bottom:1px solid var(--line);
+  text-decoration:none; color:var(--ink); font-family:'Manrope',sans-serif; font-weight:600; font-size:15.5px;
+}
+.mmo-artist-row.mmo-seeall{ color:var(--blue); font-weight:700; }
+.mmo-screen-label{ padding:16px 20px 4px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-family:'JetBrains Mono',monospace; }
+.mmo-loading, .mmo-empty{ padding:20px; font-size:14px; color:var(--ink-faint); }
+
 /* Responsive tables — scroll horizontally instead of clipping/squishing */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .table-scroll table{min-width:640px;}
@@ -93,6 +144,18 @@ img{max-width:100%;display:block;}
 .hero-light h1{color:var(--ink);}
 .hero-light p{color:var(--ink-dim);opacity:1;}
 
+/* Centers the badge, headline, subtext, search bar and "Try:" pills as
+   a block within the hero — scoped to .hero-centered only (applied
+   just on the homepage hero) so concerts.html and any other page
+   using .hero-inner keeps its original left-aligned layout. Flex
+   column + align-items:center centers each child regardless of its
+   own width (the search form and pill row both have their own
+   max-width), rather than needing margin:auto tuned per child. */
+.hero-centered .hero-inner{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+.hero-centered .hero-inner h1,
+.hero-centered .hero-inner p{ max-width:640px; }
+.hero-centered .pill-row{ justify-content:center; }
+
 /* Search bar */
 .search-form{display:flex;gap:10px;max-width:620px;flex-wrap:wrap;}
 .search-input{flex:1;min-width:200px;padding:14px 18px;border-radius:12px;border:none;font-size:15px;font-family:'Manrope',sans-serif;font-weight:600;box-shadow:0 2px 12px rgba(0,0,0,.15);}
@@ -125,6 +188,46 @@ img{max-width:100%;display:block;}
    that loading/selection logic needed to change either. */
 .card-grid-scroll{display:flex;overflow-x:auto;gap:16px;padding:4px 2px 12px;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;}
 .card-grid-scroll::-webkit-scrollbar{display:none;}
+
+/* Horizontal event row (city pages /events/{slug}/ and
+   /events/{slug}/concerts/) — same fields as the .event-card grid
+   style elsewhere (title, venue/city, date, price, ticket link), just
+   laid out as a stacked list of rows instead of a grid of boxes, no
+   image. Left side: title/meta/date. Right side: price + CTA. */
+.event-row-list{ display:flex; flex-direction:column; background:var(--surface); border-radius:16px; overflow:hidden; border:1px solid var(--line); }
+.event-row{
+  display:flex; align-items:center; justify-content:space-between; gap:20px;
+  padding:18px 22px; border-bottom:1px solid var(--line); color:inherit;
+  transition:background .15s;
+}
+.event-row:last-child{ border-bottom:none; }
+.event-row:hover{ background:var(--surface-2); }
+.event-row-main h3{ font-family:'Sora',sans-serif; font-size:16px; font-weight:700; margin-bottom:4px; }
+.event-row-main .meta{ font-size:13px; color:var(--ink-dim); }
+.event-row-main .date{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink-faint); margin-top:2px; }
+.event-row-side{ display:flex; align-items:center; gap:18px; flex-shrink:0; white-space:nowrap; }
+.event-row-side .from{ font-family:'Sora',sans-serif; font-weight:800; font-size:15px; color:var(--gold); }
+.event-row-side .cta{ font-family:'Manrope',sans-serif; font-weight:700; font-size:14px; color:var(--blue); }
+@media(max-width:640px){
+  .event-row{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .event-row-side{ align-self:stretch; justify-content:space-between; }
+}
+
+/* Pagination nav (city pages) — real <a href> pills to real
+   /events/{slug}/page/{n}/ URLs, matching the reference UI: rounded
+   pill buttons, gold text/border on the active page, prev/next arrows,
+   ellipsis once there are many pages. */
+.pagination-nav{ display:flex; align-items:center; justify-content:center; gap:8px; padding:22px 0 4px; flex-wrap:wrap; }
+.pgn-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:38px; height:38px; padding:0 10px; border-radius:10px;
+  background:var(--surface-2); color:var(--gold); font-family:'JetBrains Mono',monospace;
+  font-weight:700; font-size:14px; text-decoration:none; transition:background .15s, color .15s;
+}
+.pgn-btn:hover{ background:var(--surface); }
+.pgn-btn.active{ background:#fff; color:var(--gold); border:1.5px solid var(--gold); }
+.pgn-btn.disabled{ color:var(--ink-faint); opacity:.45; cursor:default; }
+.pgn-ellipsis{ color:var(--ink-faint); font-family:'JetBrains Mono',monospace; padding:0 2px; }
 .card-grid-scroll .card{flex:0 0 300px;}
 /* display:flex + flex-direction:column here, combined with
    margin-top:auto on .card-foot below, is what actually aligns the
@@ -516,7 +619,7 @@ img{max-width:100%;display:block;}
 
 /* ---- Floating category sidebar (Tickpick-style icon rail) ---- */
 .category-rail{
-  position:fixed; top:50%; right:20px; transform:translateY(-50%); z-index:60;
+  position:fixed; top:50%; left:20px; transform:translateY(-50%); z-index:60;
   background:var(--surface); border-radius:999px; box-shadow:0 8px 28px rgba(16,24,40,.16);
   padding:14px 10px; display:flex; flex-direction:column; gap:6px; align-items:center;
 }
@@ -533,27 +636,115 @@ img{max-width:100%;display:block;}
 .category-rail-item.disabled{ color:var(--ink-faint); }
 .category-rail-item.disabled:hover{ color:var(--ink-faint); background:var(--surface-2); }
 .category-rail-tooltip{
-  position:absolute; right:52px; top:50%; transform:translateY(-50%);
+  position:absolute; left:52px; top:50%; transform:translateY(-50%);
   background:var(--ink); color:#fff; font-size:12px; font-weight:600; white-space:nowrap;
   padding:6px 11px; border-radius:8px; opacity:0; pointer-events:none; transition:opacity .15s;
 }
 .category-rail-item:hover .category-rail-tooltip{ opacity:1; }
 .category-rail-divider{ width:24px; height:1px; background:var(--line); margin:2px 0; }
+
+/* ---- Concerts category flyout (two-pane: genre buckets left, real
+   artists right) — opened from the rail's mic icon. Structure matches
+   the pattern already used for TickPick's own rail above (documented
+   as intentional), but every artist listed here comes live from
+   /api/concerts/categories (routes/concertCategories.js) — real
+   Ticketmaster attractions, never hardcoded names. ---- */
+.concert-category-menu{
+  position:fixed; top:50%; left:78px; transform:translateY(-50%);
+  width:560px; max-width:calc(100vw - 96px); max-height:70vh;
+  background:var(--surface); border-radius:20px; box-shadow:0 20px 50px rgba(16,24,40,.22);
+  display:none; overflow:hidden; z-index:61;
+}
+.concert-category-menu.open{ display:flex; }
+.ccm-cats{
+  width:200px; flex-shrink:0; background:var(--surface-2); border-right:1px solid var(--line);
+  overflow-y:auto; padding:10px;
+}
+.ccm-cat-btn{
+  display:flex; align-items:center; justify-content:space-between; width:100%;
+  padding:11px 12px; border-radius:10px; border:none; background:none; cursor:pointer;
+  font-family:'Manrope',sans-serif; font-weight:700; font-size:14px; color:var(--ink);
+  text-align:left; margin-bottom:2px; transition:background .15s;
+}
+.ccm-cat-btn:hover{ background:var(--surface); }
+.ccm-cat-btn.active{ background:var(--ink); color:#fff; }
+.ccm-cat-btn .count{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; opacity:.6; }
+.ccm-artists{ flex:1; padding:20px 22px; overflow-y:auto; }
+.ccm-artists h4{ font-family:'Sora',sans-serif; font-size:16px; font-weight:800; margin-bottom:14px; }
+.ccm-artist-grid{ display:grid; grid-template-columns:1fr 1fr; gap:4px 20px; }
+.ccm-artist-link{
+  display:block; padding:7px 0; font-size:13.5px; color:var(--ink-dim); font-weight:600;
+  border-bottom:1px solid transparent; transition:color .15s;
+}
+.ccm-artist-link:hover{ color:var(--blue); }
+.ccm-empty, .ccm-loading{ color:var(--ink-faint); font-size:13.5px; padding:8px 0; }
+.ccm-seeall{ color:var(--blue); font-weight:700; }
+@media (max-width:760px){
+  .concert-category-menu{ right:8px; left:8px; width:auto; max-width:none; top:auto; bottom:82px; transform:none; max-height:55vh; }
+  .ccm-artist-grid{ grid-template-columns:1fr; }
+
+  /* The floating category rail (music-note/sports icon sidebar) and
+     its Concerts flyout are hidden entirely on mobile — all of their
+     functionality (Concerts genre browsing with real artists, Sports)
+     moves into the traditional hamburger menu's expandable "Concerts"
+     accordion instead. Desktop is unaffected — mobile-only breakpoint.
+     Placed in THIS media query block (not the earlier one right after
+     nav-links), and specifically AFTER the base .category-rail rule
+     above in source order — same class of bug as the calendar-panel
+     fix elsewhere in this file: the base rule explicitly sets
+     display:flex, so an override placed BEFORE it in the file gets
+     silently cancelled by the later, equal-specificity base rule,
+     regardless of the media condition. Confirmed this exact mistake
+     really did leave the rail visible on mobile after the first
+     attempt at this fix. */
+  .category-rail{ display:none; }
+  .concert-category-menu{ display:none !important; }
+
+  /* Confirmed real overflow bug: the base .search-dates-panel rule
+     above is position:absolute with left:0, which anchors it to
+     .search-segment-dates' own left edge — but that segment sits
+     wherever it happens to fall inside the search form/hero padding,
+     not at the true viewport edge. width:min(680px,92vw) was sized
+     for the viewport, but positioned from that offset ancestor, so the
+     panel's right side ran off-screen (visible cut-off calendar
+     columns and a clipped "End date" field). Ticketmaster's own mobile
+     calendar avoids this the same way .concert-category-menu above
+     already does for an identical class of bug: switch to
+     position:fixed with explicit left/right viewport offsets on
+     mobile, completely independent of the trigger's position. Placed
+     in this later media query block (not the earlier one right after
+     the base rule) specifically so it comes after that rule in source
+     order — same specificity, so an override placed BEFORE the rule
+     it's meant to override gets silently cancelled by it instead. */
+  .search-dates-panel{
+    position:fixed; left:8px; right:8px; top:auto; bottom:12px;
+    width:auto; max-width:none; max-height:80vh; overflow-y:auto;
+  }
+}
+
 @media (max-width:760px){
   /* Previously hidden entirely on mobile — but with the homepage's top
      nav links removed, this rail is now the only way to reach other
      pages (Concerts, Sports) on mobile, so it needs to stay usable
-     there rather than disappear. Shrunk and moved to a bottom-right
-     floating-button position instead of vertically centered on the
-     edge, since that's much less likely to sit on top of centered
-     content like a hero headline or search form on a narrow screen. */
+     there rather than disappear. Shrunk and moved to a bottom-left
+     floating-button position (matching the desktop rail's left-edge
+     placement) instead of vertically centered on the edge, since
+     that's much less likely to sit on top of centered content like a
+     hero headline or search form on a narrow screen.
+     bottom:82px (not 16px) is deliberate, not arbitrary — the cookie
+     settings toggle (.cookie-settings-toggle, see below) already
+     permanently occupies bottom:12px/left:12px on mobile and always
+     has; confirmed real collision where both floating buttons rendered
+     stacked on top of each other once this rail moved to the left
+     edge. This clears the cookie button (40px tall + its own 12px
+     offset) with a visible gap rather than guessing at a tight fit. */
   .category-rail{
-    top:auto; bottom:16px; right:12px; transform:none;
+    top:auto; bottom:82px; left:12px; transform:none;
     padding:8px 6px; gap:3px;
   }
   .category-rail-item{ width:34px; height:34px; }
   .category-rail-item svg{ width:16px; height:16px; }
-  .category-rail-tooltip{ right:42px; font-size:11px; padding:5px 9px; }
+  .category-rail-tooltip{ left:42px; font-size:11px; padding:5px 9px; }
 }
 
 
@@ -632,12 +823,22 @@ img{max-width:100%;display:block;}
   /* Stays visible and usable on mobile rather than disappearing behind
      a hamburger menu — TickPick's own mobile nav doesn't hide controls
      behind a 3-line icon either, it keeps them directly reachable
-     (their persistent icon rail is the same idea we already built).
-     Lets the nav wrap to a second line if the logo + toggle don't fit
-     side by side on a narrow phone, and swaps "Event+Hotel" for the
-     shorter "Both" so the pill doesn't force that wrap unnecessarily. */
-  .nav-inner{ flex-wrap:wrap; row-gap:10px; }
-  .smt-btn{ padding:7px 14px; font-size:12.5px; }
+     (their persistent icon rail is the same idea we already built). */
+
+  /* Confirmed real problem with allowing this to wrap: on a narrow
+     phone the logo, toggle, and burger didn't all fit on one line, so
+     flex-wrap pushed part of the row onto a second line — but nav-inner
+     has a fixed row height assumption elsewhere, so the wrapped content
+     visually overlapped/clipped instead of cleanly reflowing (the logo
+     showed as "veFair24", the toggle got cut off mid-button). Forcing
+     everything onto one line and shrinking each piece to actually fit
+     is the real fix, not just allowing the wrap. */
+  .nav-inner{ flex-wrap:nowrap; padding:12px 14px; gap:8px; }
+  .nav-logo{ font-size:16px; gap:5px; flex-shrink:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nav-right{ gap:6px; flex-shrink:0; }
+  .search-mode-toggle{ padding:3px; gap:1px; flex-shrink:0; }
+  .smt-btn{ padding:5px 9px; font-size:11px; }
   .smt-full{ display:none; }
   .smt-short{ display:inline; }
+  .nav-burger{ width:34px; height:34px; }
 }

@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<title>Concerts in Germany 2026 — Tickets &amp; Prices | LiveFair24</title>
-<meta name="description" content="All upcoming concerts in Germany 2026. See real ticket prices and find hotels near venues. Berlin, Hamburg, Munich, and more.">
+<title>Events in Germany — Tickets & Prices | LiveFair24</title>
+<meta name="description" content="All upcoming concerts in Germany. Real, live ticket prices updated every 2 minutes. Find hotels near venues. Berlin, Hamburg, Munich, Bremen and more.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://livefair24.com/cities/germany/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../css/style.css">
+<link rel="stylesheet" href="../../css/style.css?v=20260819y">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -29,6 +29,7 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-links" id="navLinks">
       <a href="/cities/">Browse cities</a>
+      <a href="/concerts/">Concerts</a>
       <a href="/artists/">Artists</a>
       <a href="/venues/">Venues</a>
       <a href="/guides/how-it-works.html">How it works</a>
@@ -75,150 +76,94 @@
 
   <section style="padding:40px 0 24px;">
     <span class="badge badge-blue" style="margin-bottom:16px;">🇩🇪 Germany</span>
-    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Concerts in Germany 2026</h1>
+    <h1 class="display" style="font-size:clamp(28px,4.5vw,52px);">Events in Germany</h1>
     <p style="font-size:16px;color:var(--ink-dim);margin-top:12px;max-width:54ch;line-height:1.6;">
-      See real ticket prices for all upcoming concerts in Germany, and find the nearest hotels.
+      Search ticket prices for all upcoming concerts in Germany, and find the nearest hotels.
     </p>
-    <div style="display:flex;gap:24px;margin-top:20px;flex-wrap:wrap;" id="countryStats">
-      <div style="font-size:13px;color:var(--ink-faint);">Loading live concert data…</div>
+    <div style="display:flex;gap:24px;margin-top:20px;flex-wrap:wrap;" id="germanyStats">
+      <div style="font-size:13px;color:var(--ink-faint);">Loading current listings…</div>
     </div>
   </section>
 
-  <!-- Cities — real per-city counts and prices, built from whichever
-       cities the live search actually returns (see routes/countryPage.js)
-       rather than a curated list padded with invented numbers. A city
-       only appears here if it genuinely has a real, current event. -->
+  <!-- Cities -->
   <section class="section">
     <div class="section-header"><div><h2>Browse by city</h2></div></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="countryCityGrid">
-      <div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading cities…</div>
-    </div>
-  </section>
-
-  <!-- All events — real, live results only. No fictional fallback
-       events, and no "prices updated every 2 minutes" claim on content
-       that isn't actually live — this section is only ever populated
-       from a real fetch, or shows an honest empty state. -->
-  <section class="section">
-    <div class="section-header">
-      <div><h2>All upcoming Germany concerts</h2><p>Sorted by date · real ticket prices when available</p></div>
-    </div>
-    <div class="card-grid" id="countryEventsGrid">
-      <div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading concerts…</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="germanyCityGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Loading cities…</div>
     </div>
   </section>
 
 </div>
 </main>
 
-<footer class="site-footer">
-  <div class="footer-inner">
-    <div>
-      <div class="footer-logo">● LiveFair24</div>
-      <p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p>
-    </div>
-    <div class="footer-col">
-      <h4>Browse</h4>
-      <ul>
-        <li><a href="/cities/">All cities</a></li>
-        <li><a href="/artists/">Artists</a></li>
-        <li><a href="/venues/">Venues</a></li>
-        <li><a href="/cities/germany/">Germany</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Guides</h4>
-      <ul>
-        <li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li>
-        <li><a href="/guides/how-it-works.html">How it works</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Company</h4>
-      <ul>
-        <li><a href="/privacy.html">Privacy</a></li>
-        <li><a href="/impressum.html">Impressum</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
-</footer>
-
 <script>
-// Real, live data only — see backend/routes/countryPage.js. Replaces
-// what used to be entirely hardcoded stats/cities/events on this page.
+// Real, live data for this page — /api/country-events (routes/
+// countryEvents.js) replaces what used to be hardcoded fictional
+// content: fake "From $72" prices, href="#" city cards, and two of the
+// site's fictional demo events (Rosa Calder, Nova Wren) linked directly
+// in the page's own HTML. Every stat, city, and event below now comes
+// from a real, current Ticketmaster listing — a section shows nothing
+// rather than a placeholder number when there's genuinely no data for
+// it.
 function escapeHtml(str){
-  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
 }
-function formatEventDate(iso){
-  if(!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
-  if(isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
-}
-
-async function loadCountryConcerts(){
-  const statsEl = document.getElementById('countryStats');
-  const cityGrid = document.getElementById('countryCityGrid');
-  const eventsGrid = document.getElementById('countryEventsGrid');
+async function loadGermanyData(){
+  var statsEl = document.getElementById('germanyStats');
+  var cityGrid = document.getElementById('germanyCityGrid');
   try{
-    const res = await fetch('/api/country-concerts/DE');
-    if(!res.ok) throw new Error('country-concerts API error');
-    const data = await res.json();
+    var res = await fetch('/api/country-events?country=DE');
+    if(!res.ok) throw new Error('country-events API error');
+    var data = await res.json();
 
-    // Stats bar
-    if(data.count === 0){
-      statsEl.innerHTML = '<div style="font-size:13px;color:var(--ink-faint);">No live concert data available right now — check back soon.</div>';
-    } else {
-      const cheapest = data.cheapestPrice != null ? `$${Math.round(data.cheapestPrice)}` : 'n/a';
-      statsEl.innerHTML = `
-        <div><span style="font-family:'Sora',sans-serif;font-weight:800;font-size:22px;color:var(--blue);">${data.count}</span><span style="font-size:13px;color:var(--ink-dim);margin-left:6px;">upcoming concert${data.count===1?'':'s'}</span></div>
-        <div><span style="font-family:'Sora',sans-serif;font-weight:800;font-size:22px;color:var(--gold);">${cheapest}</span><span style="font-size:13px;color:var(--ink-dim);margin-left:6px;">cheapest ticket</span></div>
-      `;
-    }
+    // Stats row — only real numbers, no fabricated "cheapest trip"
+    // figure (that requires a real hotel lookup per event, which this
+    // page-level summary doesn't do — showing one here would mean
+    // guessing at a number, not reporting one).
+    var pricedEvents = data.events.filter(function(e){ return e.lowestPrice != null; });
+    var minPrice = pricedEvents.length ? Math.min.apply(null, pricedEvents.map(function(e){ return e.lowestPrice; })) : null;
+    var currency = pricedEvents.length ? (pricedEvents[0].currency || '') : '';
+    statsEl.innerHTML =
+      '<div><span style="font-family:\'Sora\',sans-serif;font-weight:800;font-size:22px;color:var(--blue);">' + data.events.length + '</span><span style="font-size:13px;color:var(--ink-dim);margin-left:6px;">upcoming concerts</span></div>' +
+      (minPrice != null ? '<div><span style="font-family:\'Sora\',sans-serif;font-weight:800;font-size:22px;color:var(--gold);">' + escapeHtml(currency) + minPrice + '</span><span style="font-size:13px;color:var(--ink-dim);margin-left:6px;">cheapest ticket</span></div>' : '');
 
-    // City cards — Berlin gets its own real page; every other city
-    // links to a real, working filtered search rather than a dead "#".
-    if(!data.cities || data.cities.length === 0){
-      cityGrid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No cities with live concerts right now.</div>';
+    // City cards — real city, real count, real minimum price. Cities
+    // with a real, indexable SEO landing page (data/seo-cities.js
+    // pilot — Berlin, Essen, Dresden) link there; every other city
+    // still links to a pre-filtered real search rather than a dead "#".
+    var seoCitySlugs = { berlin: 'berlin', essen: 'essen', dresden: 'dresden' };
+    if(data.cities.length === 0){
+      cityGrid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">No current listings — check back soon.</div>';
     } else {
-      cityGrid.innerHTML = data.cities.map(c => {
-        const href = c.name.toLowerCase() === 'berlin'
-          ? '/cities/germany/berlin.html'
-          : `/search/?city=${encodeURIComponent(c.name)}&country=DE`;
-        const priceLine = c.cheapestPrice != null ? `From $${Math.round(c.cheapestPrice)}` : 'See prices';
-        return `<a href="${href}" class="card" style="padding:18px;">
-          <div style="font-weight:800;font-size:16px;">${escapeHtml(c.name)}</div>
-          <div style="font-size:12.5px;color:var(--ink-dim);margin-top:4px;">${c.count} upcoming event${c.count===1?'':'s'}</div>
-          <div style="font-size:13px;color:var(--gold);font-weight:700;margin-top:10px;">${priceLine}</div>
-        </a>`;
-      }).join('');
-    }
-
-    // Events list
-    if(!data.events || data.events.length === 0){
-      eventsGrid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live concerts found right now — check back soon.</div>';
-    } else {
-      eventsGrid.innerHTML = data.events.map(ev => {
-        const priceLine = ev.lowestPrice != null ? `from <b>$${Math.round(ev.lowestPrice)}</b>` : '<b>Check price</b>';
-        return `<a href="${ev.url || '#'}" class="card">
-          <div class="genre">${escapeHtml(ev.genre || 'Live')}</div>
-          <h3>${escapeHtml(ev.name)}</h3>
-          <div class="meta">${escapeHtml(ev.venue)}, ${escapeHtml(ev.city)}</div>
-          <div class="date">${escapeHtml(formatEventDate(ev.date))}</div>
-          <div class="card-foot"><span class="from">${priceLine}</span><span class="cta">View tickets →</span></div>
-        </a>`;
+      cityGrid.innerHTML = data.cities.map(function(c){
+        var slug = seoCitySlugs[(c.name || '').toLowerCase()];
+        var href = slug ? '/events/' + slug + '/' : '/search/?city=' + encodeURIComponent(c.name);
+        var priceLine = c.minPrice != null ? 'From ' + escapeHtml(c.currency || '') + c.minPrice : '';
+        return '<a href="' + href + '" class="card" style="padding:18px;">' +
+          '<div style="font-weight:800;font-size:16px;">' + escapeHtml(c.name) + '</div>' +
+          '<div style="font-size:12.5px;color:var(--ink-dim);margin-top:4px;">' + c.count + ' upcoming event' + (c.count === 1 ? '' : 's') + '</div>' +
+          (priceLine ? '<div style="font-size:13px;color:var(--gold);font-weight:700;margin-top:10px;">' + priceLine + '</div>' : '') +
+          '</a>';
       }).join('');
     }
   } catch(err){
     console.error(err);
-    statsEl.innerHTML = '<div style="font-size:13px;color:var(--ink-faint);">Could not load live concert data right now.</div>';
-    cityGrid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load cities right now.</div>';
-    eventsGrid.innerHTML = '<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load concerts right now.</div>';
+    statsEl.innerHTML = '';
+    cityGrid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Could not load current listings right now.</div>';
   }
 }
-loadCountryConcerts();
+loadGermanyData();
 </script>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">● LiveFair24</div><p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p></div>
+    <div class="footer-col"><h4>Germany</h4><ul><li><a href="/cities/germany/berlin.html">Berlin concerts</a></li><li><a href="/search/?city=Hamburg">Hamburg concerts</a></li><li><a href="/search/?city=Munich">Munich concerts</a></li><li><a href="/search/?city=Bremen">Bremen concerts</a></li></ul></div>
+    <div class="footer-col"><h4>Guides</h4><ul><li><a href="/guides/how-it-works.html">How it works</a></li><li><a href="/guides/methodology.html">Methodology</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/about.html">About</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li><li><a href="/contact.html">Contact</a></li><li><a href="../../impressum.html">Impressum</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 LiveFair24. Affiliate commission earned on purchases.</span></div>
+</footer>
 <script src="../../js/cookie-banner.js" defer></script>
 </body>
 </html>

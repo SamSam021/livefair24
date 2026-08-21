@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/venues/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/style.css?v=20260819y">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -29,6 +29,7 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-links" id="navLinks">
       <a href="/cities/">Browse cities</a>
+      <a href="/concerts/">Concerts</a>
       <a href="/artists/">Artists</a>
       <a href="/venues/">Venues</a>
       <a href="/guides/how-it-works.html">How it works</a>
@@ -80,15 +81,10 @@
   </section>
 
   <section class="section" style="padding-top:0;">
-    <div class="card-grid">
-      <a href="/venues/waldbuhne-berlin.html" class="card">
-        <div class="genre">Berlin, Germany</div>
-        <h3>Waldbühne</h3>
-        <div class="meta">22,000 capacity · Open-air amphitheatre</div>
-        <div class="card-foot"><span class="from">from <b>$66</b></span><span class="cta">1 upcoming show →</span></div>
-      </a>
+    <div class="card-grid" id="venueCardGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Loading venues…</div>
     </div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More venues are added as new tour dates are confirmed.</p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">Venues update automatically as new tour dates are confirmed.</p>
   </section>
 
 </div>
@@ -98,11 +94,48 @@
   <div class="footer-inner">
     <div><div class="footer-logo">● LiveFair24</div><p class="footer-tagline">Concert ticket search + hotels + total trip cost.</p></div>
     <div class="footer-col"><h4>Browse</h4><ul><li><a href="/cities/">All cities</a></li><li><a href="/artists/">Artists</a></li><li><a href="/venues/">Venues</a></li></ul></div>
-    <div class="footer-col"><h4>Guides</h4><ul><li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li><li><a href="/guides/how-it-works.html">How it works</a></li></ul></div>
-    <div class="footer-col"><h4>Company</h4><ul><li><a href="/about.html">About</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li><li><a href="../impressum.html">Impressum</a></li></ul></div>
+    <div class="footer-col"><h4>Guides</h4><ul><li><a href="/guides/hotels-near-venues.html">Hotels near venues</a></li><li><a href="/guides/how-it-works.html">How it works</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/about.html">About</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li><li><a href="/contact.html">Contact</a></li><li><a href="../impressum.html">Impressum</a></li></ul></div>
   </div>
   <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
 </footer>
+<script>
+// Same real-data pattern as /artists/ — pulls from /api/suggested
+// (category=music restricts to music venues only, per suggested.js's
+// venueGenreOk check), never a hardcoded/fictional entry.
+function escapeAttr(str){
+  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function loadVenueHub(){
+  const grid = document.getElementById('venueCardGrid');
+  try{
+    const res = await fetch('/api/suggested?category=music');
+    if(!res.ok) throw new Error('Suggested API error');
+    const data = await res.json();
+    const venues = data.venues || [];
+    if(venues.length === 0){
+      grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">No venues to show right now — check back soon.</div>';
+      return;
+    }
+    grid.innerHTML = venues.map(v => {
+      const href = `/venues/${encodeURIComponent(v.slug)}/`;
+      const location = escapeAttr([v.city, v.state].filter(Boolean).join(', '));
+      const name = escapeAttr(v.name);
+      const count = v.count || 0;
+      return `<a href="${href}" class="card">
+        <div class="genre">${location || 'Venue'}</div>
+        <h3>${name}</h3>
+        <div class="meta">${count} upcoming show${count === 1 ? '' : 's'}</div>
+        <div class="card-foot"><span class="cta">View shows →</span></div>
+      </a>`;
+    }).join('');
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">Could not load venues right now.</div>';
+  }
+}
+loadVenueHub();
+</script>
 <script src="../js/cookie-banner.js" defer></script>
 </body>
 </html>

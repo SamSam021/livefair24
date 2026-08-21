@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/sports/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/style.css?v=20260819y">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -29,6 +29,7 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-links" id="navLinks">
       <a href="/cities/">Browse cities</a>
+      <a href="/concerts/">Concerts</a>
       <a href="/artists/">Artists</a>
       <a href="/venues/">Venues</a>
       <a href="/guides/how-it-works.html">How it works</a>
@@ -36,30 +37,31 @@
     </div>
     <div class="nav-right">
       <a href="/search/" class="nav-cta">Search concerts</a>
-      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenuOverlay">
         <span></span><span></span><span></span>
       </button>
     </div>
   </div>
 </nav>
-<script>
-(function(){
-  var btn=document.getElementById('navBurger'), links=document.getElementById('navLinks');
-  if(!btn||!links) return;
-  btn.addEventListener('click', function(){
-    var open = links.classList.toggle('open');
-    btn.classList.toggle('open', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  links.querySelectorAll('a').forEach(function(a){
-    a.addEventListener('click', function(){
-      links.classList.remove('open');
-      btn.classList.remove('open');
-      btn.setAttribute('aria-expanded','false');
-    });
-  });
-})();
-</script>
+
+<div class="mobile-menu-overlay" id="mobileMenuOverlay">
+  <div class="mmo-header">
+    <button type="button" class="mmo-back-btn" id="mmoBackBtn">‹ Back</button>
+    <button type="button" class="mmo-close-btn" id="mmoCloseBtn" aria-label="Close menu">✕</button>
+  </div>
+  <div class="mmo-screens">
+    <div class="mmo-screen active" data-screen="main">
+      <a href="/cities/" class="mmo-row">Browse cities <span class="mmo-chev">›</span></a>
+      <button type="button" class="mmo-row" id="mmoConcertsRow">Concerts <span class="mmo-chev">›</span></button>
+      <a href="/artists/" class="mmo-row">Artists <span class="mmo-chev">›</span></a>
+      <a href="/venues/" class="mmo-row">Venues <span class="mmo-chev">›</span></a>
+      <a href="/guides/how-it-works.html" class="mmo-row">How it works <span class="mmo-chev">›</span></a>
+      <a href="/sports/index.html" class="mmo-row">Sports <span class="mmo-chev">›</span></a>
+    </div>
+    <div class="mmo-screen" data-screen="genres" id="mmoGenresScreen"></div>
+    <div class="mmo-screen" data-screen="artists" id="mmoArtistsScreen"></div>
+  </div>
+</div>
 
 <div class="breadcrumb">
   <div class="breadcrumb-inner">
@@ -80,57 +82,24 @@
 
   <section class="section" style="padding-top:0;">
     <div class="section-header">
-      <div><h2>Upcoming matches</h2><p>Live ticket prices, updated every visit.</p></div>
+      <div><h2>Upcoming matches</h2><p>Live ticket prices updated every 2 minutes.</p></div>
+      <div class="suggested-arrows">
+        <button type="button" class="suggested-arrow-btn" id="matchesPrev" aria-label="Scroll left" onclick="scrollMatches(-1)">‹</button>
+        <button type="button" class="suggested-arrow-btn" id="matchesNext" aria-label="Scroll right" onclick="scrollMatches(1)">›</button>
+      </div>
     </div>
-    <div class="card-grid">
-      <a href="/matches/fc-bergkristall-vs-rheingold-united-2026-09-12.html" class="card event-card" style="text-decoration:none;">
-        <div class="genre">Football · Rheinliga</div>
-        <h3>FC Bergkristall vs Rheingold United</h3>
-        <div class="meta">Kristallpark, Munich, Germany</div>
-        <div class="date">Sat, 12 Sep 2026 · 15:30</div>
-        <div class="card-foot">
-          <span class="from">from <b>$45</b></span>
-          <div class="card-actions">
-            <span class="cta">View tickets →</span>
-          </div>
-        </div>
-      </a>
+    <div class="card-grid-scroll" id="matchesCardGrid">
+      <div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Loading matches…</div>
     </div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-top:20px;">More matches are added as new fixtures are confirmed.</p>
   </section>
 
-  <section class="section">
-    <div class="section-header">
-      <div><h2>Browse by team</h2></div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
-      <div class="card" style="padding:18px;text-align:center;">
-        <div style="font-weight:800;font-size:15px;">Nordwall FC</div>
-        <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">Hamburg</div>
-      </div>
-      <div class="card" style="padding:18px;text-align:center;">
-        <div style="font-weight:800;font-size:15px;">Rheingold United</div>
-        <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">Cologne</div>
-      </div>
-      <div class="card" style="padding:18px;text-align:center;">
-        <div style="font-weight:800;font-size:15px;">FC Bergkristall</div>
-        <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">Munich</div>
-      </div>
-      <div class="card" style="padding:18px;text-align:center;">
-        <div style="font-weight:800;font-size:15px;">Ostpark Berlin</div>
-        <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">Berlin</div>
-      </div>
-      <div class="card" style="padding:18px;text-align:center;">
-        <div style="font-weight:800;font-size:15px;">Mainturm SV</div>
-        <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">Frankfurt</div>
-      </div>
-      <div class="card" style="padding:18px;text-align:center;">
-        <div style="font-weight:800;font-size:15px;">Schwarzwald SV</div>
-        <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">Freiburg</div>
-      </div>
-    </div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-top:16px;">Individual team pages (fixtures, following, alerts) aren't built yet — these are shown here as a preview of the roster.</p>
-  </section>
+  <!-- "Browse by team" removed — it previously listed 6 fictional demo
+       teams (Nordwall FC, FC Bergkristall, etc.) with no real links,
+       explicitly labeled as "a preview of the roster." Real team
+       browsing needs Ticketmaster's team-level attractionId grouping
+       wired up the same way artist browsing already is
+       (routes/artistPage.js) — not built yet, so this section is
+       removed rather than kept showing invented teams. -->
 
   <section class="section">
     <div class="section-header">
@@ -152,8 +121,8 @@
   <div class="footer-inner">
     <div><div class="footer-logo">● LiveFair24</div><p class="footer-tagline">Concert and sports ticket search + hotels + total trip cost.</p></div>
     <div class="footer-col"><h4>Browse</h4><ul><li><a href="/cities/">All cities</a></li><li><a href="/artists/">Artists</a></li><li><a href="/venues/">Venues</a></li><li><a href="/sports/index.html">Sports</a></li></ul></div>
-    <div class="footer-col"><h4>Guides</h4><ul><li><a href="/guides/concert-ticket-fees.html">Ticket fees explained</a></li><li><a href="/guides/how-it-works.html">How it works</a></li></ul></div>
-    <div class="footer-col"><h4>Company</h4><ul><li><a href="/privacy.html">Privacy</a></li><li><a href="/impressum.html">Impressum</a></li></ul></div>
+    <div class="footer-col"><h4>Guides</h4><ul><li><a href="/guides/hotels-near-venues.html">Hotels near venues</a></li><li><a href="/guides/how-it-works.html">How it works</a></li></ul></div>
+    <div class="footer-col"><h4>Company</h4><ul><li><a href="/about.html">About</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li><li><a href="/privacy.html">Privacy</a></li><li><a href="/contact.html">Contact</a></li><li><a href="/impressum.html">Impressum</a></li></ul></div>
   </div>
   <div class="footer-bottom"><span>© 2026 LiveFair24. We earn affiliate commission on purchases made through our links.</span></div>
 </footer>
@@ -165,10 +134,10 @@
      anywhere — hovering shows "Coming soon" rather than linking to a
      page with nothing real behind it. -->
 <div class="category-rail" aria-label="Browse by category">
-  <a href="/concerts/" class="category-rail-item" aria-label="Concerts">
+  <button type="button" class="category-rail-item" aria-label="Concerts" id="ccmTrigger" aria-expanded="false" aria-controls="ccmMenu">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     <span class="category-rail-tooltip">Concerts</span>
-  </a>
+  </button>
   <button type="button" class="category-rail-item disabled" aria-label="Football / Soccer (coming soon)">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.4h-4.8l-1.4-4.4z"/><path d="M12 7.5V4M15.8 10.3l3-2M8.2 10.3l-3-2M9.6 14.7l-1.5 3.4M14.4 14.7l1.5 3.4"/></svg>
     <span class="category-rail-tooltip">Football / Soccer — coming soon</span>
@@ -196,6 +165,305 @@
     <span class="category-rail-tooltip">Browse all</span>
   </a>
 </div>
+<div class="concert-category-menu" id="ccmMenu" role="dialog" aria-label="Browse concerts by category">
+  <div class="ccm-cats" id="ccmCats"></div>
+  <div class="ccm-artists" id="ccmArtists"></div>
+</div>
+<script>
+// Powers the Concerts flyout menu (desktop) AND the mobile full-screen
+// drill-down menu — both fetch real, current artists from
+// /api/concerts/categories (routes/concertCategories.js), grouped by
+// Ticketmaster's own genre classification. Nothing here is hardcoded;
+// if the API returns no artists for a bucket, that bucket says so
+// rather than showing a placeholder name. Desktop flyout markup/logic
+// is unchanged from before; the mobile menu (added below) replicates
+// TickPick's own real drill-down navigation pattern — main list -> tap
+// Concerts -> genre list -> tap a genre -> real artist list, each a
+// full screen with Back/Close — using our own real data, never theirs.
+(function(){
+  var trigger = document.getElementById('ccmTrigger');
+  var menu = document.getElementById('ccmMenu');
+  var catsEl = document.getElementById('ccmCats');
+  var artistsEl = document.getElementById('ccmArtists');
+  // Mobile full-screen menu elements — the rail + its flyout above are
+  // CSS-hidden on mobile (see .category-rail / .concert-category-menu
+  // mobile rules), and this overlay replaces all of their
+  // functionality there instead. Guarded independently below so a page
+  // missing one piece doesn't break the other.
+  var burger = document.getElementById('navBurger');
+  var overlay = document.getElementById('mobileMenuOverlay');
+  var mmoBackBtn = document.getElementById('mmoBackBtn');
+  var mmoCloseBtn = document.getElementById('mmoCloseBtn');
+  var mmoConcertsRow = document.getElementById('mmoConcertsRow');
+  var mmoGenresScreen = document.getElementById('mmoGenresScreen');
+  var mmoArtistsScreen = document.getElementById('mmoArtistsScreen');
+
+  var data = null;
+  var activeKey = null;
+  var loadPromise = null; // guards against duplicate concurrent fetches (prefetch + a click racing each other)
+
+  function escapeHtml(str){
+    return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+
+  // ---- Desktop flyout (unchanged) ----
+  function renderCats(){
+    if(!catsEl) return;
+    catsEl.innerHTML = data.buckets.map(function(b){
+      var active = b.key === activeKey ? ' active' : '';
+      return '<button type="button" class="ccm-cat-btn' + active + '" data-key="' + b.key + '">' +
+        '<span>' + escapeHtml(b.label) + '</span><span class="count">' + b.totalCount + '</span></button>';
+    }).join('') + '<a href="/concerts/" class="ccm-cat-btn ccm-seeall" style="display:block;margin-top:8px;">Browse all concerts →</a>';
+    catsEl.querySelectorAll('.ccm-cat-btn[data-key]').forEach(function(btn){
+      // stopPropagation is required, not cosmetic — see the long-form
+      // explanation still in git history/prior version of this file:
+      // setActive() re-renders catsEl mid-click, which detaches this
+      // exact button from the DOM before the document-level "click
+      // outside closes the menu" listener runs during bubbling.
+      btn.addEventListener('click', function(e){ e.stopPropagation(); setActive(btn.dataset.key); });
+    });
+  }
+
+  function renderArtists(){
+    if(!artistsEl) return;
+    var bucket = data.buckets.find(function(b){ return b.key === activeKey; });
+    if(!bucket){ artistsEl.innerHTML = ''; return; }
+    if(bucket.artists.length === 0){
+      artistsEl.innerHTML = '<h4>' + escapeHtml(bucket.label) + '</h4><div class="ccm-empty">No current tour dates in this category — check back soon.</div>';
+      return;
+    }
+    var links = bucket.artists.map(function(a){
+      var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
+      return '<a href="' + href + '" class="ccm-artist-link">' + escapeHtml(a.name) + '</a>';
+    }).join('');
+    var seeAll = bucket.totalCount > bucket.artists.length
+      ? '<a href="/concerts/" class="ccm-artist-link ccm-seeall">See all ' + escapeHtml(bucket.label) + ' →</a>' : '';
+    artistsEl.innerHTML = '<h4>' + escapeHtml(bucket.label) + '</h4><div class="ccm-artist-grid">' + links + seeAll + '</div>';
+  }
+
+  function setActive(key){
+    activeKey = key;
+    renderCats();
+    renderArtists();
+  }
+
+  // ---- Shared data fetch (desktop flyout + mobile menu both use this) ----
+  async function loadData(){
+    if(loadPromise) return loadPromise;
+    loadPromise = (async function(){
+      try{
+        var res = await fetch('/api/concerts/categories');
+        if(!res.ok) throw new Error('categories API error');
+        data = await res.json();
+        var firstWithArtists = data.buckets.find(function(b){ return b.artists.length > 0; });
+        activeKey = (firstWithArtists || data.buckets[0]).key;
+        renderCats();
+        renderArtists();
+        renderGenresScreen(); // safe to call even if the mobile menu isn't currently open — just refreshes its cached content
+      } catch(err){
+        console.error(err);
+        if(catsEl) catsEl.innerHTML = '<div class="ccm-empty">Could not load categories right now.</div>';
+        if(artistsEl) artistsEl.innerHTML = '';
+        if(mmoGenresScreen) mmoGenresScreen.innerHTML = '<div class="mmo-empty">Could not load categories right now.</div>';
+      }
+    })();
+    return loadPromise;
+  }
+
+  function openMenu(){
+    if(!trigger || !menu) return;
+    if(!data){
+      if(catsEl) catsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
+      if(artistsEl) artistsEl.innerHTML = '<div class="ccm-loading">Loading…</div>';
+    }
+    menu.classList.add('open');
+    trigger.setAttribute('aria-expanded', 'true');
+    loadData();
+  }
+  function closeMenu(){
+    if(!trigger || !menu) return;
+    menu.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+
+  if(trigger && menu){
+    trigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(menu.classList.contains('open')) closeMenu(); else openMenu();
+    });
+    document.addEventListener('click', function(e){
+      if(menu.classList.contains('open') && !menu.contains(e.target) && e.target !== trigger) closeMenu();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') closeMenu();
+    });
+  }
+
+  // ---- Mobile full-screen drill-down menu ----
+  var screenStack = ['main'];
+
+  function showScreen(name){
+    if(!overlay) return;
+    overlay.querySelectorAll('.mmo-screen').forEach(function(s){ s.classList.remove('active'); });
+    var target = overlay.querySelector('.mmo-screen[data-screen="' + name + '"]');
+    if(target) target.classList.add('active');
+    if(mmoBackBtn) mmoBackBtn.classList.toggle('visible', name !== 'main');
+  }
+  function pushScreen(name){
+    screenStack.push(name);
+    showScreen(name);
+  }
+  function popScreen(){
+    if(screenStack.length > 1) screenStack.pop();
+    showScreen(screenStack[screenStack.length - 1]);
+  }
+  function resetOverlay(){
+    screenStack = ['main'];
+    showScreen('main');
+  }
+
+  function renderGenresScreen(){
+    if(!mmoGenresScreen) return;
+    if(!data){
+      mmoGenresScreen.innerHTML = '<div class="mmo-loading">Loading…</div>';
+      return;
+    }
+    var nonEmpty = data.buckets.filter(function(b){ return b.artists.length > 0; });
+    if(nonEmpty.length === 0){
+      mmoGenresScreen.innerHTML = '<div class="mmo-empty">No current tour dates — check back soon.</div>';
+      return;
+    }
+    mmoGenresScreen.innerHTML = nonEmpty.map(function(b){
+      return '<button type="button" class="mmo-row" data-key="' + b.key + '">' + escapeHtml(b.label) +
+        ' <span class="mmo-genre-count">' + b.totalCount + '</span><span class="mmo-chev">›</span></button>';
+    }).join('');
+    mmoGenresScreen.querySelectorAll('.mmo-row[data-key]').forEach(function(row){
+      row.addEventListener('click', function(){
+        var bucket = data.buckets.find(function(b){ return b.key === row.dataset.key; });
+        renderArtistsScreen(bucket);
+        pushScreen('artists');
+      });
+    });
+  }
+
+  function renderArtistsScreen(bucket){
+    if(!mmoArtistsScreen || !bucket) return;
+    var links = bucket.artists.map(function(a){
+      var href = '/artists/' + encodeURIComponent(a.id) + '/' + encodeURIComponent(a.slug) + '/';
+      return '<a href="' + href + '" class="mmo-artist-row">' + escapeHtml(a.name) + '</a>';
+    }).join('');
+    var seeAll = bucket.totalCount > bucket.artists.length
+      ? '<a href="/concerts/" class="mmo-artist-row mmo-seeall">See all ' + escapeHtml(bucket.label) + ' →</a>' : '';
+    mmoArtistsScreen.innerHTML = '<div class="mmo-screen-label">' + escapeHtml(bucket.label) + '</div>' +
+      (links || '<div class="mmo-empty">No current tour dates in this category.</div>') + seeAll;
+  }
+
+  if(burger && overlay){
+    burger.addEventListener('click', function(){
+      overlay.classList.add('open');
+      burger.setAttribute('aria-expanded', 'true');
+      resetOverlay();
+    });
+  }
+  if(mmoCloseBtn && overlay){
+    mmoCloseBtn.addEventListener('click', function(){
+      overlay.classList.remove('open');
+      if(burger) burger.setAttribute('aria-expanded', 'false');
+    });
+  }
+  if(mmoBackBtn){
+    mmoBackBtn.addEventListener('click', popScreen);
+  }
+  if(mmoConcertsRow){
+    mmoConcertsRow.addEventListener('click', function(){
+      renderGenresScreen();
+      pushScreen('genres');
+      if(!data) loadData(); // loadData's success path calls renderGenresScreen() again once ready
+    });
+  }
+
+  // Eager background prefetch — fires once, shortly after this script
+  // runs, without waiting for a click. The server-side cache
+  // (routes/concertCategories.js) already makes this cheap; this just
+  // removes the one remaining network round-trip from the moment the
+  // visitor actually opens either menu. Deferred slightly via
+  // setTimeout so it never competes with the hero/search bar's own
+  // initial render.
+  setTimeout(loadData, 400);
+})();
+</script>
+
+<script>
+// Real, live "Upcoming matches" carousel — /api/matches
+// (routes/matches.js), sourced from Ticketmaster's real Sports segment.
+// Card markup/classes/spacing deliberately copied line-for-line from
+// the homepage's renderTrendingEventCards (real "Upcoming events"),
+// same as index.html's version of this carousel — the only real
+// difference is the data source. See index.html's copy of this exact
+// script block for the fuller explanation of why the CTA links
+// straight to the real event page instead of an embedded panel.
+function escapeAttr(str){
+  return (str || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+function matchCardHtml(m){
+  var fullPageHref = '/events/' + encodeURIComponent(m.eventId) + '/' + encodeURIComponent(m.slug) + '/';
+  var safeImageUrl = (m.imageUrl || '').replace(/'/g, '%27');
+  var cardStyle = m.imageUrl
+    ? 'cursor:pointer;background-image:linear-gradient(rgba(10,14,25,.55),rgba(10,14,25,.82)),url(\'' + safeImageUrl + '\');'
+    : 'cursor:pointer;';
+  var cardClass = 'card event-card' + (m.imageUrl ? ' card-photo' : '');
+  var dateLine = formatMatchDate(m.date, m.time);
+  var priceLine = m.lowestPrice != null ? escapeAttr(m.currency || '') + m.lowestPrice : 'n/a';
+  var metaLine = [m.venue, m.city, m.country].filter(Boolean).join(', ');
+  return '<a href="' + fullPageHref + '" class="' + cardClass + '" style="' + cardStyle + 'text-decoration:none;">' +
+    '<div class="genre">' + escapeAttr(m.musicGenre || 'Sports') + '</div>' +
+    '<h3>' + escapeAttr(m.name) + '</h3>' +
+    '<div class="meta">' + escapeAttr(metaLine) + '</div>' +
+    '<div class="date">' + dateLine + '</div>' +
+    '<div class="card-foot"><span class="from">from <b>' + priceLine + '</b></span>' +
+    '<div class="card-actions"><span class="cta">Tickets →</span></div></div>' +
+    '</a>';
+}
+function formatMatchDate(isoDate, time){
+  if(!isoDate) return '';
+  var d = new Date(isoDate + 'T00:00:00');
+  if(isNaN(d.getTime())) return isoDate;
+  var dateStr = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  return time ? dateStr + ' · ' + time.slice(0, 5) : dateStr;
+}
+async function loadMatches(){
+  var grid = document.getElementById('matchesCardGrid');
+  try{
+    var res = await fetch('/api/matches');
+    if(!res.ok) throw new Error('matches API error');
+    var data = await res.json();
+    if(!data.matches || data.matches.length === 0){
+      grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No current listings — check back soon.</div>';
+      return;
+    }
+    grid.innerHTML = data.matches.map(matchCardHtml).join('');
+    updateMatchesArrowState();
+  } catch(err){
+    console.error(err);
+    grid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;">Could not load matches right now.</div>';
+  }
+}
+function scrollMatches(direction){
+  var el = document.getElementById('matchesCardGrid');
+  el.scrollBy({ left: direction * 632, behavior: 'smooth' });
+}
+function updateMatchesArrowState(){
+  var el = document.getElementById('matchesCardGrid');
+  var prevBtn = document.getElementById('matchesPrev');
+  var nextBtn = document.getElementById('matchesNext');
+  if(!el || !prevBtn || !nextBtn) return;
+  prevBtn.disabled = el.scrollLeft <= 4;
+  nextBtn.disabled = el.scrollLeft >= (el.scrollWidth - el.clientWidth - 4);
+}
+document.getElementById('matchesCardGrid').addEventListener('scroll', updateMatchesArrowState);
+window.addEventListener('resize', updateMatchesArrowState);
+loadMatches();
+</script>
 
 </body>
 </html>
