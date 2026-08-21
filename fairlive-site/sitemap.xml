@@ -70,9 +70,22 @@
        is IP/country-driven, correct for the interactive browse
        experience but explicitly NOT meant to be what determines
        indexability. These three always render the same city
-       regardless of who/what requests them. -->
+       regardless of who/what requests them.
+
+       Each city also has a /concerts/ sub-page — same city record,
+       same SSR architecture, filtered to Ticketmaster's real Music
+       segment only (routes/cityPage.js's renderCityConcertsPage).
+       Deliberately a separate URL/canonical from the general page
+       above, not a query-string filter, per the explicit instruction
+       that search/filter URLs must never be the canonical SEO page. -->
   <url>
     <loc>https://livefair24.com/events/berlin/</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/events/berlin/concerts/</loc>
     <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
@@ -84,7 +97,19 @@
     <priority>0.85</priority>
   </url>
   <url>
+    <loc>https://livefair24.com/events/essen/concerts/</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
     <loc>https://livefair24.com/events/dresden/</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://livefair24.com/events/dresden/concerts/</loc>
     <lastmod>2026-08-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
