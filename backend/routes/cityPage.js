@@ -435,7 +435,7 @@ ${page > 1 ? `<link rel="prev" href="${pageUrl(page - 1)}">` : ''}
 ${page < totalPages ? `<link rel="next" href="${pageUrl(page + 1)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819y">
+<link rel="stylesheet" href="/css/style.css?v=20260819w">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(pageDescription)}">
 <meta property="og:type" content="website">
@@ -568,7 +568,7 @@ async function renderCityConcertsPage(slug, env, siteOrigin, pageNum) {
 // page is much faster" question: Eventim reads from their own
 // pre-ingested database at request time (fast, no external dependency).
 // This route instead makes real, live Ticketmaster calls as part of
-// rendering — one broad search plus up to 10 individual per-event price
+// rendering — one broad search plus up to 12 individual per-event price
 // verifications, each correctly spaced ~220ms apart by the global
 // throttle (providers/tickets/ticketmaster.js) to respect Ticketmaster's
 // own confirmed rate limit. That live-fetch cost is unavoidable in
@@ -579,43 +579,17 @@ async function renderCityConcertsPage(slug, env, siteOrigin, pageNum) {
 // inside CACHE_TTL_MS, so under normal operation a real request almost
 // always hits an already-warm cache instead of triggering the live
 // fetch chain itself.
-//
-// Confirmed real gap, reported directly: this originally only warmed
-// PAGE 1 of each city/mode — clicking to page 2/3/etc. always hit an
-// uncached page and paid the full live-fetch cost itself (the reported
-// 3-5s per click). Now loops every real page for each city/mode, not
-// just the first — relies on renderCityPageInternal's own existing
-// out-of-range check (page > totalPages returns null) as the natural
-// stopping point, so this doesn't need to duplicate that page-count
-// math here.
 const BACKGROUND_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour — half of CACHE_TTL_MS, same margin concertCategories.js uses
 const SITE_ORIGIN_FOR_BACKGROUND_REFRESH = 'https://www.livefair24.com'; // no incoming request to derive this from in a background job
 
 async function backgroundRefreshCityPages() {
-  // lowPriority:true marks every real Ticketmaster call this job makes
-  // as background-triggered — see providers/tickets/ticketmaster.js's
-  // two-lane priority queue. Confirmed real regression this fixes: with
-  // 12 cities now pre-warmed, this job alone can queue well over a
-  // hundred real calls; without this flag those calls would compete
-  // equally with a real visitor's own request instead of yielding to it.
-  const env = { ...registry.getMergedEnv(), lowPriority: true }; // re-read fresh each cycle — picks up an admin-panel key change without a restart, same reasoning as the other background jobs
+  const env = registry.getMergedEnv(); // re-read fresh each cycle — picks up an admin-panel key change without a restart, same reasoning as the other background jobs
   for (const cityRecord of SEO_CITIES) {
     for (const concertsOnly of [false, true]) {
-      let page = 1;
-      // Safety cap — real city inventories here are small (tens of
-      // events, not thousands), so this should never actually get
-      // close to 50 pages; it's just a hard backstop against looping
-      // forever if something upstream ever misbehaves.
-      const MAX_PAGES_SAFETY_CAP = 50;
-      while (page <= MAX_PAGES_SAFETY_CAP) {
-        try {
-          const result = await renderCityPageInternal(cityRecord.slug, concertsOnly, env, SITE_ORIGIN_FOR_BACKGROUND_REFRESH, page);
-          if (!result) break; // past the last real page for this city/mode
-        } catch (err) {
-          console.warn('[cityPage background refresh]', cityRecord.slug, concertsOnly ? 'concerts' : 'all', 'page', page, err.message);
-          break;
-        }
-        page++;
+      try {
+        await renderCityPageInternal(cityRecord.slug, concertsOnly, env, SITE_ORIGIN_FOR_BACKGROUND_REFRESH);
+      } catch (err) {
+        console.warn('[cityPage background refresh]', cityRecord.slug, concertsOnly ? 'concerts' : 'all', err.message);
       }
     }
   }
