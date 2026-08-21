@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/concerts/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819t">
+<link rel="stylesheet" href="/css/style.css?v=20260819u">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -473,6 +473,9 @@
       <h4>Browse</h4>
       <ul>
         <li><a href="/cities/">All cities</a></li>
+        <li><a href="/events/berlin/concerts/">Berlin concerts</a></li>
+        <li><a href="/events/essen/concerts/">Essen concerts</a></li>
+        <li><a href="/events/dresden/concerts/">Dresden concerts</a></li>
         <li><a href="/artists/">Artists</a></li>
         <li><a href="/venues/">Venues</a></li>
         <li><a href="/cities/">Browse cities</a></li>
@@ -681,10 +684,15 @@ async function loadTrendingConcerts(originalHTML){
   }
 }
 
-// Every city routes through the same search flow — no dedicated city
-// page gets special-cased over the others, so the experience stays
-// consistent no matter which city a visitor lands on.
+// Cities with a real, indexable SEO landing page (data/seo-cities.js
+// pilot — Berlin, Essen, Dresden) link there instead of the generic
+// search fallback — real internal linking to those pages, which
+// previously had zero links pointing at them from anywhere on the
+// site. Every other city keeps routing through search unchanged.
+const SEO_CITY_SLUGS = { berlin: 'berlin', essen: 'essen', dresden: 'dresden' };
 function cityHref(countryCode, city){
+  const slug = countryCode === 'DE' ? SEO_CITY_SLUGS[(city.name || '').toLowerCase()] : null;
+  if (slug) return `/events/${slug}/`;
   return `/search/?city=${encodeURIComponent(city.name)}`;
 }
 
