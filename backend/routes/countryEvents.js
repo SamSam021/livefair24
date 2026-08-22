@@ -11,12 +11,14 @@
 // Ticketmaster listing, including the real ev.url booking link; nothing
 // invented to fill a gap.
 //
-// Cached per-country with a 24h TTL, background-refreshed once per day
-// (see startBackgroundCountryEventsRefresh below) — a real visitor's
-// request should always hit this cache, never trigger the live fetch
-// itself. Only DE is pre-warmed today, since that's the only country
-// /cities/germany/ actually asks for; other countries (if ever used)
-// still fall back to the old lazy-compute-on-first-request behavior.
+// Cached per-country with a TTL (lazy: the first request for a given
+// country pays the real broad-search cost, every request after that
+// within the TTL is instant) — same reasoning as
+// routes/concertCategories.js's cache, just keyed by country instead of
+// being a single global entry, since this can be asked about any
+// supported country. No background pre-warm yet (unlike trending.js /
+// concertCategories.js) since this isn't a high-traffic entry point
+// today — worth adding the same pattern later if that changes.
 
 const registry = require('../providers/registry');
 
@@ -44,7 +46,7 @@ function buildEventSlug(ev) {
 
 const PAGES = 2; // 2 x 200 = up to 400 real events — enough for a country-wide "all upcoming" list without being excessive
 const PAGE_SIZE = 200;
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — raised from 2h at the user's explicit request: this page should only make its real API calls once per day, background-refreshed, never triggered by a real visitor's own request.
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const cache = new Map(); // countryCode -> { value, expiresAt }
 
 async function collectCountryEvents(tm, env, countryCode) {
@@ -110,32 +112,4 @@ async function getCountryEvents(env, countryCode) {
   return { ...fresh, cacheHit: false };
 }
 
-// Background pre-warming, once per day — the actual fix for "this page
-// should only make its real API calls once per day": only DE is
-// pre-warmed (the only country /cities/germany/ actually requests).
-// lowPriority:true marks these calls as background-triggered, same
-// reasoning as every other background job — see providers/tickets/
-// ticketmaster.js's two-lane priority queue.
-const BACKGROUND_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours — once per day, matches CACHE_TTL_MS exactly
-const PRE_WARMED_COUNTRIES = ['DE'];
-
-async function backgroundRefreshCountryEvents() {
-  const env = { ...registry.getMergedEnv(), lowPriority: true };
-  for (const countryCode of PRE_WARMED_COUNTRIES) {
-    try {
-      const fresh = await computeCountryEvents(env, countryCode);
-      cache.set(countryCode, { value: fresh, expiresAt: Date.now() + CACHE_TTL_MS });
-    } catch (err) {
-      console.warn('[countryEvents background refresh]', countryCode, err.message);
-    }
-  }
-}
-
-function startBackgroundCountryEventsRefresh() {
-  backgroundRefreshCountryEvents().catch((err) => console.warn('[countryEvents background refresh]', err.message));
-  setInterval(() => {
-    backgroundRefreshCountryEvents().catch((err) => console.warn('[countryEvents background refresh]', err.message));
-  }, BACKGROUND_REFRESH_INTERVAL_MS);
-}
-
-module.exports = { getCountryEvents, startBackgroundCountryEventsRefresh };
+module.exports = { getCountryEvents };
