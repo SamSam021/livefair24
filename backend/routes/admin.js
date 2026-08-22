@@ -107,6 +107,13 @@ function toggleCustomProvider(id, enabled) {
   return { ok: true };
 }
 
+function getTicketmasterKeyStatus() {
+  const env = registry.getMergedEnv();
+  const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
+  if (!tm || typeof tm.getKeyStatus !== 'function') return { keys: [] };
+  return { keys: tm.getKeyStatus(env) };
+}
+
 function getWatcherStats() {
   const all = watchersStore.getAll();
   const active = all.filter((w) => w.active);
@@ -219,4 +226,5 @@ module.exports = {
   getVenueContent,
   saveVenueContent,
   deleteVenueContent,
+  getTicketmasterKeyStatus,
 };

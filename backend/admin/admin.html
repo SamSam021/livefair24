@@ -79,6 +79,14 @@ summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--blue);}
     <p class="desc">Built-in providers — enter the key(s) each one needs. Saving activates it immediately, no restart needed.</p>
     <div id="builtInTickets"></div>
   </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2>Ticketmaster key status</h2>
+      <button class="btn-secondary" onclick="loadKeyStatus()">Refresh</button>
+    </div>
+    <p class="desc">Whether each configured key slot has hit today's real quota cap right now, and when it resets.</p>
+    <div id="tmKeyStatus"></div>
+  </div>
   <div class="card" id="customTicketsCard">
     <p class="desc">Custom providers you've registered by name.</p>
     <div id="customTickets"></div>
@@ -180,6 +188,7 @@ function showDashboard(){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   loadConfig();
+  loadKeyStatus();
 }
 
 async function login(){
@@ -369,6 +378,29 @@ async function runPriceCheckNow(){
   toast(`Checked ${result.checked}, notified ${result.notified}${result.demoMode?' (demo mode)':''}`);
   loadWatchers();
   loadSentEmails();
+}
+
+// ---- Ticketmaster key status ----
+async function loadKeyStatus(){
+  const container = document.getElementById('tmKeyStatus');
+  container.innerHTML = '<p class="desc" style="margin-bottom:0;">Checking…</p>';
+  const { keys } = await api('/admin/api/ticketmaster-key-status');
+  const configured = keys.filter(k => k.configured);
+  if(configured.length === 0){
+    container.innerHTML = '<p class="desc" style="margin-bottom:0;">No Ticketmaster keys configured yet.</p>';
+    return;
+  }
+  container.innerHTML = configured.map(k => `
+    <div class="provider-row">
+      <div class="provider-name">${k.envName}</div>
+      <div style="font-size:13px;font-weight:700;color:${k.exhausted ? 'var(--red)' : 'var(--green)'};">
+        ${k.exhausted ? `Exhausted \u2014 resets ${new Date(k.exhaustedUntil).toLocaleString()}` : 'Available'}
+      </div>
+    </div>`).join('');
+  const anyAvailable = configured.some(k => !k.exhausted);
+  if(!anyAvailable){
+    container.innerHTML += '<p class="desc" style="margin-bottom:0;margin-top:10px;color:var(--red);">Every configured key is currently exhausted \u2014 real ticket/event data will not load until one resets, or you add another key.</p>';
+  }
 }
 
 // ---- Venue content ----

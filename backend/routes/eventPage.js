@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const registry = require('../providers/registry');
+const venueContentStore = require('../venue-content-store');
 
 const VIEW_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'fairlive-site', 'events', 'view.html');
 
@@ -64,12 +65,7 @@ function escapeHtml(str) {
 // Fetches the real event by eventId directly from Ticketmaster — no
 // caching, no database, always the current live data, same source of
 // truth the rest of the site already uses for this event.
-async function fetchRealEvent(eventId, env) {
-  const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
-  if (!tm || !tm.isEnabled(env) || typeof tm.getEventDetails !== 'function') return null;
-  const mapped = await tm.getEventDetails(eventId, env);
-  if (!mapped) return null;
-
+function shapeEvent(mapped, eventId) {
   return {
     artist: mapped.name || 'Event',
     venue: mapped.venue || '',
@@ -107,19 +103,52 @@ async function fetchRealEvent(eventId, env) {
     // with no real attraction behind them) — null falls back to the
     // generic hub link rather than building a URL that can't resolve.
     attractionId: mapped.attractionId || null,
+    // Same silent-drop pattern as imageUrl/currency/attractionId above
+    // — Ticketmaster's real venue ID, needed to look up admin-authored
+    // venue content (venue-content-store.js) for the venue this event
+    // takes place at. Confirmed real gap: admin content was wired into
+    // the separate /venues/{slug}/ hub page but not here, even though
+    // most real visitors land on an event page like this one, not the
+    // generic venue hub.
+    venueId: mapped.venueId || null,
   };
 }
 
-// Returns { html, canonicalSlug } on success, or null if the event
-// can't be found (caller should respond 404 — never render a page shell
-// with no real event behind it).
+// Returns { event, fetchError } — event is null on any failure, but
+// fetchError distinguishes WHY: a real API failure (rate limit, quota,
+// network) vs. genuinely no data for this ID, previously completely
+// indistinguishable from each other (both just silently became "Event
+// not found"). Uses getEventDetailsWithDiagnostics specifically so this
+// file alone gets that distinction — the provider's plain
+// getEventDetails (used by cityPage.js and this provider's own
+// search() method) is untouched, zero behavior change for either.
+async function fetchRealEvent(eventId, env) {
+  const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
+  if (!tm || !tm.isEnabled(env)) return { event: null, fetchError: null };
+  if (typeof tm.getEventDetailsWithDiagnostics === 'function') {
+    const { mapped, error } = await tm.getEventDetailsWithDiagnostics(eventId, env);
+    return { event: mapped ? shapeEvent(mapped, eventId) : null, fetchError: mapped ? null : error };
+  }
+  // Defensive fallback if an older provider build without the
+  // diagnostic method is ever loaded — same behavior as before this
+  // fix, just without the extra diagnostic.
+  if (typeof tm.getEventDetails !== 'function') return { event: null, fetchError: null };
+  const mapped = await tm.getEventDetails(eventId, env);
+  return { event: mapped ? shapeEvent(mapped, eventId) : null, fetchError: null };
+}
+
+// Returns { html, canonicalSlug } on success, or { notFound: true,
+// fetchError } on failure — fetchError is the real reason when this was
+// caused by an actual API failure rather than a genuinely nonexistent
+// event ID, so the caller (server.js) can show something more useful
+// than a blind 404 when there's a real, specific cause.
 async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
-  const realEvent = await fetchRealEvent(eventId, env);
+  const { event: realEvent, fetchError } = await fetchRealEvent(eventId, env);
   if (!realEvent || !realEvent.venue || !realEvent.isoDate) {
     // Missing venue/date means we don't have enough to call this a real,
     // useful page — matches the "materially thin" non-eligibility rule
     // rather than publishing a half-empty page.
-    return null;
+    return { notFound: true, fetchError };
   }
 
   const canonicalSlug = buildCanonicalSlug(realEvent);
@@ -257,6 +286,42 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
 <script>window.__EVENT__ = ${JSON.stringify(realEvent)};</script>
 `;
   html = html.replace('</head>', `${injected}</head>`);
+
+  // Optional admin-authored venue content — see venue-content-store.js's
+  // header comment. Confirmed real gap, reported directly: this was
+  // wired into the separate /venues/{slug}/ hub page but not here, even
+  // though most real visitors land on an event page like this one
+  // rather than the generic venue hub. Purely additive — an event whose
+  // venue has no saved admin content renders this page byte-identical
+  // to before, since adminSectionsHtml stays an empty string and the
+  // .replace() below is a no-op beyond re-inserting the same anchor
+  // comment it matched.
+  const adminContent = realEvent.venueId ? venueContentStore.getVenueContent(realEvent.venueId) : null;
+  if (adminContent) {
+    const SECTION_LABELS = {
+      about: 'About the venue',
+      howToGetThere: 'How to get there',
+      address: 'Address',
+      publicTransport: 'Public transport',
+      parking: 'Parking',
+      seating: 'Seating information',
+    };
+    const sectionsHtml = Object.keys(SECTION_LABELS)
+      .filter((key) => adminContent.sections[key] && adminContent.sections[key].enabled)
+      .map((key) => `
+    <div style="margin-bottom:28px;">
+      <h2 style="font-size:19px;margin-bottom:8px;">${escapeHtml(SECTION_LABELS[key])}</h2>
+      <div style="color:var(--ink-dim);line-height:1.7;white-space:pre-line;">${escapeHtml(adminContent.sections[key].text || '')}</div>
+    </div>`)
+      .join('');
+    if (sectionsHtml) {
+      const anchor = '<!-- FAQ — generic, templated from this event\'s own artist/venue/city;';
+      html = html.replace(
+        anchor,
+        `<section class="section">${sectionsHtml}</section>\n\n  ${anchor}`
+      );
+    }
+  }
 
   return { html, canonicalSlug };
 }

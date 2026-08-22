@@ -191,6 +191,9 @@ async function handleAdminApi(req, res, pathname, query) {
     if (pathname === '/admin/api/venues/search' && req.method === 'GET') {
       return sendJSON(res, 200, await adminRoutes.searchVenues(query));
     }
+    if (pathname === '/admin/api/ticketmaster-key-status' && req.method === 'GET') {
+      return sendJSON(res, 200, adminRoutes.getTicketmasterKeyStatus());
+    }
     if (pathname.match(/^\/admin\/api\/venue-content\/[^/]+$/) && req.method === 'GET') {
       const venueId = decodeURIComponent(pathname.split('/').pop());
       return sendJSON(res, 200, adminRoutes.getVenueContent(venueId));
@@ -562,9 +565,16 @@ const server = http.createServer(async (req, res) => {
           registry.getMergedEnv(),
           siteOrigin
         );
-        if (!result) {
+        if (result.notFound) {
           res.writeHead(404, { 'Content-Type': 'text/plain' });
-          return res.end('Event not found');
+          // Confirmed real gap this fixes: a genuinely nonexistent event
+          // ID and a real API failure (rate limit, quota, network) were
+          // completely indistinguishable before — both just said "Event
+          // not found" with zero way to tell which. When there's a real,
+          // specific cause, it's now included directly in the response,
+          // same diagnostic-in-the-response pattern already used by
+          // /api/trending, /api/tickets, and /api/hotels.
+          return res.end(result.fetchError ? `Event not found. Real cause: ${result.fetchError}` : 'Event not found');
         }
         // Redirect to the canonical slug rather than serving duplicate
         // content under two URLs for the same real event.

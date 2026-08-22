@@ -190,6 +190,24 @@ module.exports = {
     return TICKETMASTER_KEY_ENV_NAMES.some((envName) => !!env[envName]);
   },
 
+  // Real-time status of every configured key slot — which ones are set,
+  // and if a key has hit a confirmed quota violation today, exactly
+  // when it becomes usable again. Added specifically so "is the cap
+  // hit right now" has a direct answer instead of only being inferable
+  // from whether one sample request happens to succeed or fail. Never
+  // exposes the actual key values themselves, only slot names and
+  // status.
+  getKeyStatus(env) {
+    const now = Date.now();
+    return TICKETMASTER_KEY_ENV_NAMES.map((envName) => {
+      const key = env[envName];
+      if (!key) return { envName, configured: false, exhausted: false, exhaustedUntil: null };
+      const until = keyExhaustedUntil.get(key);
+      const exhausted = !!until && until > now;
+      return { envName, configured: true, exhausted, exhaustedUntil: exhausted ? new Date(until).toISOString() : null };
+    });
+  },
+
   // Confirmed via Ticketmaster's own official documentation (Inventory
   // Status API page): "This Price Ranges feature is currently only
   // supported in these markets: US, CA, AU, NZ, MX." Not an account
@@ -411,6 +429,28 @@ module.exports = {
     } catch (err) {
       console.warn('[ticketmaster provider] getEventDetails', err.message);
       return null;
+    }
+  },
+
+  // Same real fetch as getEventDetails above, but never silently
+  // swallows the failure reason — returns { mapped, error } instead of
+  // a bare null either way. Added specifically for eventPage.js's 404
+  // path: confirmed real gap where a genuinely nonexistent event ID and
+  // a real API failure (rate limit, quota, network) were completely
+  // indistinguishable from the outside, both just showing "Event not
+  // found" with zero way to tell which one actually happened. Only
+  // eventPage.js uses this — the other 2 real callers of
+  // getEventDetails (cityPage.js's price verification, this file's own
+  // search() method) are untouched, so this carries zero risk to
+  // either of those.
+  async getEventDetailsWithDiagnostics(eventId, env) {
+    const buildUrl = (key) => `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
+    try {
+      const ev = await requestWithKeyRotation(buildUrl, env, !!env.lowPriority);
+      return { mapped: mapEventToResult(ev), error: null };
+    } catch (err) {
+      console.warn('[ticketmaster provider] getEventDetailsWithDiagnostics', err.message);
+      return { mapped: null, error: err.message };
     }
   },
 };
