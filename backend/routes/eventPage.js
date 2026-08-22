@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const registry = require('../providers/registry');
+const venueContentStore = require('../venue-content-store');
 
 const VIEW_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'fairlive-site', 'events', 'view.html');
 
@@ -107,6 +108,14 @@ async function fetchRealEvent(eventId, env) {
     // with no real attraction behind them) — null falls back to the
     // generic hub link rather than building a URL that can't resolve.
     attractionId: mapped.attractionId || null,
+    // Same silent-drop pattern as imageUrl/currency/attractionId above
+    // — Ticketmaster's real venue ID, needed to look up admin-authored
+    // venue content (venue-content-store.js) for the venue this event
+    // takes place at. Confirmed real gap: admin content was wired into
+    // the separate /venues/{slug}/ hub page but not here, even though
+    // most real visitors land on an event page like this one, not the
+    // generic venue hub.
+    venueId: mapped.venueId || null,
   };
 }
 
@@ -257,6 +266,42 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
 <script>window.__EVENT__ = ${JSON.stringify(realEvent)};</script>
 `;
   html = html.replace('</head>', `${injected}</head>`);
+
+  // Optional admin-authored venue content — see venue-content-store.js's
+  // header comment. Confirmed real gap, reported directly: this was
+  // wired into the separate /venues/{slug}/ hub page but not here, even
+  // though most real visitors land on an event page like this one
+  // rather than the generic venue hub. Purely additive — an event whose
+  // venue has no saved admin content renders this page byte-identical
+  // to before, since adminSectionsHtml stays an empty string and the
+  // .replace() below is a no-op beyond re-inserting the same anchor
+  // comment it matched.
+  const adminContent = realEvent.venueId ? venueContentStore.getVenueContent(realEvent.venueId) : null;
+  if (adminContent) {
+    const SECTION_LABELS = {
+      about: 'About the venue',
+      howToGetThere: 'How to get there',
+      address: 'Address',
+      publicTransport: 'Public transport',
+      parking: 'Parking',
+      seating: 'Seating information',
+    };
+    const sectionsHtml = Object.keys(SECTION_LABELS)
+      .filter((key) => adminContent.sections[key] && adminContent.sections[key].enabled)
+      .map((key) => `
+    <div style="margin-bottom:28px;">
+      <h2 style="font-size:19px;margin-bottom:8px;">${escapeHtml(SECTION_LABELS[key])}</h2>
+      <div style="color:var(--ink-dim);line-height:1.7;white-space:pre-line;">${escapeHtml(adminContent.sections[key].text || '')}</div>
+    </div>`)
+      .join('');
+    if (sectionsHtml) {
+      const anchor = '<!-- FAQ — generic, templated from this event\'s own artist/venue/city;';
+      html = html.replace(
+        anchor,
+        `<section class="section">${sectionsHtml}</section>\n\n  ${anchor}`
+      );
+    }
+  }
 
   return { html, canonicalSlug };
 }

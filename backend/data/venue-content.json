@@ -7,30 +7,30 @@
       "sections": {
         "about": {
           "enabled": true,
-          "text": "A major indoor arena in Berlin."
+          "text": "Major indoor arena in Berlin, part of the Mediaspree development."
         },
         "howToGetThere": {
-          "enabled": false,
-          "text": "should not appear"
+          "enabled": true,
+          "text": "Mercedes-Platz 1, 10243 Berlin-Friedrichshain"
         },
         "address": {
           "enabled": true,
-          "text": ""
+          "text": "Uber Arena Berlin\nUber-Platz 1, 10243 Berlin"
         },
         "publicTransport": {
           "enabled": true,
-          "text": "U-Bahn line U5, Stadion station."
+          "text": "Warschauer Strasse station, S-Bahn/U-Bahn."
         },
         "parking": {
-          "enabled": false,
-          "text": ""
+          "enabled": true,
+          "text": "Plaza Parking Garage."
         },
         "seating": {
           "enabled": false,
           "text": ""
         }
       },
-      "updatedAt": "2026-08-22T11:56:34.110Z"
+      "updatedAt": "2026-08-22T12:43:33.501Z"
     }
   }
 }
