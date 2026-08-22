@@ -413,28 +413,6 @@ module.exports = {
       return null;
     }
   },
-
-  // Same real fetch as getEventDetails above, but never silently
-  // swallows the failure reason — returns { mapped, error } instead of
-  // a bare null either way. Added specifically for eventPage.js's 404
-  // path: confirmed real gap where a genuinely nonexistent event ID and
-  // a real API failure (rate limit, quota, network) were completely
-  // indistinguishable from the outside, both just showing "Event not
-  // found" with zero way to tell which one actually happened. Only
-  // eventPage.js uses this — the other 2 real callers of
-  // getEventDetails (cityPage.js's price verification, this file's own
-  // search() method) are untouched, so this carries zero risk to
-  // either of those.
-  async getEventDetailsWithDiagnostics(eventId, env) {
-    const buildUrl = (key) => `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
-    try {
-      const ev = await requestWithKeyRotation(buildUrl, env, !!env.lowPriority);
-      return { mapped: mapEventToResult(ev), error: null };
-    } catch (err) {
-      console.warn('[ticketmaster provider] getEventDetailsWithDiagnostics', err.message);
-      return { mapped: null, error: err.message };
-    }
-  },
 };
 
 // Shared per-event mapping — used by both the list/search endpoint
