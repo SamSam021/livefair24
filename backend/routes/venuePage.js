@@ -50,6 +50,31 @@ function escapeHtml(str) {
   return (str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Renders admin-authored free text as real paragraph blocks with real
+// clickable links — added specifically after a reference comparison
+// (TickPick's own venue FAQ content) showed two concrete gaps: their
+// body text reads as distinct paragraph blocks with real spacing
+// between them, and a plain URL like "https://en.wikipedia.org/..."
+// pasted into a reference line renders as a real clickable link, not
+// inert plain text. Escapes first, then linkifies the ALREADY-escaped
+// text — safe because escaped text never contains a raw < or >, so the
+// URL-matching regex can't accidentally straddle an HTML entity.
+// Splits on blank lines for paragraph blocks (matching how the admin
+// panel's own textarea naturally separates paragraphs when typed), and
+// converts single line breaks within one paragraph to <br> (address/
+// transport lines are often meant to stay on separate lines within the
+// same paragraph, e.g. "Uber-Platz 1" / "10243 Berlin").
+function renderAdminText(text) {
+  const paragraphs = (text || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  return paragraphs
+    .map((p) => {
+      const escaped = escapeHtml(p).replace(/\n/g, '<br>');
+      const linked = escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">${url}</a>`);
+      return `<p style="margin-bottom:14px;">${linked}</p>`;
+    })
+    .join('');
+}
+
 function deslugify(slug) {
   return slug.replace(/-/g, ' ').trim();
 }
@@ -113,8 +138,8 @@ async function renderVenuePage(slug, env, siteOrigin) {
         .filter((key) => adminContent.sections[key] && adminContent.sections[key].enabled)
         .map((key) => `
     <div style="margin-bottom:28px;">
-      <h2 style="font-size:19px;margin-bottom:8px;">${escapeHtml(SECTION_LABELS[key])}</h2>
-      <div style="color:var(--ink-dim);line-height:1.7;white-space:pre-line;">${escapeHtml(adminContent.sections[key].text || '')}</div>
+      <h2 style="font-size:19px;margin-bottom:10px;">${escapeHtml(SECTION_LABELS[key])}</h2>
+      <div style="color:var(--ink-dim);font-size:15.5px;line-height:1.75;">${renderAdminText(adminContent.sections[key].text)}</div>
     </div>`)
         .join('')
     : '';

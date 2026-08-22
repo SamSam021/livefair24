@@ -62,6 +62,24 @@ function escapeHtml(str) {
   return (str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Renders admin-authored free text as real paragraph blocks with real
+// clickable links — see venuePage.js's identical helper for the full
+// reasoning (a real reference-site comparison surfaced both gaps).
+// Kept duplicated between the two files rather than factored into a
+// shared module, matching this codebase's existing convention for
+// these two closely-related-but-separate page renderers (e.g.
+// SECTION_LABELS is already duplicated the same way).
+function renderAdminText(text) {
+  const paragraphs = (text || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  return paragraphs
+    .map((p) => {
+      const escaped = escapeHtml(p).replace(/\n/g, '<br>');
+      const linked = escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">${url}</a>`);
+      return `<p style="margin-bottom:14px;">${linked}</p>`;
+    })
+    .join('');
+}
+
 // Fetches the real event by eventId directly from Ticketmaster — no
 // caching, no database, always the current live data, same source of
 // truth the rest of the site already uses for this event.
@@ -310,8 +328,8 @@ async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
       .filter((key) => adminContent.sections[key] && adminContent.sections[key].enabled)
       .map((key) => `
     <div style="margin-bottom:28px;">
-      <h2 style="font-size:19px;margin-bottom:8px;">${escapeHtml(SECTION_LABELS[key])}</h2>
-      <div style="color:var(--ink-dim);line-height:1.7;white-space:pre-line;">${escapeHtml(adminContent.sections[key].text || '')}</div>
+      <h2 style="font-size:19px;margin-bottom:10px;">${escapeHtml(SECTION_LABELS[key])}</h2>
+      <div style="color:var(--ink-dim);font-size:15.5px;line-height:1.75;">${renderAdminText(adminContent.sections[key].text)}</div>
     </div>`)
       .join('');
     if (sectionsHtml) {

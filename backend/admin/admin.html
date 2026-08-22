@@ -130,6 +130,7 @@ summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--blue);}
     </details>
     <div id="vcEditor" style="display:none;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">
       <h2 id="vcEditorTitle"></h2>
+      <p class="field-hint" id="vcEditorVenueId" style="margin-top:0;"></p>
       <div id="vcSections"></div>
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button class="btn-primary" onclick="saveVenueContentForAdmin()">Save</button>
@@ -433,7 +434,7 @@ async function searchVenuesForAdmin(){
       <div class="provider-row">
         <div>
           <div class="provider-name">${v.venueName}</div>
-          <div class="provider-sub">${v.eventCount} current listing${v.eventCount===1?'':'s'}</div>
+          <div class="provider-sub">${v.eventCount} current listing${v.eventCount===1?'':'s'} \u00b7 ID: ${v.venueId}</div>
         </div>
         <button class="btn-secondary" onclick='selectVenue(${JSON.stringify(v.venueId)}, ${JSON.stringify(v.venueName)}, ${JSON.stringify(v.city)}, ${JSON.stringify(v.country)})'>Select</button>
       </div>`).join('');
@@ -454,6 +455,7 @@ function selectManualVenue(){
 async function selectVenue(venueId, venueName, city, country){
   vcCurrentVenueId = venueId;
   document.getElementById('vcEditorTitle').textContent = `${venueName}${city?', '+city:''}`;
+  document.getElementById('vcEditorVenueId').textContent = `Venue ID: ${venueId}`;
   const content = await api(`/admin/api/venue-content/${encodeURIComponent(venueId)}`);
   document.getElementById('vcSections').innerHTML = Object.keys(VC_SECTION_LABELS).map(key => {
     const s = content.sections[key] || { enabled:false, text:'' };
