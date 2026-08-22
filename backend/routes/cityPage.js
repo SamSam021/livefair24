@@ -22,7 +22,7 @@
 const registry = require('../providers/registry');
 const { SEO_CITIES, getSeoCityBySlug } = require('../data/seo-cities');
 
-const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours — raised from 2h alongside the refresh interval below (see that comment for why: this route alone was found to be the largest contributor to a real Ticketmaster daily quota violation)
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours — same reasoning as countryEvents.js
 const cache = new Map(); // slug -> { html, expiresAt }
 
 function escapeHtml(str) {
@@ -583,22 +583,12 @@ async function renderCityConcertsPage(slug, env, siteOrigin, pageNum) {
 // Confirmed real gap, reported directly: this originally only warmed
 // PAGE 1 of each city/mode — clicking to page 2/3/etc. always hit an
 // uncached page and paid the full live-fetch cost itself (the reported
-// 3-5s per click). Extended to loop every real page for each city/mode
-// — but that in turn (12 cities x 2 modes x every real page, refreshed
-// EVERY HOUR) turned out to be the single largest contributor to a real
-// confirmed Ticketmaster daily quota violation (a genuinely different,
-// longer-period limit from the per-second spike-arrest limit fixed
-// earlier — see providers/tickets/ticketmaster.js's priority queue).
-// Rebalanced here: refresh interval quadrupled (1h -> 4h, so 6
-// cycles/day instead of 24) and pre-warmed depth capped to the first 2
-// pages per city/mode — covers the overwhelming majority of real
-// traffic (few visitors page past 2), while a real visitor who does go
-// deeper still gets a correctly-throttled, correctly-PRIORITIZED live
-// fetch for just that one page (the priority-queue fix from the same
-// investigation ensures that doesn't get stuck behind background
-// traffic even though it's no longer pre-warmed).
-const BACKGROUND_REFRESH_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours — quadrupled from 1h; matches the new 4h CACHE_TTL_MS
-const PRE_WARM_MAX_PAGES = 2; // only the first 2 pages get pre-warmed; deeper pages fall back to a real, correctly-prioritized live fetch
+// 3-5s per click). Now loops every real page for each city/mode, not
+// just the first — relies on renderCityPageInternal's own existing
+// out-of-range check (page > totalPages returns null) as the natural
+// stopping point, so this doesn't need to duplicate that page-count
+// math here.
+const BACKGROUND_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour — half of CACHE_TTL_MS, same margin concertCategories.js uses
 const SITE_ORIGIN_FOR_BACKGROUND_REFRESH = 'https://www.livefair24.com'; // no incoming request to derive this from in a background job
 
 async function backgroundRefreshCityPages() {
@@ -611,7 +601,13 @@ async function backgroundRefreshCityPages() {
   const env = { ...registry.getMergedEnv(), lowPriority: true }; // re-read fresh each cycle — picks up an admin-panel key change without a restart, same reasoning as the other background jobs
   for (const cityRecord of SEO_CITIES) {
     for (const concertsOnly of [false, true]) {
-      for (let page = 1; page <= PRE_WARM_MAX_PAGES; page++) {
+      let page = 1;
+      // Safety cap — real city inventories here are small (tens of
+      // events, not thousands), so this should never actually get
+      // close to 50 pages; it's just a hard backstop against looping
+      // forever if something upstream ever misbehaves.
+      const MAX_PAGES_SAFETY_CAP = 50;
+      while (page <= MAX_PAGES_SAFETY_CAP) {
         try {
           const result = await renderCityPageInternal(cityRecord.slug, concertsOnly, env, SITE_ORIGIN_FOR_BACKGROUND_REFRESH, page);
           if (!result) break; // past the last real page for this city/mode
@@ -619,6 +615,7 @@ async function backgroundRefreshCityPages() {
           console.warn('[cityPage background refresh]', cityRecord.slug, concertsOnly ? 'concerts' : 'all', 'page', page, err.message);
           break;
         }
+        page++;
       }
     }
   }
