@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const configStore = require('../config-store');
 const registry = require('../providers/registry');
 const watchersStore = require('../watchers-store');
+const venueContentStore = require('../venue-content-store');
 const { runPriceCheck } = require('../price-check');
 
 function maskSecret(value) {
@@ -130,6 +131,80 @@ async function triggerPriceCheck() {
   return runPriceCheck();
 }
 
+// Real venues currently found in live Ticketmaster data for a given
+// country/city — the admin panel's picker uses this so a venue is
+// selected from what genuinely exists right now, not typed blind. Not
+// filtered to music-only (allCategories:true) — a venue worth writing
+// "How to get there" content for might primarily host sports or other
+// event types, admin content shouldn't be blocked by that.
+async function searchVenues(query) {
+  const country = (query.country || '').toUpperCase();
+  const city = query.city || '';
+  if (!country) throw Object.assign(new Error('country is required'), { statusCode: 400 });
+
+  const env = registry.getMergedEnv();
+  const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
+  if (!tm || !tm.isEnabled(env) || typeof tm.searchEvents !== 'function') return { venues: [] };
+
+  const results = await tm.searchEvents({ query: '', city, countryCode: country, limit: 200, allCategories: true }, env);
+  if (!Array.isArray(results)) return { venues: [] };
+
+  const byVenueId = new Map();
+  for (const ev of results) {
+    if (!ev.venueId || !ev.venue) continue;
+    if (!byVenueId.has(ev.venueId)) {
+      byVenueId.set(ev.venueId, { venueId: ev.venueId, venueName: ev.venue, city: ev.city, country, eventCount: 0 });
+    }
+    byVenueId.get(ev.venueId).eventCount += 1;
+  }
+  const venues = Array.from(byVenueId.values()).sort((a, b) => b.eventCount - a.eventCount);
+  return { venues };
+}
+
+function getVenueContent(venueId) {
+  if (!venueId) throw Object.assign(new Error('venueId is required'), { statusCode: 400 });
+  const existing = venueContentStore.getVenueContent(venueId);
+  if (existing) return existing;
+  // No saved content yet for this venue — return the same shape with
+  // every section disabled/empty, so the admin UI has a consistent
+  // form to render regardless of whether this venue has been touched
+  // before.
+  const sections = {};
+  for (const key of venueContentStore.SECTION_KEYS) sections[key] = { enabled: false, text: '' };
+  return { venueName: '', city: '', country: '', sections };
+}
+
+function saveVenueContent(venueId, body) {
+  if (!venueId) throw Object.assign(new Error('venueId is required'), { statusCode: 400 });
+  if (!body.sections || typeof body.sections !== 'object') {
+    throw Object.assign(new Error('sections object is required'), { statusCode: 400 });
+  }
+  // Only accept known section keys with the expected {enabled, text}
+  // shape — never persist an admin-supplied key this store doesn't
+  // know about.
+  const sections = {};
+  for (const key of venueContentStore.SECTION_KEYS) {
+    if (body.sections[key]) {
+      sections[key] = {
+        enabled: !!body.sections[key].enabled,
+        text: typeof body.sections[key].text === 'string' ? body.sections[key].text : '',
+      };
+    }
+  }
+  return venueContentStore.saveVenueContent(venueId, {
+    venueName: body.venueName,
+    city: body.city,
+    country: body.country,
+    sections,
+  });
+}
+
+function deleteVenueContent(venueId) {
+  if (!venueId) throw Object.assign(new Error('venueId is required'), { statusCode: 400 });
+  venueContentStore.deleteVenueContent(venueId);
+  return { ok: true };
+}
+
 module.exports = {
   getConfig,
   setCredential,
@@ -140,4 +215,8 @@ module.exports = {
   getWatcherStats,
   getDemoEmailLog,
   triggerPriceCheck,
+  searchVenues,
+  getVenueContent,
+  saveVenueContent,
+  deleteVenueContent,
 };

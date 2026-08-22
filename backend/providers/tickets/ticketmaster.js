@@ -475,6 +475,14 @@ function mapEventToResult(ev) {
     genre: genre ? genre.name : null,
     musicGenre: musicGenre ? musicGenre.name : null,
     venue: venue ? venue.name : null,
+    // Ticketmaster's own real venue ID (confirmed present on the same
+    // venue object city/state/country are already read from) — added
+    // specifically so venue pages have a stable, real identifier to key
+    // admin-authored venue content to, instead of only ever having a
+    // name-derived slug (fragile: two real venues can share a similar
+    // name, and a slug silently breaks if the venue's name in
+    // Ticketmaster's own data ever shifts).
+    venueId: venue ? venue.id : null,
     city: venue && venue.city ? venue.city.name : null,
     // Confirmed real field on Ticketmaster's venue object (e.g.
     // {"name": "Florida", "stateCode": "FL"}), same shape as

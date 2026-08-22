@@ -102,6 +102,34 @@ summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--blue);}
     </details>
   </div>
 
+  <div class="section-title">Venue content</div>
+  <div class="card">
+    <p class="desc">Optional editorial content for a real venue — About the venue, How to get there, Address, Public transport, Parking, Seating information. Unticked sections never show on the site; ticked sections always show, even empty. A venue with nothing saved here shows exactly as it does today.</p>
+    <div class="row">
+      <div><label>Country (2-letter code)</label><input type="text" id="vcCountry" placeholder="DE" value="DE"></div>
+      <div><label>City</label><input type="text" id="vcCity" placeholder="Berlin" value="Berlin"></div>
+    </div>
+    <button class="btn-secondary" style="margin-top:14px;" onclick="searchVenuesForAdmin()">Search real venues</button>
+    <div id="vcSearchResults" style="margin-top:14px;"></div>
+    <details style="margin-top:10px;">
+      <summary>Can't find it? Enter a venue name manually</summary>
+      <div style="margin-top:10px;">
+        <label>Venue name</label>
+        <input type="text" id="vcManualName" placeholder="e.g. Uber Arena">
+        <button class="btn-secondary" style="margin-top:10px;" onclick="selectManualVenue()">Use this venue</button>
+        <div class="field-hint">Used when the venue doesn't have any current real listings to search from yet. Re-link it once it does, for a more reliable match.</div>
+      </div>
+    </details>
+    <div id="vcEditor" style="display:none;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">
+      <h2 id="vcEditorTitle"></h2>
+      <div id="vcSections"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="btn-primary" onclick="saveVenueContentForAdmin()">Save</button>
+        <button class="btn-danger" onclick="deleteVenueContentForAdmin()">Delete all content for this venue</button>
+      </div>
+    </div>
+  </div>
+
   <div class="section-title">Price-drop alerts</div>
   <div class="card">
     <p class="desc">Email sender for price-drop notifications. Only one is active at a time — the first one below with a key set wins. With none set, alerts are logged here instead of actually sent, so you can test the whole flow safely.</p>
@@ -341,6 +369,101 @@ async function runPriceCheckNow(){
   toast(`Checked ${result.checked}, notified ${result.notified}${result.demoMode?' (demo mode)':''}`);
   loadWatchers();
   loadSentEmails();
+}
+
+// ---- Venue content ----
+const VC_SECTION_LABELS = {
+  about: 'About the venue',
+  howToGetThere: 'How to get there',
+  address: 'Address',
+  publicTransport: 'Public transport',
+  parking: 'Parking',
+  seating: 'Seating information',
+};
+let vcCurrentVenueId = null;
+
+function vcSlugify(str){
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+async function searchVenuesForAdmin(){
+  const country = document.getElementById('vcCountry').value.trim();
+  const city = document.getElementById('vcCity').value.trim();
+  const container = document.getElementById('vcSearchResults');
+  container.innerHTML = '<p class="desc" style="margin-bottom:0;">Searching…</p>';
+  try{
+    const { venues } = await api(`/admin/api/venues/search?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`);
+    if(venues.length === 0){
+      container.innerHTML = '<p class="desc" style="margin-bottom:0;">No real venues found with current listings for that city — try the manual option below.</p>';
+      return;
+    }
+    container.innerHTML = venues.map(v => `
+      <div class="provider-row">
+        <div>
+          <div class="provider-name">${v.venueName}</div>
+          <div class="provider-sub">${v.eventCount} current listing${v.eventCount===1?'':'s'}</div>
+        </div>
+        <button class="btn-secondary" onclick='selectVenue(${JSON.stringify(v.venueId)}, ${JSON.stringify(v.venueName)}, ${JSON.stringify(v.city)}, ${JSON.stringify(v.country)})'>Select</button>
+      </div>`).join('');
+  } catch(e){
+    container.innerHTML = `<p class="desc" style="margin-bottom:0;color:var(--red);">${e.message}</p>`;
+  }
+}
+
+function selectManualVenue(){
+  const name = document.getElementById('vcManualName').value.trim();
+  const city = document.getElementById('vcCity').value.trim();
+  const country = document.getElementById('vcCountry').value.trim();
+  if(!name){ toast('Enter a venue name first'); return; }
+  const manualId = `manual:${vcSlugify(name)}-${vcSlugify(city)}`;
+  selectVenue(manualId, name, city, country);
+}
+
+async function selectVenue(venueId, venueName, city, country){
+  vcCurrentVenueId = venueId;
+  document.getElementById('vcEditorTitle').textContent = `${venueName}${city?', '+city:''}`;
+  const content = await api(`/admin/api/venue-content/${encodeURIComponent(venueId)}`);
+  document.getElementById('vcSections').innerHTML = Object.keys(VC_SECTION_LABELS).map(key => {
+    const s = content.sections[key] || { enabled:false, text:'' };
+    return `
+      <div style="margin-top:16px;">
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;text-transform:none;font-size:13px;">
+          <input type="checkbox" id="vc_${key}_enabled" ${s.enabled?'checked':''} style="width:auto;">
+          ${VC_SECTION_LABELS[key]}
+        </label>
+        <textarea id="vc_${key}_text" rows="3" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:var(--surface-2);" placeholder="${VC_SECTION_LABELS[key]}…">${s.text||''}</textarea>
+      </div>`;
+  }).join('');
+  document.getElementById('vcEditor').style.display = 'block';
+  document.getElementById('vcEditor').dataset.venueName = venueName;
+  document.getElementById('vcEditor').dataset.city = city;
+  document.getElementById('vcEditor').dataset.country = country;
+}
+
+async function saveVenueContentForAdmin(){
+  if(!vcCurrentVenueId) return;
+  const editor = document.getElementById('vcEditor');
+  const sections = {};
+  for(const key of Object.keys(VC_SECTION_LABELS)){
+    sections[key] = {
+      enabled: document.getElementById(`vc_${key}_enabled`).checked,
+      text: document.getElementById(`vc_${key}_text`).value,
+    };
+  }
+  await api(`/admin/api/venue-content/${encodeURIComponent(vcCurrentVenueId)}`, {
+    method:'POST',
+    body: JSON.stringify({ venueName: editor.dataset.venueName, city: editor.dataset.city, country: editor.dataset.country, sections }),
+  });
+  toast('Saved');
+}
+
+async function deleteVenueContentForAdmin(){
+  if(!vcCurrentVenueId) return;
+  if(!confirm('Delete all saved content for this venue?')) return;
+  await api(`/admin/api/venue-content/${encodeURIComponent(vcCurrentVenueId)}`, { method:'DELETE' });
+  document.getElementById('vcEditor').style.display = 'none';
+  vcCurrentVenueId = null;
+  toast('Deleted');
 }
 
 // Check for an existing valid session on load

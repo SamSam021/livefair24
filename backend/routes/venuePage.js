@@ -12,6 +12,7 @@
 
 const registry = require('./../providers/registry');
 const cityImage = require('./../providers/geo/cityImage');
+const venueContentStore = require('./../venue-content-store');
 const { buildCanonicalSlug } = require('./eventPage');
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -90,6 +91,34 @@ async function renderVenuePage(slug, env, siteOrigin) {
   const country = events[0].country;
   const canonicalSlug = slugify(realVenueName);
   const canonicalUrl = `${siteOrigin}/venues/${canonicalSlug}/`;
+
+  // Optional admin-authored content — see venue-content-store.js's own
+  // header comment. Keyed by Ticketmaster's real venue ID (events[0]
+  // already carries this on every result, since they all share the
+  // same venue by construction of fetchVenueEvents above). Purely
+  // additive: if nothing was ever saved for this venue, adminSections
+  // stays empty and the page renders exactly as it always has.
+  const venueId = events[0].venueId;
+  const adminContent = venueId ? venueContentStore.getVenueContent(venueId) : null;
+  const SECTION_LABELS = {
+    about: 'About the venue',
+    howToGetThere: 'How to get there',
+    address: 'Address',
+    publicTransport: 'Public transport',
+    parking: 'Parking',
+    seating: 'Seating information',
+  };
+  const adminSectionsHtml = adminContent
+    ? Object.keys(SECTION_LABELS)
+        .filter((key) => adminContent.sections[key] && adminContent.sections[key].enabled)
+        .map((key) => `
+    <div style="margin-bottom:28px;">
+      <h2 style="font-size:19px;margin-bottom:8px;">${escapeHtml(SECTION_LABELS[key])}</h2>
+      <div style="color:var(--ink-dim);line-height:1.7;white-space:pre-line;">${escapeHtml(adminContent.sections[key].text || '')}</div>
+    </div>`)
+        .join('')
+    : '';
+
   // Real photo of this venue's own host city — Ticketmaster's venue
   // objects carry no image of their own (see
   // providers/geo/cityImage.js's header comment), so this is the
@@ -167,6 +196,8 @@ async function renderVenuePage(slug, env, siteOrigin) {
   </div>
   <h1 class="display" style="font-size:clamp(28px,5vw,42px);margin-bottom:8px;">${escapeHtml(realVenueName)}</h1>
   <p style="color:var(--ink-dim);margin-bottom:32px;">${[city, country].filter(Boolean).map(escapeHtml).join(', ')}${city ? ' · ' : ''}${events.length} upcoming event${events.length === 1 ? '' : 's'}</p>
+  ${adminSectionsHtml}
+  ${adminSectionsHtml ? '<h2 style="font-size:19px;margin-bottom:16px;">Upcoming events</h2>' : ''}
   <div>
     ${eventRows}
   </div>

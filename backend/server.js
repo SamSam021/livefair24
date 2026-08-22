@@ -36,6 +36,7 @@ const adminAuth = require('./admin-auth');
 const adminRoutes = require('./routes/admin');
 const { runPriceCheck } = require('./price-check');
 const configStore = require('./config-store');
+const venueContentStore = require('./venue-content-store');
 const watchersStore = require('./watchers-store');
 const persistence = require('./persistence');
 
@@ -186,6 +187,22 @@ async function handleAdminApi(req, res, pathname, query) {
     }
     if (pathname === '/admin/api/run-price-check' && req.method === 'POST') {
       return sendJSON(res, 200, await adminRoutes.triggerPriceCheck());
+    }
+    if (pathname === '/admin/api/venues/search' && req.method === 'GET') {
+      return sendJSON(res, 200, await adminRoutes.searchVenues(query));
+    }
+    if (pathname.match(/^\/admin\/api\/venue-content\/[^/]+$/) && req.method === 'GET') {
+      const venueId = decodeURIComponent(pathname.split('/').pop());
+      return sendJSON(res, 200, adminRoutes.getVenueContent(venueId));
+    }
+    if (pathname.match(/^\/admin\/api\/venue-content\/[^/]+$/) && req.method === 'POST') {
+      const venueId = decodeURIComponent(pathname.split('/').pop());
+      const body = await readBody(req);
+      return sendJSON(res, 200, adminRoutes.saveVenueContent(venueId, body));
+    }
+    if (pathname.match(/^\/admin\/api\/venue-content\/[^/]+$/) && req.method === 'DELETE') {
+      const venueId = decodeURIComponent(pathname.split('/').pop());
+      return sendJSON(res, 200, adminRoutes.deleteVenueContent(venueId));
     }
     return sendJSON(res, 404, { error: 'Not found' });
   } catch (err) {
@@ -635,6 +652,7 @@ const server = http.createServer(async (req, res) => {
   // Load persisted state (DynamoDB or local file, see persistence.js)
   // before accepting any requests.
   await configStore.init();
+  await venueContentStore.init();
   await watchersStore.init();
 
   server.listen(port, () => {

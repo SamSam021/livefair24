@@ -1,0 +1,36 @@
+{
+  "venues": {
+    "KovZpZA7AAEA": {
+      "venueName": "Uber Arena",
+      "city": "Berlin",
+      "country": "DE",
+      "sections": {
+        "about": {
+          "enabled": true,
+          "text": "A major indoor arena in Berlin."
+        },
+        "howToGetThere": {
+          "enabled": false,
+          "text": "should not appear"
+        },
+        "address": {
+          "enabled": true,
+          "text": ""
+        },
+        "publicTransport": {
+          "enabled": true,
+          "text": "U-Bahn line U5, Stadion station."
+        },
+        "parking": {
+          "enabled": false,
+          "text": ""
+        },
+        "seating": {
+          "enabled": false,
+          "text": ""
+        }
+      },
+      "updatedAt": "2026-08-22T11:56:34.110Z"
+    }
+  }
+}
