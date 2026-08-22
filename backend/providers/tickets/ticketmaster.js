@@ -97,13 +97,97 @@ function throttledHttpGet(url, lowPriority) {
   });
 }
 
+// Multi-key rotation — added at the user's explicit request after
+// Ticketmaster granted several separate API keys (a legitimate,
+// Ticketmaster-issued pool, not multiple accounts registered to evade
+// their limits — they explicitly said increasing a single key's cap
+// further would be a challenge, and offered multiple keys instead).
+// Up to 10 key slots, admin-configurable via the same generic
+// credential mechanism every other provider setting already uses (see
+// requiredEnv below — the admin panel builds one input field per
+// entry automatically, no UI code needed beyond this list). The first
+// slot keeps the original TICKETMASTER_API_KEY name specifically so
+// an already-configured single-key deployment keeps working with zero
+// migration.
+const TICKETMASTER_KEY_ENV_NAMES = [
+  'TICKETMASTER_API_KEY',
+  'TICKETMASTER_API_KEY_2', 'TICKETMASTER_API_KEY_3', 'TICKETMASTER_API_KEY_4',
+  'TICKETMASTER_API_KEY_5', 'TICKETMASTER_API_KEY_6', 'TICKETMASTER_API_KEY_7',
+  'TICKETMASTER_API_KEY_8', 'TICKETMASTER_API_KEY_9', 'TICKETMASTER_API_KEY_10',
+];
+
+// Real key -> UTC-midnight-timestamp it becomes usable again. In-memory
+// only (per process, like the priority queue above) — a restart clears
+// it, which just means every key gets one fresh chance to prove itself
+// exhausted or not again; harmless, not worth persisting.
+const keyExhaustedUntil = new Map();
+
+function msUntilNextUtcMidnight() {
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+  return next.getTime() - now.getTime();
+}
+
+// Confirmed exact real error code from Ticketmaster's own 429 response
+// body, captured directly in production: "policies.ratelimit.
+// QuotaViolation" — their DAILY cap (5,000/day on the default tier,
+// confirmed via their own developer docs), distinct from the
+// per-second "SpikeArrestViolation" the throttle above already
+// prevents from recurring. A quota violation means THIS KEY is done
+// for the day — no amount of waiting/retrying with the same key helps
+// until Ticketmaster's own daily reset, so the only real recovery is
+// switching to a different key in the pool.
+function isQuotaViolation(errMessage) {
+  return typeof errMessage === 'string' && errMessage.includes('policies.ratelimit.QuotaViolation');
+}
+
+function availableKeys(env) {
+  const now = Date.now();
+  return TICKETMASTER_KEY_ENV_NAMES
+    .map((envName) => env[envName])
+    .filter(Boolean)
+    .filter((key) => {
+      const until = keyExhaustedUntil.get(key);
+      return !until || until <= now;
+    });
+}
+
+// Shared by search(), searchEvents(), and getEventDetails() — the one
+// place that actually walks the key pool. buildUrl receives each
+// candidate key in turn and must return the full request URL using it.
+// Tries every currently-available (non-exhausted) key in slot order;
+// on a confirmed quota violation, marks that specific key exhausted
+// until the next UTC midnight and immediately tries the next one —
+// seamless to the caller, who only ever sees the final success or the
+// last real error if every key is genuinely exhausted or unconfigured.
+async function requestWithKeyRotation(buildUrl, env, lowPriority) {
+  const keys = availableKeys(env);
+  if (keys.length === 0) {
+    throw new Error('Ticketmaster: no available API key (all configured keys are exhausted for today, or none configured)');
+  }
+  let lastErr = null;
+  for (const key of keys) {
+    try {
+      return await throttledHttpGet(buildUrl(key), lowPriority);
+    } catch (err) {
+      lastErr = err;
+      if (isQuotaViolation(err.message)) {
+        keyExhaustedUntil.set(key, Date.now() + msUntilNextUtcMidnight());
+        continue; // seamless failover to the next key
+      }
+      throw err; // any other error (network, parse, invalid key, etc.) isn't solved by switching keys — surface it as-is
+    }
+  }
+  throw lastErr; // every available key hit a quota violation
+}
+
 module.exports = {
   id: 'ticketmaster',
   name: 'Ticketmaster',
   badge: 'TM',
-  requiredEnv: ['TICKETMASTER_API_KEY'],
+  requiredEnv: TICKETMASTER_KEY_ENV_NAMES,
   isEnabled(env) {
-    return !!env.TICKETMASTER_API_KEY;
+    return TICKETMASTER_KEY_ENV_NAMES.some((envName) => !!env[envName]);
   },
 
   // Confirmed via Ticketmaster's own official documentation (Inventory
@@ -163,13 +247,12 @@ module.exports = {
       // below rather than giving up, in case that surfaces something.
     }
 
-    const key = env.TICKETMASTER_API_KEY;
     const keyword = encodeURIComponent(params.artist || params.query || '');
     const city = params.city ? `&city=${encodeURIComponent(params.city)}` : '';
-    const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&keyword=${keyword}${city}&size=5`;
+    const buildUrl = (key) => `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&keyword=${keyword}${city}&size=5`;
 
     try {
-      const data = await throttledHttpGet(url, !!env.lowPriority);
+      const data = await requestWithKeyRotation(buildUrl, env, !!env.lowPriority);
       const events = (data._embedded && data._embedded.events) || [];
       const results = [];
       for (const ev of events) {
@@ -206,9 +289,8 @@ module.exports = {
   // and no keyword — "what's happening in this country" rather than "find
   // this specific thing".
   async searchEvents(params, env) {
-    const key = env.TICKETMASTER_API_KEY;
     const size = params.limit || 10;
-    const parts = [`apikey=${key}`, `size=${size}`];
+    const parts = [`size=${size}`];
     // Optional pagination — Ticketmaster's own `page` query param (0-indexed).
     // Added for routes/concertCategories.js, which needs a wider pool of
     // real events than one 150-200-result page gives per market to have a
@@ -283,10 +365,10 @@ module.exports = {
     // confirming with a real date-filtered search before relying on it.
     if (params.dateFrom) parts.push(`startDateTime=${encodeURIComponent(params.dateFrom)}`);
     if (params.dateTo) parts.push(`endDateTime=${encodeURIComponent(params.dateTo)}`);
-    const url = `https://app.ticketmaster.com/discovery/v2/events.json?${parts.join('&')}`;
+    const buildUrl = (key) => `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}&${parts.join('&')}`;
 
     try {
-      const data = await throttledHttpGet(url, !!env.lowPriority);
+      const data = await requestWithKeyRotation(buildUrl, env, !!env.lowPriority);
       const events = (data._embedded && data._embedded.events) || [];
       return events.map(mapEventToResult);
     } catch (err) {
@@ -322,10 +404,9 @@ module.exports = {
   // against a live call, same as several other pieces here — this is a
   // genuinely different hypothesis, not a guess dressed up as one.
   async getEventDetails(eventId, env) {
-    const key = env.TICKETMASTER_API_KEY;
-    const url = `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
+    const buildUrl = (key) => `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(eventId)}.json?apikey=${key}`;
     try {
-      const ev = await throttledHttpGet(url, !!env.lowPriority);
+      const ev = await requestWithKeyRotation(buildUrl, env, !!env.lowPriority);
       return mapEventToResult(ev);
     } catch (err) {
       console.warn('[ticketmaster provider] getEventDetails', err.message);
