@@ -435,7 +435,7 @@ ${page > 1 ? `<link rel="prev" href="${pageUrl(page - 1)}">` : ''}
 ${page < totalPages ? `<link rel="next" href="${pageUrl(page + 1)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260819y">
+<link rel="stylesheet" href="/css/style.css?v=20260819yfix">
 <meta property="og:title" content="${escapeHtml(seoTitle)}">
 <meta property="og:description" content="${escapeHtml(pageDescription)}">
 <meta property="og:type" content="website">
