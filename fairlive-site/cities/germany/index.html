@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/cities/germany/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../css/style.css?v=20260819y">
+<link rel="stylesheet" href="../../css/style.css?v=20260819yfix">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -131,7 +131,15 @@ async function loadGermanyData(){
     // with a real, indexable SEO landing page (data/seo-cities.js
     // pilot — Berlin, Essen, Dresden) link there; every other city
     // still links to a pre-filtered real search rather than a dead "#".
-    var seoCitySlugs = { berlin: 'berlin', essen: 'essen', dresden: 'dresden' };
+    var seoCitySlugs = {
+      berlin: 'berlin', hamburg: 'hamburg',
+      munich: 'munich', münchen: 'munich',
+      cologne: 'cologne', köln: 'cologne',
+      frankfurt: 'frankfurt',
+      dusseldorf: 'dusseldorf', düsseldorf: 'dusseldorf',
+      stuttgart: 'stuttgart', leipzig: 'leipzig', dortmund: 'dortmund',
+      essen: 'essen', bremen: 'bremen', dresden: 'dresden',
+    };
     if(data.cities.length === 0){
       cityGrid.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-faint);font-size:13.5px;grid-column:1/-1;">No current listings — check back soon.</div>';
     } else {
