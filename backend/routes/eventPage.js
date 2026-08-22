@@ -65,12 +65,7 @@ function escapeHtml(str) {
 // Fetches the real event by eventId directly from Ticketmaster — no
 // caching, no database, always the current live data, same source of
 // truth the rest of the site already uses for this event.
-async function fetchRealEvent(eventId, env) {
-  const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
-  if (!tm || !tm.isEnabled(env) || typeof tm.getEventDetails !== 'function') return null;
-  const mapped = await tm.getEventDetails(eventId, env);
-  if (!mapped) return null;
-
+function shapeEvent(mapped, eventId) {
   return {
     artist: mapped.name || 'Event',
     venue: mapped.venue || '',
@@ -119,16 +114,41 @@ async function fetchRealEvent(eventId, env) {
   };
 }
 
-// Returns { html, canonicalSlug } on success, or null if the event
-// can't be found (caller should respond 404 — never render a page shell
-// with no real event behind it).
+// Returns { event, fetchError } — event is null on any failure, but
+// fetchError distinguishes WHY: a real API failure (rate limit, quota,
+// network) vs. genuinely no data for this ID, previously completely
+// indistinguishable from each other (both just silently became "Event
+// not found"). Uses getEventDetailsWithDiagnostics specifically so this
+// file alone gets that distinction — the provider's plain
+// getEventDetails (used by cityPage.js and this provider's own
+// search() method) is untouched, zero behavior change for either.
+async function fetchRealEvent(eventId, env) {
+  const tm = registry.ticketProviders.find((p) => p.id === 'ticketmaster');
+  if (!tm || !tm.isEnabled(env)) return { event: null, fetchError: null };
+  if (typeof tm.getEventDetailsWithDiagnostics === 'function') {
+    const { mapped, error } = await tm.getEventDetailsWithDiagnostics(eventId, env);
+    return { event: mapped ? shapeEvent(mapped, eventId) : null, fetchError: mapped ? null : error };
+  }
+  // Defensive fallback if an older provider build without the
+  // diagnostic method is ever loaded — same behavior as before this
+  // fix, just without the extra diagnostic.
+  if (typeof tm.getEventDetails !== 'function') return { event: null, fetchError: null };
+  const mapped = await tm.getEventDetails(eventId, env);
+  return { event: mapped ? shapeEvent(mapped, eventId) : null, fetchError: null };
+}
+
+// Returns { html, canonicalSlug } on success, or { notFound: true,
+// fetchError } on failure — fetchError is the real reason when this was
+// caused by an actual API failure rather than a genuinely nonexistent
+// event ID, so the caller (server.js) can show something more useful
+// than a blind 404 when there's a real, specific cause.
 async function renderEventPage(eventId, requestedSlug, env, siteOrigin) {
-  const realEvent = await fetchRealEvent(eventId, env);
+  const { event: realEvent, fetchError } = await fetchRealEvent(eventId, env);
   if (!realEvent || !realEvent.venue || !realEvent.isoDate) {
     // Missing venue/date means we don't have enough to call this a real,
     // useful page — matches the "materially thin" non-eligibility rule
     // rather than publishing a half-empty page.
-    return null;
+    return { notFound: true, fetchError };
   }
 
   const canonicalSlug = buildCanonicalSlug(realEvent);
