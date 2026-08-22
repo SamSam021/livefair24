@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260819z">
+<link rel="stylesheet" href="css/style.css?v=20260819yfix">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -66,9 +66,9 @@
     <a href="/" class="nav-logo"><span class="dot"></span>LiveFair24</a>
     <div class="nav-right">
       <div class="search-mode-toggle" role="group" aria-label="What to search for">
-        <button type="button" class="smt-btn active" data-mode="event" onclick="setSearchMode('event')">Event</button>
+        <button type="button" class="smt-btn active" data-mode="both" onclick="setSearchMode('both')"><span class="smt-full">Event+Hotel</span><span class="smt-short">Both</span></button>
+        <button type="button" class="smt-btn" data-mode="event" onclick="setSearchMode('event')">Event</button>
         <button type="button" class="smt-btn" data-mode="hotel" onclick="setSearchMode('hotel')">Hotel</button>
-        <button type="button" class="smt-btn" data-mode="both" onclick="setSearchMode('both')"><span class="smt-full">Event+Hotel</span><span class="smt-short">Both</span></button>
       </div>
       <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenuOverlay">
         <span></span><span></span><span></span>
@@ -871,7 +871,7 @@ let loadToken=0;
 // only updates their contents, never recreates them), so this just
 // toggles display — the mode persists correctly across subsequent
 // selectEvent() calls without needing to re-apply it each time.
-let currentSearchMode = 'event';
+let currentSearchMode = 'both';
 function setSearchMode(mode){
   currentSearchMode = mode;
   document.querySelectorAll('.smt-btn').forEach(btn => {
