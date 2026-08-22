@@ -674,7 +674,7 @@ function renderEventHotelList(){
 
   document.getElementById('hotelScroll').innerHTML = filtered.map((h,i)=>`
     <div class="hcard" data-idx="${i}">
-      <div class="hname">${h.name}${i===0?' <span class="best-badge">CLOSEST</span>':''}</div>
+      <div class="hname">${h.name}</div>
       <div class="hrow">
         <span class="hdist">${h.distanceKm!=null?h.distanceKm.toFixed(1)+' km from venue':'Distance n/a'}</span>
         <span class="hrating">${h.rating!=null?`★ ${h.rating.toFixed(1)} <span class="hrev">${h.reviews!=null?`(${h.reviews.toLocaleString()})`:''}</span>`:''}</span>
