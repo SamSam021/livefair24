@@ -832,7 +832,7 @@ async function fetchHotels(ev){
 }
 
 function renderSellerCards(data){
-  const sellers = data.results || [];
+  let sellers = data.results || [];
   document.getElementById('ticketDemoBadge') && (document.getElementById('ticketDemoBadge').style.display = data.demoMode ? 'inline-flex' : 'none');
 
   if(sellers.length === 0){
@@ -841,6 +841,27 @@ function renderSellerCards(data){
       '<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.</div>';
     return;
   }
+
+  // Confirmed real UX issue, reported directly with screenshots: the
+  // same total price could appear stacked as multiple near-identical
+  // cards (nothing distinguishing them but an empty section and a
+  // repeated "Get tickets" button). Collapse to one card per distinct
+  // price, keep the first (already lowest-first sorted) occurrence of
+  // each, and cap at 4 — if there genuinely are more than 4 distinct
+  // prices, that's still plenty of real choice without overwhelming
+  // the panel. isBestPrice is recomputed here against the deduplicated
+  // list specifically, rather than trusted from the raw data — this is
+  // what guarantees the lowest price is always the one actually shown
+  // as SELECTED OFFER, even in the edge case where the very cheapest
+  // raw entry got collapsed into a later duplicate.
+  const seenPrices = new Set();
+  sellers = sellers.filter((s) => {
+    if (seenPrices.has(s.total)) return false;
+    seenPrices.add(s.total);
+    return true;
+  }).slice(0, 4);
+  const lowestPrice = Math.min(...sellers.map((s) => s.total));
+  sellers = sellers.map((s) => ({ ...s, isBestPrice: s.total === lowestPrice }));
 
   document.getElementById('ticketEpPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
 

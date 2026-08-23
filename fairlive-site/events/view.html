@@ -463,7 +463,7 @@ async function fetchHotels(){
 }
 
 function renderSellerCards(data){
-  const sellers = data.results || [];
+  let sellers = data.results || [];
   document.getElementById('ticketDemoBadge').style.display = data.demoMode ? 'inline-flex' : 'none';
 
   if(sellers.length === 0){
@@ -478,6 +478,18 @@ function renderSellerCards(data){
       `<div style="padding:24px;text-align:center;color:var(--ink-faint);font-size:13.5px;">No live prices available for this event right now.${fallbackLink}</div>`;
     return;
   }
+
+  // See index.html's identical fix for the full reasoning - collapses
+  // identical-priced offers into one card, caps at 4 distinct prices,
+  // recomputes isBestPrice against the deduplicated list.
+  const seenPrices = new Set();
+  sellers = sellers.filter((s) => {
+    if (seenPrices.has(s.total)) return false;
+    seenPrices.add(s.total);
+    return true;
+  }).slice(0, 4);
+  const lowestPrice = Math.min(...sellers.map((s) => s.total));
+  sellers = sellers.map((s) => ({ ...s, isBestPrice: s.total === lowestPrice }));
 
   document.getElementById('ticketEpPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
   document.getElementById('summaryTicketPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
