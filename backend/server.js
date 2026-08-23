@@ -16,6 +16,7 @@ const { handleTickets } = require('./routes/tickets');
 const { handleHotels } = require('./routes/hotels');
 const watcherRoutes = require('./routes/watchers');
 const eventRoutes = require('./routes/events');
+const { renderNotFoundPage } = require('./routes/notFoundPage');
 const sportsRoutes = require('./routes/sports');
 const searchRoutes = require('./routes/search');
 const trendingRoutes = require('./routes/trending');
@@ -665,8 +666,16 @@ const server = http.createServer(async (req, res) => {
         const siteOrigin = `https://${req.headers.host || 'www.livefair24.com'}`;
         const result = await venuePageRoutes.renderVenuePage(decodeURIComponent(slug), registry.getMergedEnv(), siteOrigin);
         if (!result) {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          return res.end('No upcoming events found for this venue');
+          res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+          return res.end(renderNotFoundPage({
+            heading: 'Venue not found',
+            message: `We couldn't find any current or recent events for this venue. It may not exist, or there's simply nothing on sale there right now.`,
+            suggestions: [
+              { href: '/venues/', label: 'Browse venues' },
+              { href: '/cities/', label: 'Browse cities' },
+              { href: '/concerts/', label: 'Upcoming concerts' },
+            ],
+          }));
         }
         if (result.canonicalSlug !== slug) {
           res.writeHead(301, { Location: `/venues/${encodeURIComponent(result.canonicalSlug)}/` });
