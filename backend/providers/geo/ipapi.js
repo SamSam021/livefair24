@@ -15,6 +15,29 @@
 
 const https = require('https');
 
+// Confirmed real cause of a real reported bug: language auto-detection
+// was silently defaulting everyone to English. This function had zero
+// caching, and is now called from TWO places per pageview (trending.js's
+// country detection, and i18n/detect.js's language detection) — every
+// visitor, every page load, was a fresh real ipapi.co call. We already
+// confirmed actual 429 rate-limit responses from this exact free-tier
+// service earlier — once that limit is hit, every call fails, returns
+// null, and null always maps to English regardless of the visitor's
+// real country. A simple IP-keyed cache with a 24h TTL (an IP's country
+// essentially never changes within a day) cuts real API calls
+// dramatically — repeat visits, and different pages loaded by the same
+// visitor, now reuse one real lookup instead of triggering a fresh one
+// each time.
+const COUNTRY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+// Failures get a much shorter TTL than successes — long enough to stop
+// hammering ipapi.co with doomed requests during an active rate-limit
+// window (their limit resets daily, so retrying every request during
+// that window is pure waste), short enough that a genuine recovery
+// (limit reset, transient network blip) is picked up again within
+// minutes rather than staying "unknown" for a full day.
+const FAILURE_CACHE_TTL_MS = 5 * 60 * 1000;
+const countryCache = new Map(); // ip -> { countryCode, expiresAt }
+
 function httpGet(url) {
   return new Promise((resolve, reject) => {
     https.get(url, { headers: { 'User-Agent': 'livefair24' } }, (res) => {
@@ -52,12 +75,30 @@ function isPrivateOrLocalIp(ip) {
 // not treat null as an error to surface to the visitor.
 async function getCountryCodeForIp(ip) {
   if (isPrivateOrLocalIp(ip)) return null;
+
+  const cached = countryCache.get(ip);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.countryCode;
+  }
+
   try {
     const data = await httpGet(`https://ipapi.co/${encodeURIComponent(ip)}/json/`);
-    if (data.error) return null; // ipapi.co returns {"error":true,"reason":"..."} on failure, not an HTTP error code
-    return data.country_code || null;
+    if (data.error) {
+      countryCache.set(ip, { countryCode: null, expiresAt: Date.now() + FAILURE_CACHE_TTL_MS });
+      return null; // ipapi.co returns {"error":true,"reason":"..."} on failure, not an HTTP error code
+    }
+    const countryCode = data.country_code || null;
+    // Only cache a genuine success at the long TTL — a rate-limited/
+    // failed lookup gets the short failure TTL above instead, so the
+    // next request for this IP after a real recovery gets a fresh
+    // attempt rather than being locked into "unknown" for a full day.
+    if (countryCode) {
+      countryCache.set(ip, { countryCode, expiresAt: Date.now() + COUNTRY_CACHE_TTL_MS });
+    }
+    return countryCode;
   } catch (err) {
     console.warn('[ipapi.co geo lookup]', err.message);
+    countryCache.set(ip, { countryCode: null, expiresAt: Date.now() + FAILURE_CACHE_TTL_MS });
     return null;
   }
 }
