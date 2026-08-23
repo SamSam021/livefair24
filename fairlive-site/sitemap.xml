@@ -247,18 +247,8 @@
   </url>
 
   <!-- Legal / trust pages -->
-  <url>
-    <loc>https://livefair24.com/privacy.html</loc>
-    <lastmod>2026-08-16</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.30</priority>
-  </url>
-  <url>
-    <loc>https://livefair24.com/impressum.html</loc>
-    <lastmod>2026-08-16</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.30</priority>
-  </url>
+  <!-- privacy.html and impressum.html are intentionally noindex'd
+       (see their own robots meta tag) and therefore excluded here -->
   <url>
     <loc>https://livefair24.com/about.html</loc>
     <lastmod>2026-08-19</lastmod>
