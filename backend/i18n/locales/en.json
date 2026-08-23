@@ -1,0 +1,74 @@
+{
+  "nav": {
+    "browseCities": "Browse cities",
+    "concerts": "Concerts",
+    "artists": "Artists",
+    "venues": "Venues",
+    "howItWorks": "How it works",
+    "sports": "Sports",
+    "searchConcerts": "Search concerts"
+  },
+  "hero": {
+    "liveBadge": "● Live prices — updated every 2 minutes",
+    "title1": "Live happens once.",
+    "title2": "Don't miss it.",
+    "subtitle": "Search for events — concerts and sports — see real ticket prices, find a hotel near the venue, and see your complete trip cost, all in one search.",
+    "locationLabel": "Location",
+    "locationPlaceholder": "City or Zip Code",
+    "datesLabel": "Dates",
+    "datesPlaceholder": "All Dates",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Artist, event or city — e.g. Coldplay Berlin",
+    "searchButton": "Search →"
+  },
+  "searchMode": {
+    "event": "Event",
+    "hotel": "Hotel",
+    "both": "Event+Hotel",
+    "bothShort": "Both"
+  },
+  "events": {
+    "sectionTitle": "Upcoming events",
+    "sectionSubtitle": "Live ticket prices updated every 2 minutes.",
+    "seeAllCities": "See all cities →",
+    "emptyState": "We're checking the latest event availability. Please try again shortly.",
+    "updatedRecently": "Updated recently"
+  },
+  "ticketPanel": {
+    "title": "Ticket prices",
+    "subtitle": "Same seat category, sorted by total price including fees.",
+    "lowestTotalPrice": "Lowest total price",
+    "totalInclFees": "Total incl. fees",
+    "getTickets": "Get tickets →",
+    "pickYourSeat": "Pick your seat next",
+    "selectedOffer": "SELECTED OFFER"
+  },
+  "hotelPanel": {
+    "title": "Hotels near your selected event",
+    "selectEventAbove": "Select an event above",
+    "ticketPrice": "Ticket price",
+    "hotelsFound": "hotels near venue",
+    "noHotelsFound": "No hotels available.",
+    "book": "Book →",
+    "maxPricePerNight": "Max price / night",
+    "maxDistanceFromVenue": "Max distance from venue"
+  },
+  "footer": {
+    "tagline": "Concert ticket search + hotels + total trip cost.",
+    "browse": "Browse",
+    "allCities": "All cities",
+    "guides": "Guides",
+    "howItWorks": "How it works",
+    "hotelsNearVenues": "Hotels near venues",
+    "company": "Company",
+    "about": "About",
+    "affiliateDisclosure": "Affiliate disclosure",
+    "privacy": "Privacy",
+    "contact": "Contact",
+    "impressum": "Impressum",
+    "copyright": "© 2026 LiveFair24. We earn affiliate commission on purchases made through our links."
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  }
+}

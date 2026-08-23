@@ -1,0 +1,74 @@
+{
+  "nav": {
+    "browseCities": "Explorar ciudades",
+    "concerts": "Conciertos",
+    "artists": "Artistas",
+    "venues": "Recintos",
+    "howItWorks": "Cómo funciona",
+    "sports": "Deportes",
+    "searchConcerts": "Buscar conciertos"
+  },
+  "hero": {
+    "liveBadge": "● Precios en vivo — actualizados cada 2 minutos",
+    "title1": "Lo en vivo pasa una sola vez.",
+    "title2": "No te lo pierdas.",
+    "subtitle": "Busca eventos — conciertos y deportes — mira precios reales de entradas, encuentra un hotel cerca del recinto y consulta el costo total de tu viaje, todo en una sola búsqueda.",
+    "locationLabel": "Ubicación",
+    "locationPlaceholder": "Ciudad o código postal",
+    "datesLabel": "Fechas",
+    "datesPlaceholder": "Todas las fechas",
+    "searchLabel": "Buscar",
+    "searchPlaceholder": "Artista, evento o ciudad — ej. Coldplay Berlín",
+    "searchButton": "Buscar →"
+  },
+  "searchMode": {
+    "event": "Evento",
+    "hotel": "Hotel",
+    "both": "Evento+Hotel",
+    "bothShort": "Ambos"
+  },
+  "events": {
+    "sectionTitle": "Próximos eventos",
+    "sectionSubtitle": "Precios de entradas en vivo, actualizados cada 2 minutos.",
+    "seeAllCities": "Ver todas las ciudades →",
+    "emptyState": "Estamos verificando la disponibilidad más reciente. Vuelve a intentarlo en breve.",
+    "updatedRecently": "Actualizado recientemente"
+  },
+  "ticketPanel": {
+    "title": "Precios de entradas",
+    "subtitle": "Misma categoría de asiento, ordenado por precio total con comisiones incluidas.",
+    "lowestTotalPrice": "Precio total más bajo",
+    "totalInclFees": "Total con comisiones",
+    "getTickets": "Ver entradas →",
+    "pickYourSeat": "Elige tu asiento a continuación",
+    "selectedOffer": "OFERTA SELECCIONADA"
+  },
+  "hotelPanel": {
+    "title": "Hoteles cerca del evento seleccionado",
+    "selectEventAbove": "Selecciona un evento arriba",
+    "ticketPrice": "Precio de entrada",
+    "hotelsFound": "hoteles cerca del recinto",
+    "noHotelsFound": "No hay hoteles disponibles.",
+    "book": "Reservar →",
+    "maxPricePerNight": "Precio máx. / noche",
+    "maxDistanceFromVenue": "Distancia máx. al recinto"
+  },
+  "footer": {
+    "tagline": "Búsqueda de entradas de conciertos + hoteles + costo total del viaje.",
+    "browse": "Explorar",
+    "allCities": "Todas las ciudades",
+    "guides": "Guías",
+    "howItWorks": "Cómo funciona",
+    "hotelsNearVenues": "Hoteles cerca de recintos",
+    "company": "Empresa",
+    "about": "Acerca de",
+    "affiliateDisclosure": "Divulgación de afiliados",
+    "privacy": "Privacidad",
+    "contact": "Contacto",
+    "impressum": "Aviso legal",
+    "copyright": "© 2026 LiveFair24. Recibimos una comisión de afiliado por las compras realizadas a través de nuestros enlaces."
+  },
+  "languageSwitcher": {
+    "label": "Idioma"
+  }
+}

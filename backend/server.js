@@ -33,6 +33,8 @@ const countryEventsRoutes = require('./routes/countryEvents');
 const matchesRoutes = require('./routes/matches');
 const registry = require('./providers/registry');
 const adminAuth = require('./admin-auth');
+const i18n = require('./i18n');
+const i18nDetect = require('./i18n/detect');
 const adminRoutes = require('./routes/admin');
 const { runPriceCheck } = require('./price-check');
 const configStore = require('./config-store');
@@ -233,6 +235,33 @@ const server = http.createServer(async (req, res) => {
       // any real feature — since "did the deploy actually go out" has
       // been genuinely hard to answer from the outside so far.
       return sendJSON(res, 200, { ok: true, buildMarker: 'suggested-images-v16' });
+    }
+    // Language detection + the actual translation dictionary, in one
+    // call — the client-side i18n layer (fairlive-site/js/i18n.js) is
+    // the only thing that calls this. Deliberately does NOT touch any
+    // existing route, meta tag, canonical URL, or structured data —
+    // this is a purely additive display-layer feature, not a URL/SEO
+    // architecture change. Real country detection reuses the exact
+    // same IP lookup trending.js already uses.
+    if (pathname === '/api/language' && req.method === 'GET') {
+      const { language, source, detectedCountry } = await i18nDetect.detectLanguage(req);
+      const dictionary = i18n.getDictionary(language);
+      return sendJSON(res, 200, { language, source, detectedCountry, dictionary });
+    }
+    // A real, explicit user choice from the language switcher — sets a
+    // long-lived cookie that /api/language above (and this endpoint's
+    // own next call) will read back and always prefer over IP
+    // detection from then on, per the explicit requirement that any
+    // user can change the language themselves.
+    if (pathname === '/api/language' && req.method === 'POST') {
+      const body = await readBody(req);
+      const language = body.language;
+      if (!i18nDetect.SUPPORTED_LANGUAGES.includes(language)) {
+        return sendJSON(res, 400, { error: 'Unsupported language' });
+      }
+      return sendJSON(res, 200, { ok: true, language }, {
+        'Set-Cookie': `${i18nDetect.LANGUAGE_COOKIE_NAME}=${language}; Path=/; Max-Age=31536000; SameSite=Lax`,
+      });
     }
     if (pathname === '/sitemap-events.xml' && req.method === 'GET') {
       try {

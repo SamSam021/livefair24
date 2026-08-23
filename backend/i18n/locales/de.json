@@ -1,0 +1,74 @@
+{
+  "nav": {
+    "browseCities": "Städte durchsuchen",
+    "concerts": "Konzerte",
+    "artists": "Künstler",
+    "venues": "Veranstaltungsorte",
+    "howItWorks": "So funktioniert's",
+    "sports": "Sport",
+    "searchConcerts": "Konzerte suchen"
+  },
+  "hero": {
+    "liveBadge": "● Live-Preise — alle 2 Minuten aktualisiert",
+    "title1": "Live-Momente gibt es nur einmal.",
+    "title2": "Verpasse sie nicht.",
+    "subtitle": "Suche nach Events — Konzerte und Sport — sieh echte Ticketpreise, finde ein Hotel in der Nähe der Location und erhalte deine Gesamtkosten in einer einzigen Suche.",
+    "locationLabel": "Ort",
+    "locationPlaceholder": "Stadt oder Postleitzahl",
+    "datesLabel": "Datum",
+    "datesPlaceholder": "Alle Termine",
+    "searchLabel": "Suche",
+    "searchPlaceholder": "Künstler, Event oder Stadt — z. B. Coldplay Berlin",
+    "searchButton": "Suchen →"
+  },
+  "searchMode": {
+    "event": "Event",
+    "hotel": "Hotel",
+    "both": "Event+Hotel",
+    "bothShort": "Beides"
+  },
+  "events": {
+    "sectionTitle": "Kommende Events",
+    "sectionSubtitle": "Live-Ticketpreise, alle 2 Minuten aktualisiert.",
+    "seeAllCities": "Alle Städte ansehen →",
+    "emptyState": "Wir prüfen gerade die aktuelle Verfügbarkeit. Bitte versuche es in Kürze erneut.",
+    "updatedRecently": "Kürzlich aktualisiert"
+  },
+  "ticketPanel": {
+    "title": "Ticketpreise",
+    "subtitle": "Gleiche Sitzplatzkategorie, sortiert nach Gesamtpreis inkl. Gebühren.",
+    "lowestTotalPrice": "Niedrigster Gesamtpreis",
+    "totalInclFees": "Gesamt inkl. Gebühren",
+    "getTickets": "Tickets ansehen →",
+    "pickYourSeat": "Sitzplatz als Nächstes wählen",
+    "selectedOffer": "AUSGEWÄHLTES ANGEBOT"
+  },
+  "hotelPanel": {
+    "title": "Hotels in der Nähe deines ausgewählten Events",
+    "selectEventAbove": "Wähle oben ein Event aus",
+    "ticketPrice": "Ticketpreis",
+    "hotelsFound": "Hotels in der Nähe",
+    "noHotelsFound": "Keine Hotels verfügbar.",
+    "book": "Buchen →",
+    "maxPricePerNight": "Max. Preis / Nacht",
+    "maxDistanceFromVenue": "Max. Entfernung zur Location"
+  },
+  "footer": {
+    "tagline": "Konzertticket-Suche + Hotels + Gesamtkosten der Reise.",
+    "browse": "Entdecken",
+    "allCities": "Alle Städte",
+    "guides": "Ratgeber",
+    "howItWorks": "So funktioniert's",
+    "hotelsNearVenues": "Hotels in der Nähe von Locations",
+    "company": "Unternehmen",
+    "about": "Über uns",
+    "affiliateDisclosure": "Affiliate-Hinweis",
+    "privacy": "Datenschutz",
+    "contact": "Kontakt",
+    "impressum": "Impressum",
+    "copyright": "© 2026 LiveFair24. Wir erhalten eine Affiliate-Provision für Käufe über unsere Links."
+  },
+  "languageSwitcher": {
+    "label": "Sprache"
+  }
+}
