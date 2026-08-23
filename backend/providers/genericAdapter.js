@@ -89,7 +89,7 @@ async function genericTicketSearch(def, params) {
           rating: def.fields.rating ? Number(getByPath(item, def.fields.rating)) || null : null,
           reviews: null,
           url: getByPath(item, def.fields.url) || def.baseUrl,
-          section: 'See seller for details',
+          section: null, // was previously hardcoded to a placeholder string here, which meant it was ALWAYS truthy and the frontend's own real fallback text (events/view.html etc.) never actually got a chance to apply - null lets that real fallback do its job
           demo: false,
         };
       })

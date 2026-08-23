@@ -256,7 +256,7 @@ module.exports = {
           rating: null,
           reviews: null,
           url: detail.url || '#',
-          section: 'See seller for section/row',
+          section: null, // was previously hardcoded to a placeholder string here, which meant it was ALWAYS truthy and the frontend's own real fallback text (events/view.html etc.) never actually got a chance to apply - null lets that real fallback do its job
           demo: false,
         }];
       }
@@ -289,7 +289,7 @@ module.exports = {
           rating: null, // Ticketmaster's public API doesn't expose a seller rating
           reviews: null,
           url: ev.url || '#',
-          section: 'See seller for section/row',
+          section: null, // was previously hardcoded to a placeholder string here, which meant it was ALWAYS truthy and the frontend's own real fallback text (events/view.html etc.) never actually got a chance to apply - null lets that real fallback do its job
           demo: false,
         });
       }
