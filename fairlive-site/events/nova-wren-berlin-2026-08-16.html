@@ -770,8 +770,7 @@ function renderPriceTable(sellers){
     <tr class="${s.isBestPrice?'best-row':''}">
       <td>
         <div class="pname">
-          <div class="pbadge p-${(s.badge||'dm').toLowerCase()}">${s.badge||'—'}</div>
-          <div>${s.sellerName}${s.isBestPrice?' <span class="best-badge">★ BEST PRICE</span>':''}</div>
+          <div>${s.isBestPrice?'<span class="best-badge">SELECTED OFFER</span>':''}</div>
         </div>
       </td>
       <td><div class="total-price ${s.isBestPrice?'best':''}">$${s.total.toFixed(2)}</div><div class="fee-breakdown">${s.demo?'Demo data':'Verified total'}</div></td>

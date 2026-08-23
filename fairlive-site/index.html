@@ -842,13 +842,12 @@ function renderSellerCards(data){
 
   document.getElementById('sellerCards').innerHTML = sellers.map((s)=>`
     <div class="seller-card ${s.isBestPrice?'best':''}">
-      ${s.isBestPrice?'<div class="seller-badge-best">★ BEST PRICE</div>':''}
+      ${s.isBestPrice?'<div class="seller-badge-best">SELECTED OFFER</div>':''}
       <div class="seller-left">
-        <div class="seller-badge-sq p-${s.badge.toLowerCase()}">${s.badge}</div>
         <div>
-          <div class="seller-name">${s.sellerName}</div>
-          <div class="seller-meta">${s.section || 'See seller for details'}</div>
-          <div class="seller-rating">${s.rating!=null ? `Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}` : 'Rating not provided by this seller'}</div>
+          
+          <div class="seller-meta">${s.section || 'Details shown at checkout'}</div>
+          <div class="seller-rating">${s.rating!=null ? `Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}` : 'No rating available'}</div>
         </div>
       </div>
       <div class="seller-divider"></div>
