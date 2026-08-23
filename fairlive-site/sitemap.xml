@@ -277,6 +277,12 @@
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
+  <url>
+    <loc>https://livefair24.com/terms.html</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.30</priority>
+  </url>
 
   <!--
     NOT YET BUILT — do not add these back to the sitemap until the pages exist:
