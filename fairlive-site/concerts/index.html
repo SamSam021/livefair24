@@ -809,7 +809,7 @@ function renderSellerCards(data){
   document.getElementById('ticketEpPrice').textContent = `$${sellers[0].total.toFixed(2)}`;
 
   document.getElementById('sellerCards').innerHTML = sellers.map((s)=>`
-    <div class="seller-card ${s.isBestPrice?'best':''}">
+    <div class="seller-card ${s.isBestPrice?'best':''}" style="cursor:pointer;" onclick='if(event.target.closest("a")) return; window.open(${JSON.stringify(s.url)}, "_blank", "noopener");'>
       ${s.isBestPrice?'<div class="seller-badge-best">SELECTED OFFER</div>':''}
       <div class="seller-left">
         <div>
