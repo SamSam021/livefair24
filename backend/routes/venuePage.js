@@ -108,12 +108,42 @@ async function fetchVenueEvents(searchName, env) {
 async function renderVenuePage(slug, env, siteOrigin) {
   const searchName = deslugify(slug);
   const events = await fetchVenueEvents(searchName, env);
-  if (events.length === 0) return null;
 
-  const realVenueName = events[0].venue;
-  const city = events[0].city;
-  const state = events[0].state;
-  const country = events[0].country;
+  // Confirmed real SEO issue, reported directly: this page previously
+  // 404'd outright whenever a venue had zero current live events —
+  // exactly the "delete the URL because inventory is temporarily
+  // empty" mistake the spec explicitly warned against for EVENT pages
+  // (section 26: never 404 just because something's between bookings —
+  // Google's accumulated rankings/backlinks/trust on that URL can be
+  // lost and have to be rebuilt from scratch once it reappears). Venue
+  // identity (name/city/country/venueId) previously came ONLY from the
+  // live events themselves, so a genuine gap meant literally no way to
+  // know the venue existed. Saved admin content already stores that
+  // same identity independently — falling back to it here means a
+  // venue you've written content for never disappears, gap or no gap.
+  // A venue with neither live events NOR saved content genuinely has
+  // nothing to render (no identity, no content) and still 404s — that
+  // page was never meaningfully reachable in the first place, so
+  // there's no accumulated SEO value at risk either way.
+  let realVenueName, city, state, country, venueId;
+  if (events.length > 0) {
+    realVenueName = events[0].venue;
+    city = events[0].city;
+    state = events[0].state;
+    country = events[0].country;
+    venueId = events[0].venueId;
+  } else {
+    const allSaved = venueContentStore.getAllVenueContent();
+    const matchedId = Object.keys(allSaved).find((id) => slugify(allSaved[id].venueName || '') === slug);
+    if (!matchedId) return null; // genuinely nothing to render — no live events, no saved identity
+    const saved = allSaved[matchedId];
+    realVenueName = saved.venueName;
+    city = saved.city;
+    state = null;
+    country = saved.country;
+    venueId = matchedId;
+  }
+
   const canonicalSlug = slugify(realVenueName);
   const canonicalUrl = `${siteOrigin}/venues/${canonicalSlug}/`;
 
@@ -123,7 +153,6 @@ async function renderVenuePage(slug, env, siteOrigin) {
   // same venue by construction of fetchVenueEvents above). Purely
   // additive: if nothing was ever saved for this venue, adminSections
   // stays empty and the page renders exactly as it always has.
-  const venueId = events[0].venueId;
   const adminContent = venueId ? venueContentStore.getVenueContent(venueId) : null;
   const SECTION_LABELS = {
     about: 'About the venue',
@@ -156,14 +185,16 @@ async function renderVenuePage(slug, env, siteOrigin) {
   // cityImage.js for the confirmed case that motivated this.
   const venueImageUrl = await cityImage.getCityImageUrl(city, state);
 
-  const eventRows = events
-    .map((ev) => {
-      const evSlug = buildCanonicalSlug({ artist: ev.name, city: ev.city, isoDate: ev.date });
-      const href = `/events/${encodeURIComponent(ev.eventId)}/${evSlug}`;
-      const dateLabel = formatDate(ev.date, ev.time);
-      return `<a href="${href}" class="artist-event-row"><div><div class="artist-event-date">${escapeHtml(dateLabel)}</div><div class="artist-event-venue">${escapeHtml(ev.name)}</div></div><span class="artist-event-arrow">View event →</span></a>`;
-    })
-    .join('\n');
+  const eventRows = events.length > 0
+    ? events
+        .map((ev) => {
+          const evSlug = buildCanonicalSlug({ artist: ev.name, city: ev.city, isoDate: ev.date });
+          const href = `/events/${encodeURIComponent(ev.eventId)}/${evSlug}`;
+          const dateLabel = formatDate(ev.date, ev.time);
+          return `<a href="${href}" class="artist-event-row"><div><div class="artist-event-date">${escapeHtml(dateLabel)}</div><div class="artist-event-venue">${escapeHtml(ev.name)}</div></div><span class="artist-event-arrow">View event →</span></a>`;
+        })
+        .join('\n')
+    : `<p style="color:var(--ink-faint);padding:20px 0;">No upcoming events at ${escapeHtml(realVenueName)} right now — check back soon.</p>`;
 
   const title = `${realVenueName} — Upcoming Events${city ? ' in ' + city : ''} | LiveFair24`;
   const description = `${events.length} upcoming event${events.length === 1 ? '' : 's'} at ${realVenueName}${city ? ', ' + city : ''} — real dates and ticket prices on LiveFair24.`;

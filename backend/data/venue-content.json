@@ -7,7 +7,7 @@
       "sections": {
         "about": {
           "enabled": true,
-          "text": "Uber Arena (formerly branded as O2 World and Mercedes-Benz Arena) is a multipurpose indoor arena in the Friedrichshain district of Berlin, Germany.\n\nWith a maximum capacity of 17,000 people for concerts and MMA events, the arena is home to the Eisbaren Berlin ice hockey team and ALBA Berlin basketball team.\n\nReference: https://en.wikipedia.org/wiki/Uber_Arena"
+          "text": "A major indoor arena in Berlin."
         },
         "howToGetThere": {
           "enabled": false,
@@ -30,7 +30,7 @@
           "text": ""
         }
       },
-      "updatedAt": "2026-08-22T15:56:19.748Z"
+      "updatedAt": "2026-08-22T21:21:47.011Z"
     }
   }
 }
