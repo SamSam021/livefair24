@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://livefair24.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2026081a1">
+<link rel="stylesheet" href="css/style.css?v=2026081a2">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -847,7 +847,7 @@ function renderSellerCards(data){
         <div>
           
           <div class="seller-meta">${s.section || 'Pick your seat next'}</div>
-          <div class="seller-rating">${s.rating!=null ? `Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}` : 'No rating available'}</div>
+          ${s.rating!=null ? `<div class="seller-rating">Seller rating <b>${s.rating.toFixed(1)}/5</b>${s.reviews!=null?` · ${s.reviews.toLocaleString()} reviews`:''}</div>` : ''}
         </div>
       </div>
       <div class="seller-divider"></div>
