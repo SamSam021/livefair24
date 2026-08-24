@@ -19,7 +19,8 @@
     "datesPlaceholder": "Alle Termine",
     "searchLabel": "Suche",
     "searchPlaceholder": "Künstler, Event oder Stadt — z. B. Coldplay Berlin",
-    "searchButton": "Suchen →"
+    "searchButton": "Suchen →",
+    "concertsSubtitle": "Suche Ticketpreise, finde ein Hotel in der Nähe der Location und erhalte deine Gesamtkosten — in einer einzigen Suche."
   },
   "searchMode": {
     "event": "Event",
@@ -32,7 +33,8 @@
     "sectionSubtitle": "Live-Ticketpreise, alle 2 Minuten aktualisiert.",
     "seeAllCities": "Alle Städte ansehen →",
     "emptyState": "Wir prüfen gerade die aktuelle Verfügbarkeit. Bitte versuche es in Kürze erneut.",
-    "updatedRecently": "Kürzlich aktualisiert"
+    "updatedRecently": "Kürzlich aktualisiert",
+    "upcomingConcertsTitle": "Kommende Konzerte"
   },
   "ticketPanel": {
     "title": "Ticketpreise",

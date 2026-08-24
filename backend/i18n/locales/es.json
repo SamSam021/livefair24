@@ -19,7 +19,8 @@
     "datesPlaceholder": "Todas las fechas",
     "searchLabel": "Buscar",
     "searchPlaceholder": "Artista, evento o ciudad — ej. Coldplay Berlín",
-    "searchButton": "Buscar →"
+    "searchButton": "Buscar →",
+    "concertsSubtitle": "Busca precios de entradas, encuentra un hotel cerca del recinto y consulta el costo total de tu viaje — todo en una sola búsqueda."
   },
   "searchMode": {
     "event": "Evento",
@@ -32,7 +33,8 @@
     "sectionSubtitle": "Precios de entradas en vivo, actualizados cada 2 minutos.",
     "seeAllCities": "Ver todas las ciudades →",
     "emptyState": "Estamos verificando la disponibilidad más reciente. Vuelve a intentarlo en breve.",
-    "updatedRecently": "Actualizado recientemente"
+    "updatedRecently": "Actualizado recientemente",
+    "upcomingConcertsTitle": "Próximos conciertos"
   },
   "ticketPanel": {
     "title": "Precios de entradas",
